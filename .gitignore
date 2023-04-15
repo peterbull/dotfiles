@@ -1,0 +1,14 @@
+# ignore all files except for dotfiles we want to track
+*
+!.ackrc
+!.bash_aliases
+!.bashrc.local
+!.ctags
+!.gitconfig
+!.tmux.conf
+!.bashrc
+!.vimrc
+!.gitconfig
+!.bashrc
+!.fzf.bash
+!.gitignore
