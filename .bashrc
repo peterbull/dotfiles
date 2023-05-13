@@ -147,3 +147,11 @@ export FZF_DEFAULT_COMMAND="history | fzf +s"
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
+
+# aliases
+alias jl='jupyter lab --ContentsManager.allow_hidden=True'
+
+
+mamba activate fastai
+
+
