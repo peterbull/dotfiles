@@ -12,3 +12,5 @@
 !.bashrc
 !.fzf.bash
 !.gitignore
+
+/.quarto/
