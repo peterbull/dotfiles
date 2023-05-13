@@ -1,4 +1,5 @@
 # ignore all files except for dotfiles we want to track
+*
 !.ackrc
 !.bash_aliases
 !.bashrc.local
