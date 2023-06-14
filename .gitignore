@@ -12,5 +12,5 @@
 !.bashrc
 !.fzf.bash
 !.gitignore
-
+!*.yml
 /.quarto/
