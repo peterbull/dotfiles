@@ -155,3 +155,6 @@ alias jl='jupyter lab --ContentsManager.allow_hidden=True'
 mamba activate fastai
 
 
+
+# Created by `pipx` on 2023-07-01 16:16:53
+export PATH="$PATH:/home/pete-00/.local/bin"

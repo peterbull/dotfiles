@@ -566,7 +566,7 @@ dependencies:
       - qtpy==2.3.1
       - qudida==0.0.4
       - rapidfuzz==3.0.0
-      - ray==2.4.0
+      - ray>=2.2.0
       - roboweb-extension==0.1.42
       - roboweb-server==0.1.42
       - scikit-image==0.20.0

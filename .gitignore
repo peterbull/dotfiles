@@ -3,6 +3,7 @@
 !.ackrc
 !.bash_aliases
 !.bashrc.local
+!.bash_completion
 !.ctags
 !.gitconfig
 !.tmux.conf
