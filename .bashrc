@@ -140,6 +140,8 @@ fi
 
 # cuda path
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
+export PATH=/usr/local/cuda/bin:$PATH
+
 
 # fzf settings
 export FZF_DEFAULT_COMMAND="history | fzf +s"
@@ -156,5 +158,9 @@ mamba activate fastai
 
 
 
-# Created by `pipx` on 2023-07-01 16:16:53
-export PATH="$PATH:/home/pete-00/.local/bin"
+export MODULAR_HOME="/home/pete-00/.modular"
+export PATH="/home/pete-00/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
+
+# vcxsrv
+export DISPLAY=$(ip route list default | awk '{print $3}'):0
+export LIBGL_ALWAYS_INDIRECT=1
