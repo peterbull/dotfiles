@@ -154,13 +154,23 @@ export FZF_DEFAULT_COMMAND="history | fzf +s"
 alias jl='jupyter lab --ContentsManager.allow_hidden=True'
 
 
-mamba activate fastai
+# mamba activate fastai
+# source ~/.venv/bin/activate
+
+# Fly.io
+export FLYCTL_INSTALL="/home/pete-00/.fly"
+export PATH="$FLYCTL_INSTALL/bin:$PATH"
 
 
-
+# Mojo
 export MODULAR_HOME="/home/pete-00/.modular"
 export PATH="/home/pete-00/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
 
 # vcxsrv
 export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
 export LIBGL_ALWAYS_INDIRECT=true
+
+# path to mongodb
+export PATH=$PATH:/usr/local/bin/mongodb-linux-x86_64-ubuntu2204-7.0.2/bin
+
+
