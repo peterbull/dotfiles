@@ -174,3 +174,13 @@ export LIBGL_ALWAYS_INDIRECT=true
 export PATH=$PATH:/usr/local/bin/mongodb-linux-x86_64-ubuntu2204-7.0.2/bin
 
 
+export ECCODES_DIR=/usr/src/eccodes
+export ECCODES_DEFINITION_PATH=/usr/src/eccodes/share/eccodes/definitions
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+alias ddown='docker compose down'
+alias dup='docker compose up'
+

@@ -34,3 +34,5 @@
 	helper = !/usr/bin/gh auth git-credential
 [init]
 	defaultBranch = main
+[core]
+	editor = code-insiders --wait
