@@ -1,13 +1,13 @@
 # Setup fzf
 # ---------
-if [[ ! "$PATH" == */home/pete-00/.fzf/bin* ]]; then
-  PATH="${PATH:+${PATH}:}/home/pete-00/.fzf/bin"
+if [[ ! "$PATH" == */home/peter-legion-wsl2/.fzf/bin* ]]; then
+  PATH="${PATH:+${PATH}:}/home/peter-legion-wsl2/.fzf/bin"
 fi
 
 # Auto-completion
 # ---------------
-[[ $- == *i* ]] && source "/home/pete-00/.fzf/shell/completion.bash" 2> /dev/null
+source "/home/peter-legion-wsl2/.fzf/shell/completion.bash"
 
 # Key bindings
 # ------------
-source "/home/pete-00/.fzf/shell/key-bindings.bash"
+source "/home/peter-legion-wsl2/.fzf/shell/key-bindings.bash"

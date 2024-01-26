@@ -2,8 +2,6 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
-source=/home/pete-00/bash/ble.sh
-
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -144,7 +142,7 @@ export PATH=/usr/local/cuda/bin:$PATH
 
 
 # fzf settings
-export FZF_DEFAULT_COMMAND="history | fzf +s"
+export FZF_DEFAULT_COMMAND="history | fzf"
 
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
@@ -184,3 +182,9 @@ export NVM_DIR="$HOME/.nvm"
 alias ddown='docker compose down'
 alias dup='docker compose up'
 
+
+# Created by `pipx` on 2024-01-25 12:22:05
+export PATH="$PATH:/home/peter-legion-wsl2/.local/bin"
+
+# Add poetry path
+export PATH="$HOME/.local/bin:$PATH"
