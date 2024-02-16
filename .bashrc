@@ -188,3 +188,5 @@ export PATH="$PATH:/home/peter-legion-wsl2/.local/bin"
 
 # Add poetry path
 export PATH="$HOME/.local/bin:$PATH"
+export ECCODES_DIR=/usr/src/eccodes
+export ECCODES_DEFINITION_PATH=/usr/src/eccodes/share/eccodes/definitions
