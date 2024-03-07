@@ -15,9 +15,12 @@ HISTCONTROL=ignoreboth
 # append to the history file, don't overwrite it
 shopt -s histappend
 
+# ensure history is immediately available in other tmux windows
+PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+HISTSIZE=2000
+HISTFILESIZE=3000
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -181,7 +184,7 @@ export NVM_DIR="$HOME/.nvm"
 
 alias ddown='docker compose down'
 alias dup='docker compose up'
-
+alias dupb='docker compose up --build'
 
 # Created by `pipx` on 2024-01-25 12:22:05
 export PATH="$PATH:/home/peter-legion-wsl2/.local/bin"
