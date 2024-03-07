@@ -185,6 +185,7 @@ export NVM_DIR="$HOME/.nvm"
 alias ddown='docker compose down'
 alias dup='docker compose up'
 alias dupb='docker compose up --build'
+alias dlogf='docker compose logs -f'
 
 # Created by `pipx` on 2024-01-25 12:22:05
 export PATH="$PATH:/home/peter-legion-wsl2/.local/bin"
