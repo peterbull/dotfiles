@@ -95,6 +95,9 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
+# xclip aliases
+alias xck='xclip -selection clipboard'
+
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
@@ -120,59 +123,9 @@ if ! shopt -oq posix; then
 fi
 source ~/.bashrc.local
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/pete-00/mambaforge/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/pete-00/mambaforge/etc/profile.d/conda.sh" ]; then
-        . "/home/pete-00/mambaforge/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/pete-00/mambaforge/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-
-if [ -f "/home/pete-00/mambaforge/etc/profile.d/mamba.sh" ]; then
-    . "/home/pete-00/mambaforge/etc/profile.d/mamba.sh"
-fi
-# <<< conda initialize <<<
-
-# cuda path
-export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
-export PATH=/usr/local/cuda/bin:$PATH
-
-
-# fzf settings
-export FZF_DEFAULT_COMMAND="history | fzf"
-
-
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
-
 
 # aliases
 alias jl='jupyter lab --ContentsManager.allow_hidden=True'
-
-
-# mamba activate fastai
-# source ~/.venv/bin/activate
-
-# Fly.io
-export FLYCTL_INSTALL="/home/pete-00/.fly"
-export PATH="$FLYCTL_INSTALL/bin:$PATH"
-
-
-# Mojo
-export MODULAR_HOME="/home/pete-00/.modular"
-export PATH="/home/pete-00/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
-
-# vcxsrv
-export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
-export LIBGL_ALWAYS_INDIRECT=true
-
-# path to mongodb
-export PATH=$PATH:/usr/local/bin/mongodb-linux-x86_64-ubuntu2204-7.0.2/bin
 
 
 export ECCODES_DIR=/usr/src/eccodes
@@ -187,10 +140,21 @@ alias dup='docker compose up'
 alias dupb='docker compose up --build'
 alias dlogf='docker compose logs -f'
 
-# Created by `pipx` on 2024-01-25 12:22:05
-export PATH="$PATH:/home/peter-legion-wsl2/.local/bin"
-
 # Add poetry path
 export PATH="$HOME/.local/bin:$PATH"
 export ECCODES_DIR=/usr/src/eccodes
 export ECCODES_DEFINITION_PATH=/usr/src/eccodes/share/eccodes/definitions
+
+# Vscode
+# export PATH="$PATH:/snap/bin"
+export DISPLAY=:0
+
+export DENO_INSTALL="/home/peter/.deno"
+export PATH="$DENO_INSTALL/bin:$PATH"
+
+#fzf
+source /usr/share/doc/fzf/examples/key-bindings.bash
+source /usr/share/doc/fzf/examples/completion.bash
+eval "$(/bin/brew shellenv)"
+
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
