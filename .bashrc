@@ -19,8 +19,8 @@ shopt -s histappend
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=2000
-HISTFILESIZE=3000
+HISTSIZE=4000
+HISTFILESIZE=6000
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -154,7 +154,4 @@ export PATH="$DENO_INSTALL/bin:$PATH"
 
 #fzf
 source /usr/share/doc/fzf/examples/key-bindings.bash
-source /usr/share/doc/fzf/examples/completion.bash
-eval "$(/bin/brew shellenv)"
-
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
