@@ -1,38 +1,3 @@
 [user]
+	name = peter bull
 	email = petercbull@gmail.com
-	name = LAPTOP-VCGCOL4V
-
-[push]
-        default = simple
-
-[credential]
-	helper = cache --timeout=3600
-
-[filter "lfs"]
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
-
-[pull]
-	rebase = true
-[rebase]
-	autoStash = true
-[submodule]
-	recurse = true
-[diff]
-	submodule = log
-[status]
-	submodulesummary = 1
-[branch]
-	autosetuprebase = always
-[credential "https://github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
-[credential "https://gist.github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
-[init]
-	defaultBranch = main
-[core]
-	editor = code-insiders --wait
