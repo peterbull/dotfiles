@@ -146,6 +146,7 @@ alias dbuild="docker compose build"
 
 ## Cursor
 alias cursor="cursor . --profile peter-og"
+
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/Users/peterbull/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
@@ -167,3 +168,5 @@ alias branch_hist="git for-each-ref --sort=-committerdate --format='%(refname:sh
 . "$HOME/.cargo/env"
 
 
+## Gen purpose aliases 
+alias zr="source ~/.zshrc && echo 'shell session reset'"

@@ -17,5 +17,4 @@ gnore all files except for dotfiles we want to track
 /.quarto/
 !.obsidian.vimrc
 !.p10k.zsh
-!.viminfo
 !.zshrc
