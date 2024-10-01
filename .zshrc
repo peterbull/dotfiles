@@ -124,10 +124,6 @@ source /opt/homebrew/share/powerlevel10k/powerlevel10k.zsh-theme
 
 source <(fzf --zsh)
 
-export PATH="$HOME/.pyenv/bin:$PATH"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
-
 export NVM_DIR="$HOME/.nvm"
   [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
   [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" 
@@ -147,20 +143,29 @@ alias dbuild="docker compose build"
 ## Cursor
 alias cursor="cursor . --profile peter-og"
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/Users/peterbull/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/Users/peterbull/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/Users/peterbull/miniconda3/etc/profile.d/conda.sh"
+# Conda initialization (disabled by default)
+conda_init() {
+    # >>> conda initialize >>>
+    # !! Contents within this block are managed by 'conda init' !!
+    __conda_setup="$('/Users/peterbull/miniforge3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
     else
-        export PATH="/Users/peterbull/miniconda3/bin:$PATH"
+        if [ -f "/Users/peterbull/miniforge3/etc/profile.d/conda.sh" ]; then
+            . "/Users/peterbull/miniforge3/etc/profile.d/conda.sh"
+        else
+            export PATH="/Users/peterbull/miniforge3/bin:$PATH"
+        fi
     fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+    unset __conda_setup
+
+    if [ -f "/Users/peterbull/miniforge3/etc/profile.d/mamba.sh" ]; then
+        . "/Users/peterbull/miniforge3/etc/profile.d/mamba.sh"
+    fi
+    # <<< conda initialize <<<
+}
+
+# To initialize conda, run the 'conda_init' function
 
 ## Git"
 alias branch_hist="git for-each-ref --sort=-committerdate --format='%(refname:short) - %(committerdate:relative)' refs/heads/"
@@ -170,3 +175,6 @@ alias branch_hist="git for-each-ref --sort=-committerdate --format='%(refname:sh
 
 ## Gen purpose aliases 
 alias zr="source ~/.zshrc && echo 'shell session reset'"
+alias tf="tree | tee >(pbcopy)"
+alias t1="tree -L 1 | tee >(pbcopy)"
+alias t2="tree -L 2 | tee >(pbcopy)"
