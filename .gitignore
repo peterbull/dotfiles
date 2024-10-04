@@ -5,6 +5,7 @@ gnore all files except for dotfiles we want to track
 !.bashrc.local
 !.bash_completion
 !.ctags
+!.config
 !.gitconfig
 !.tmux.conf
 !.bashrc
