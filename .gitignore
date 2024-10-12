@@ -20,3 +20,11 @@ gnore all files except for dotfiles we want to track
 !.obsidian.vimrc
 !.p10k.zsh
 !.zshrc
+tt.*
+.tests
+doc/tags
+debug
+.repro
+foo.*
+*.log
+data
