@@ -29,6 +29,9 @@ vim.keymap.set({ "n", "v" }, "<leader>aa", function()
   return require("CopilotChat").toggle()
 end, { desc = "Toggle Copilot Chat" })
 
+-- LSPsaga keymaps
+vim.keymap.set("n", "K", "<cmd>Lspsaga hover_doc")
+
 vim.keymap.set({ "n", "v" }, "<leader>aq", function()
   local input = vim.fn.input("Quick Chat: ")
   if input ~= "" then
