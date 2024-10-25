@@ -1,9 +1,12 @@
 return {
+  -- {
+  --   "navarasu/onedark.nvim",
+  --   opts = {
+  --     style = "cool",
+  --   },
+  -- },
   {
-    "navarasu/onedark.nvim",
-    opts = {
-      style = "cool",
-    },
+    "monsonjeremy/onedark.nvim",
   },
   {
     "LazyVim/LazyVim",
