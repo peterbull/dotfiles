@@ -4,7 +4,9 @@ return {
   config = function()
     -- Sets bulbs to always visible to prevent visual stutter
     vim.opt.signcolumn = "yes:3"
-    require("lspsaga").setup({})
+    require("lspsaga").setup({
+      lightbulb = { enable = false },
+    })
     -- Custom keymaps
     vim.keymap.set("n", "gt", "<cmd>Lspsaga peek_type_definition<CR>", { desc = "Peek type definition" })
   end,
