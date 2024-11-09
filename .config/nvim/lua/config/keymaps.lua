@@ -38,3 +38,55 @@ vim.keymap.set({ "n", "v" }, "<leader>aq", function()
     require("CopilotChat").ask(input)
   end
 end, { desc = "Quick Chat" })
+
+-- Neo-tree yank file content
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "neo-tree",
+  callback = function(event)
+    vim.keymap.set("n", "<leader>Y", function()
+      -- Get the neo-tree state directly from the renderer
+      local state = require("neo-tree.sources.manager").get_state("filesystem")
+      if not state then
+        vim.notify("Failed to get neo-tree state", vim.log.levels.ERROR)
+        return
+      end
+
+      local node = state.tree:get_node()
+      if not node then
+        vim.notify("No node selected", vim.log.levels.ERROR)
+        return
+      end
+
+      if node.type == "file" then
+        local filepath = node:get_id()
+        local ok, content = pcall(function()
+          local file = io.open(filepath, "r")
+          if not file then
+            return nil
+          end
+          local content = file:read("*all")
+          file:close()
+          return content
+        end)
+
+        if not ok or not content then
+          vim.notify("Failed to read file: " .. filepath, vim.log.levels.ERROR)
+          return
+        end
+
+        if content and content ~= "" then
+          -- Remove trailing newline if present
+          content = content:gsub("\n$", "")
+          -- Set to both the unnamed register and system clipboard
+          vim.fn.setreg('"', content)
+          vim.fn.setreg("+", content)
+          vim.notify("File content yanked: " .. node.name, vim.log.levels.INFO)
+        else
+          vim.notify("File is empty: " .. node.name, vim.log.levels.WARN)
+        end
+      else
+        vim.notify("Not a file", vim.log.levels.WARN)
+      end
+    end, { buffer = event.buf, desc = "Yank file content" })
+  end,
+})
