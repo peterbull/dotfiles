@@ -1,0 +1,102 @@
+// Place your key bindings in this file to override the defaults
+[
+    {
+        "key": "cmd+; cmd+.",
+        "command": "notebook.cell.clearOutputs",
+        "when": "notebookCellEditable && notebookCellHasOutputs && notebookEditable && notebookEditorFocused && !inputFocus"
+    },
+    {
+        "key": "alt+delete",
+        "command": "-notebook.cell.clearOutputs",
+        "when": "notebookCellEditable && notebookCellHasOutputs && notebookEditable && notebookEditorFocused && !inputFocus"
+    },
+    {
+        "key": "cmd+; cmd+.",
+        "command": "notebook.clearAllCellsOutputs"
+    },
+    {
+        "key": "cmd+' cmd+/",
+        "command": "deno.kernel.restart"
+    },
+    {
+        "key": "cmd+' cmd+/",
+        "command": "jupyter.restartkernel"
+    },
+    {
+        "key": "cmd+' cmd+/",
+        "command": "deno.kernel.restart",
+        "when": "isWorkspaceTrusted && notebookType == 'nbts'"
+    },
+    {
+        "key": "shift+l",
+        "command": "workbench.action.nextEditor",
+        "when": "editorTextFocus && vim.active && vim.mode != 'Insert'"
+    },
+    {
+        "key": "shift+h",
+        "command": "workbench.action.previousEditor",
+        "when": "editorTextFocus && vim.active && vim.mode != 'Insert'"
+    },
+    {
+        "key": "ctrl+l",
+        "command": "workbench.action.navigateRight"
+    },
+    {
+        "key": "ctrl+h",
+        "command": "workbench.action.navigateLeft"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "workbench.action.navigateUp"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "workbench.action.navigateDown"
+    },
+    {
+        "key": "enter",
+        "command": "list.select",
+        "when": "explorerViewFocus && !inputFocus"
+    },
+    {
+        "key": "cmd+enter",
+        "command": "renameFile",
+        "when": "explorerViewFocus && !inputFocus"
+    },
+    {
+        "key": "shift+cmd+8 shift+cmd+6",
+        "command": "workbench.debug.viewlet.action.removeAllBreakpoints"
+    },
+    {
+        "key": "shift+alt+8 shift+alt+6",
+        "command": "workbench.debug.viewlet.action.disableAllBreakpoints"
+    },
+    {
+        "key": "shift+alt+6 shift+alt+8",
+        "command": "workbench.debug.viewlet.action.enableAllBreakpoints"
+    },
+    {
+        "key": "escape",
+        "command": "notifications.hideToasts",
+        "when": "notificationToastsVisible"
+    },
+    {
+        "key": "escape",
+        "command": "workbench.action.closeMessages",
+        "when": "globalMessageVisible"
+    },
+    {
+        "key": "enter",
+        "command": "acceptSelectedSuggestion",
+        "when": "suggestWidgetVisible && textInputFocus && debugConsoleInputFocus"
+    },
+    {
+        "key": "shift+enter",
+        "command": "repl.action.acceptInput",
+        "when": "suggestWidgetVisible && textInputFocus && debugConsoleInputFocus"
+    },
+    {
+        "key": "ctrl+\\",
+        "command": "workbench.action.terminal.toggleTerminal"
+    }
+]

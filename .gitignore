@@ -27,6 +27,8 @@
 !.config/nvim/**
 !.config/nvim.bak/**
 !.vscode/extensions/extensions.json
+!.vscode/settings.json
+!.vscode/keybindings.json
 
 # Finally, add specific ignores
 /.quarto/

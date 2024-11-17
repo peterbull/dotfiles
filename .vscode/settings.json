@@ -1,0 +1,419 @@
+{
+    "editor.renderWhitespace": "all",
+    "python.autoComplete.extraPaths": [
+        "C:\\Users\\peter\\Documents\\pyRevit-Master\\pyrevitlib\\",
+        "C:\\Users\\peter\\Documents\\Python_Scripts\\sharepoint\\bin"
+    ],
+    "python.analysis.extraPaths": [
+        "C:\\Users\\peter\\Documents\\pyRevit-Master\\pyrevitlib\\",
+        "C:\\Users\\peter\\Documents\\Python_Scripts\\sharepoint\\bin"
+    ],
+    "editor.formatOnSave": true,
+    "debug.javascript.autoAttachFilter": "always",
+    "security.workspace.trust.untrustedFiles": "open",
+    "notebook.editorOptionsCustomizations": {},
+    // Wraps after 72 characters
+    "rewrap.wrappingColumn": 79,
+    "tabnine.experimentalAutoImports": true,
+    "vim.useSystemClipboard": true,
+    "vim.insertModeKeyBindings": [
+        {
+            "before": [
+                "j",
+                "k"
+            ],
+            "after": [
+                "<Esc>"
+            ]
+        }
+    ],
+    "vim.normalModeKeyBindings": [
+        {
+            "before": [
+                "u"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "undo",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "<C-r>"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "redo",
+                    "args": []
+                }
+            ]
+        }
+    ],
+    "git.autofetch": true,
+    "python.defaultInterpreterPath": "C:\\Users\\peter\\AppData\\Local\\Microsoft\\WindowsApps\\python3.10.exe",
+    "workbench.startupEditor": "none",
+    "editor.formatOnPaste": true,
+    "workbench.colorTheme": "One Dark Pro Flat",
+    "jupyter.askForKernelRestart": false,
+    "editor.accessibilitySupport": "off",
+    "[python]": {
+        "editor.formatOnType": true,
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        },
+    },
+    "black-formatter.args": [
+        "--line-length",
+        "100"
+    ],
+    "update.enableWindowsBackgroundUpdates": false,
+    "git.enableSmartCommit": true,
+    "python.languageServer": "Pylance",
+    "editor.inlineSuggest.enabled": true,
+    "github.copilot.enable": {
+        "quarto": true,
+        "*": false,
+        "yaml": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false,
+        "python": false,
+        "sql": false,
+        "jsonc": false,
+        "ignore": false
+    },
+    "notebook.output.wordWrap": true,
+    "git.openRepositoryInParentFolders": "never",
+    "CodeGPT.model": "gpt-4",
+    "settingsSync.ignoredExtensions": [
+        "github.copilot-chat"
+    ],
+    "notebook.output.scrolling": false,
+    "liveServer.settings.useLocalIp": true,
+    "liveServer.settings.AdvanceCustomBrowserCmdLine": "",
+    "inlineChat.showDiff": false,
+    "editor.inlineSuggest.suppressSuggestions": true,
+    "javascript.format.semicolons": "insert",
+    "[javascriptreact]": {
+        "editor.tabSize": 2,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.tabSize": 2,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "diffEditor.ignoreTrimWhitespace": false,
+    "[sql]": {},
+    "git.terminalGitEditor": true,
+    "typescript.format.enable": false,
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "remote.autoForwardPortsSource": "hybrid",
+    "[css]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "emmet.includeLanguages": {
+        "javascript": "javascriptreact",
+        "typescript": "typescriptreact"
+    },
+    "[dockercompose]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[markdown]": {
+        "editor.formatOnSave": false,
+        "editor.formatOnPaste": false,
+        "editor.formatOnType": false
+    },
+    "svelte.enable-ts-plugin": true,
+    "update.mode": "manual",
+    "remoteHub.uncommittedChangesOnEntry": "none",
+    "github.copilot.chat.scopeSelection": true,
+    "extensions.experimental.affinity": {
+        "asvetliakov.vscode-neovim": 1
+    },
+    "vscode-neovim.compositeKeys": {
+        "jk": {
+            "command": "vscode-neovim.escape",
+        },
+    },
+    "github.copilot.chat.temporalContext.enabled": true,
+    "github.copilot.advanced": {},
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "workbench.list.defaultFindMode": "highlight",
+    "workbench.list.typeNavigationMode": "automatic",
+    "explorer.confirmDragAndDrop": true,
+    "explorer.confirmDelete": true,
+    "files.exclude": {
+        "**/.git": true
+    },
+    "explorer.confirmPasteNative": false,
+    "vim.leader": "<space>",
+    "vim.normalModeKeyBindingsNonRecursive": [
+        {
+            "before": [
+                "<space>"
+            ],
+            "commands": [
+                "whichkey.show"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "K"
+            ],
+            "commands": [
+                "editor.action.peekDefinition"
+            ]
+        }
+    ],
+    "vim.visualModeKeyBindingsNonRecursive": [
+        {
+            "before": [
+                "<space>"
+            ],
+            "commands": [
+                "whichkey.show"
+            ]
+        }
+    ],
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.git": true
+    },
+    "search.useIgnoreFiles": true,
+    "search.useGlobalIgnoreFiles": true,
+    "search.useParentIgnoreFiles": true,
+    "symbolExtractor.exclude": {
+        "**/node_modules/**": true,
+        "**/dist/**": true,
+        "**/build/**": true
+    },
+    "whichkey.bindings": [
+        {
+            "key": "/",
+            "name": "Search in workspace",
+            "command": "workbench.action.findInFiles"
+        },
+        {
+            "key": "e",
+            "name": "Explorer",
+            "command": "workbench.view.explorer"
+        },
+        {
+            "key": "f",
+            "name": "File...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "f",
+                    "name": "Find file",
+                    "command": "workbench.action.quickOpen"
+                },
+                {
+                    "key": "r",
+                    "name": "Recent files",
+                    "command": "workbench.action.openRecent"
+                },
+                {
+                    "key": "t",
+                    "name": "Find text",
+                    "command": "workbench.action.findInFiles"
+                }
+            ]
+        },
+        {
+            "key": "g",
+            "name": "Git...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "g",
+                    "name": "Source Control",
+                    "command": "workbench.view.scm"
+                },
+                {
+                    "key": "b",
+                    "name": "Blame",
+                    "command": "gitlens.toggleFileBlame"
+                }
+            ]
+        },
+        {
+            "key": "t",
+            "name": "Toggle...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "a",
+                    "name": "Toggle Activity Bar",
+                    "command": "workbench.action.toggleActivityBarVisibility"
+                },
+                {
+                    "key": "t",
+                    "name": "Toggle Terminal",
+                    "command": "workbench.action.terminal.toggleTerminal"
+                }
+            ]
+        },
+        {
+            "key": "b",
+            "name": "Buffer...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "o",
+                    "name": "Close other buffers",
+                    "command": "workbench.action.closeOtherEditors"
+                },
+                {
+                    "key": "d",
+                    "name": "Close buffer",
+                    "command": "workbench.action.closeActiveEditor"
+                }
+            ]
+        },
+        {
+            "key": "w",
+            "name": "Window...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "o",
+                    "name": "Close other windows",
+                    "commands": [
+                        "workbench.action.closeSidebar",
+                        "workbench.action.closePanel",
+                        "workbench.action.closeEditorsInOtherGroups",
+                        "workbench.action.closeAuxiliaryBar",
+                        "workbench.action.toggleActivityBarVisibility"
+                    ]
+                },
+                {
+                    "key": "m",
+                    "name": "Maximize editor",
+                    "command": "workbench.action.toggleEditorWidths"
+                },
+                {
+                    "key": "d",
+                    "name": "Close window",
+                    "command": "workbench.action.closeWindow"
+                },
+                {
+                    "key": "v",
+                    "name": "Split vertical",
+                    "command": "workbench.action.splitEditorRight"
+                },
+                {
+                    "key": "h",
+                    "name": "Split horizontal",
+                    "command": "workbench.action.splitEditorDown"
+                }
+            ]
+        },
+        {
+            "key": "s",
+            "name": "Search/Symbol...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "s",
+                    "name": "Search Symbols",
+                    "command": "workbench.action.showAllSymbols"
+                },
+                {
+                    "key": "d",
+                    "name": "Document Symbols",
+                    "command": "workbench.action.gotoSymbol"
+                },
+                {
+                    "key": "p",
+                    "name": "Project Symbols",
+                    "command": "workbench.action.showAllSymbols"
+                }
+            ]
+        },
+        {
+            "key": "a",
+            "name": "Debug...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "a",
+                    "name": "Start Debugging",
+                    "command": "workbench.action.debug.start"
+                },
+                {
+                    "key": "b",
+                    "name": "Toggle Breakpoint",
+                    "command": "editor.debug.action.toggleBreakpoint"
+                },
+                {
+                    "key": "s",
+                    "name": "Stop Debugging",
+                    "command": "workbench.action.debug.stop"
+                },
+                {
+                    "key": "r",
+                    "name": "Run Without Debugging",
+                    "command": "workbench.action.debug.run"
+                },
+                {
+                    "key": "d",
+                    "name": "Open Debug View",
+                    "command": "workbench.view.debug"
+                }
+            ]
+        },
+        {
+            "key": "d",
+            "name": "Database",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "d",
+                    "name": "Open Database Client",
+                    "command": "github.cweijan.mysql.focus"
+                }
+            ]
+        },
+        {
+            "key": "c",
+            "name": "Copilot/Chat...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "c",
+                    "name": "Focus Copilot Chat",
+                    "command": "workbench.panel.chat.view.copilot.focus"
+                },
+                {
+                    "key": "d",
+                    "name": "Close Chat",
+                    "command": "workbench.action.closeAuxiliaryBar"
+                }
+            ]
+        }
+    ],
+    "@azure.argTenant": "",
+    "workbench.activityBar.location": "hidden"
+}
