@@ -1,12 +1,16 @@
-gnore all files except for dotfiles we want to track
+# First ignore everything
 *
+
+# Then unignore dirs
+!.config/
+!.vscode/
+
+# Then unignore specific files
 !.ackrc
 !.bash_aliases
 !.bashrc.local
 !.bash_completion
 !.ctags
-!.config/nvim/**
-!.config/nvim.bak/**
 !.gitconfig
 !.tmux.conf
 !.bashrc
@@ -15,11 +19,17 @@ gnore all files except for dotfiles we want to track
 !.bashrc
 !.fzf.bash
 !.gitignore
-!*.yml
-/.quarto/
 !.obsidian.vimrc
 !.p10k.zsh
 !.zshrc
+
+# Then unignore specific patterns in subdirectories
+!.config/nvim/**
+!.config/nvim.bak/**
+!.vscode/extensions/extensions.json
+
+# Finally, add specific ignores
+/.quarto/
 tt.*
 .tests
 doc/tags
@@ -28,4 +38,3 @@ debug
 foo.*
 *.log
 data
-!.vscode/extensions/extensions.json
