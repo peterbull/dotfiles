@@ -178,6 +178,11 @@ alias zr="source ~/.zshrc && echo 'shell session reset'"
 alias tf="tree | tee >(pbcopy)"
 alias t1="tree -L 1 | tee >(pbcopy)"
 alias t2="tree -L 2 | tee >(pbcopy)"
+alias t3="tree -L 3 | tee >(pbcopy)"
+alias t4="tree -L 4 | tee >(pbcopy)"
+
+
 
 # Python Path
 export PATH="/opt/homebrew/opt/python@3.12/bin:$PATH"
+export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"

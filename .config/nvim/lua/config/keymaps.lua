@@ -43,7 +43,8 @@ end, { desc = "Quick Chat" })
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "neo-tree",
   callback = function(event)
-    vim.keymap.set("n", "<leader>Y", function()
+    -- Function to yank content
+    local function yank_content(append)
       -- Get the neo-tree state directly from the renderer
       local state = require("neo-tree.sources.manager").get_state("filesystem")
       if not state then
@@ -77,16 +78,39 @@ vim.api.nvim_create_autocmd("FileType", {
         if content and content ~= "" then
           -- Remove trailing newline if present
           content = content:gsub("\n$", "")
+
+          if append then
+            -- Get current clipboard content and ensure it exists
+            local current_content = vim.fn.getreg("+")
+            if current_content and current_content ~= "" then
+              content = current_content .. "\n" .. content
+              vim.notify("Appended content from: " .. node.name, vim.log.levels.INFO)
+            else
+              vim.notify("No existing content to append to, yanking new content", vim.log.levels.WARN)
+            end
+          else
+            vim.notify("Yanked content from: " .. node.name, vim.log.levels.INFO)
+          end
+
           -- Set to both the unnamed register and system clipboard
           vim.fn.setreg('"', content)
           vim.fn.setreg("+", content)
-          vim.notify("File content yanked: " .. node.name, vim.log.levels.INFO)
         else
           vim.notify("File is empty: " .. node.name, vim.log.levels.WARN)
         end
       else
         vim.notify("Not a file", vim.log.levels.WARN)
       end
+    end
+
+    -- Regular yank
+    vim.keymap.set("n", "<leader>Y", function()
+      yank_content(false)
     end, { buffer = event.buf, desc = "Yank file content" })
+
+    -- Append yank (using different leader key to avoid conflicts)
+    vim.keymap.set("n", "<leader>A", function()
+      yank_content(true)
+    end, { buffer = event.buf, desc = "Append file content to clipboard" })
   end,
 })
