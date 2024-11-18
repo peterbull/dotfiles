@@ -412,6 +412,18 @@
                     "command": "workbench.action.closeAuxiliaryBar"
                 }
             ]
+        },
+        {
+            "key": "x",
+            "name": "Problems...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "x",
+                    "name": "Show All Problems",
+                    "command": "workbench.actions.view.problems"
+                }
+            ]
         }
     ],
     "@azure.argTenant": "",

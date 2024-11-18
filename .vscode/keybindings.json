@@ -110,18 +110,24 @@
         "when": "filesExplorerFocus && !inputFocus"
     },
     {
-        "key": "ctrl+j",
-        "command": "list.focusDown",
-        "when": "searchViewletFocus"
-    },
-    {
-        "key": "ctrl+k",
-        "command": "search.focus.previousInputBox",
-        "when": "searchViewletFocus && !inputBoxFocus"
-    },
-    {
         "key": "r",
         "command": "renameFile",
         "when": "explorerViewletFocus && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
-    }
+    },
+    // Search panel navigation
+    {
+        "key": "ctrl+j",
+        "command": "search.focus.nextInputBox",
+        "when": "searchInputBoxFocus"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "list.focusDown",
+        "when": "searchViewletFocus && !inputBoxFocus"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "search.action.focusSearchFromResults",
+        "when": "searchViewletFocus && !inputBoxFocus"
+    },
 ]
