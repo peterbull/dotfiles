@@ -159,5 +159,11 @@
         "key": "cmd+down",
         "command": "-search.focus.nextInputBox",
         "when": "inSearchEditor && inputBoxFocus || inputBoxFocus && searchViewletVisible"
+    },
+    // return focus to main window if not in it
+    {
+        "key": "ctrl+;",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "!editorFocus"
     }
 ]

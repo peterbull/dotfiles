@@ -434,6 +434,19 @@
                     "command": "workbench.actions.view.problems"
                 }
             ]
+        },
+        // typescript worksheets
+        {
+            "key": "m",
+            "name": "TypeScript Worksheets",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "r",
+                    "name": "run worksheet",
+                    "command": "ts-worksheet.run"
+                },
+            ]
         }
     ],
     "@azure.argTenant": "",
