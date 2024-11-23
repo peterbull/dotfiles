@@ -51,7 +51,8 @@
     },
     {
         "key": "ctrl+j",
-        "command": "workbench.action.navigateDown"
+        "command": "workbench.action.navigateDown",
+        "when": "!hasSearchResult && !inSearchEditor"
     },
     {
         "key": "enter",
@@ -138,5 +139,25 @@
         "key": "ctrl+k",
         "command": "chat.action.focusPreviousCodeBlock",
         "when": "inChat && chatFocused && !chatInputFocus"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "search.action.focusQueryEditorWidget",
+        "when": "inSearchEditor"
+    },
+    {
+        "key": "escape",
+        "command": "-search.action.focusQueryEditorWidget",
+        "when": "inSearchEditor"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "search.focus.nextInputBox",
+        "when": "inSearchEditor && inputBoxFocus || inputBoxFocus && searchViewletVisible"
+    },
+    {
+        "key": "cmd+down",
+        "command": "-search.focus.nextInputBox",
+        "when": "inSearchEditor && inputBoxFocus || inputBoxFocus && searchViewletVisible"
     }
 ]

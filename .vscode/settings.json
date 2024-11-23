@@ -315,7 +315,7 @@
                         "workbench.action.closePanel",
                         "workbench.action.closeEditorsInOtherGroups",
                         "workbench.action.closeAuxiliaryBar",
-                        "workbench.action.toggleActivityBarVisibility"
+                        "workbench.action.activityBarLocation.hide"
                     ]
                 },
                 {
