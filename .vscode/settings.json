@@ -272,6 +272,16 @@
                     "key": "t",
                     "name": "Toggle Terminal",
                     "command": "workbench.action.terminal.toggleTerminal"
+                },
+                {
+                    "key": "e",
+                    "name": "Toggle TypeScript Explorer",
+                    "command": "type-tree.focus"
+                },
+                {
+                    "key": "s",
+                    "name": "Focus type symbol in tree",
+                    "command": "typescriptExplorer.selection.select"
                 }
             ]
         },
@@ -427,5 +437,7 @@
         }
     ],
     "@azure.argTenant": "",
+    "workbench.iconTheme": "vscode-icons",
+    "git.confirmSync": false,
     "workbench.activityBar.location": "hidden"
 }

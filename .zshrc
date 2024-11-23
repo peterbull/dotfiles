@@ -186,3 +186,8 @@ alias t4="tree -L 4 | tee >(pbcopy)"
 # Python Path
 export PATH="/opt/homebrew/opt/python@3.12/bin:$PATH"
 export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
+
+# NVM version
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use default
