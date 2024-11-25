@@ -181,6 +181,15 @@
             "commands": [
                 "editor.action.peekDefinition"
             ]
+        },
+        {
+            "before": [
+                "g",
+                "r"
+            ],
+            "commands": [
+                "editor.action.referenceSearch.trigger"
+            ]
         }
     ],
     "vim.visualModeKeyBindingsNonRecursive": [
