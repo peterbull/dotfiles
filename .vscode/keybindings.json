@@ -30,12 +30,12 @@
     {
         "key": "shift+l",
         "command": "workbench.action.nextEditor",
-        "when": "inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')"
+        "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
     },
     {
         "key": "shift+h",
         "command": "workbench.action.previousEditor",
-        "when": "inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')"
+        "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
     },
     {
         "key": "ctrl+l",
@@ -165,5 +165,19 @@
         "key": "ctrl+;",
         "command": "workbench.action.focusActiveEditorGroup",
         "when": "!editorFocus"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "workbench.scm.action.focusPreviousInput",
+        "when": "scmViewVisible"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "workbench.scm.action.focusNextInput",
+        "when": "scmViewVisible"
+    },
+    {
+        "key": "shift+alt+0 shift+alt+0",
+        "command": "editor.debug.action.selectionToWatch"
     }
 ]

@@ -11,7 +11,10 @@
     "editor.formatOnSave": true,
     "debug.javascript.autoAttachFilter": "always",
     "security.workspace.trust.untrustedFiles": "open",
-    "notebook.editorOptionsCustomizations": {},
+    "notebook.editorOptionsCustomizations": {
+        "editor.tabSize": 2,
+        "editor.indentSize": 2
+    },
     // Wraps after 72 characters
     "rewrap.wrappingColumn": 79,
     "tabnine.experimentalAutoImports": true,
@@ -221,7 +224,7 @@
         {
             "key": "/",
             "name": "Search in workspace",
-            "command": "workbench.action.findInFiles"
+            "command": "search.action.openNewEditorToSide"
         },
         {
             "key": "e",
