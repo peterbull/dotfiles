@@ -512,7 +512,7 @@
                     "command": "bookmarks.clearFromAllFiles"
                 }
             ]
-        }
+        },
         // typescript worksheets
         {
             "key": "m",
