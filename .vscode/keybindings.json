@@ -179,5 +179,14 @@
     {
         "key": "shift+alt+0 shift+alt+0",
         "command": "editor.debug.action.selectionToWatch"
+    },
+    {
+        "key": "cmd+p",
+        "command": "workbench.action.quickOpen",
+        "when": "!editorFocus && !inputFocus"
+    },
+    {
+        "key": "cmd+p",
+        "command": "-workbench.action.quickOpen"
     }
 ]

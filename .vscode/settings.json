@@ -287,13 +287,32 @@
                 },
                 {
                     "key": "e",
-                    "name": "Toggle TypeScript Explorer",
-                    "command": "type-tree.focus"
-                },
-                {
-                    "key": "s",
-                    "name": "Focus type symbol in tree",
-                    "command": "typescriptExplorer.selection.select"
+                    "name": "TypeScript Explorer...",
+                    "type": "bindings",
+                    "bindings": [
+                        {
+                            "key": "a",
+                            "name": "Toggle TypeScript Explorer",
+                            "command": "type-tree.focus"
+                        },
+                        {
+                            "key": "s",
+                            "name": "Focus type symbol in tree",
+                            "command": "typescriptExplorer.selection.select"
+                        },
+                        {
+                            "key": "d",
+                            "name": "Disable TypeScript Explorer",
+                            "command": "workbench.extensions.disableExtension",
+                            "args": "type-tree.type-tree"
+                        },
+                        {
+                            "key": "e",
+                            "name": "Enable TypeScript Explorer",
+                            "command": "workbench.extensions.enableExtension",
+                            "args": "type-tree.type-tree"
+                        }
+                    ]
                 }
             ]
         },
@@ -447,6 +466,53 @@
                 }
             ]
         },
+        {
+            "key": "m",
+            "name": "Bookmarks...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "t",
+                    "name": "Toggle bookmark",
+                    "command": "bookmarks.toggle"
+                },
+                {
+                    "key": "l",
+                    "name": "Toggle labeled bookmark",
+                    "command": "bookmarks.toggleLabeled"
+                },
+                {
+                    "key": "n",
+                    "name": "Jump to next bookmark",
+                    "command": "bookmarks.jumpToNext"
+                },
+                {
+                    "key": "p",
+                    "name": "Jump to previous bookmark",
+                    "command": "bookmarks.jumpToPrevious"
+                },
+                {
+                    "key": "b",
+                    "name": "List bookmarks (current file)",
+                    "command": "bookmarks.list"
+                },
+                {
+                    "key": "a",
+                    "name": "List bookmarks (all files)",
+                    "command": "bookmarks.listFromAllFiles"
+                },
+                {
+                    "key": "c",
+                    "name": "Clear bookmarks (current file)",
+                    "command": "bookmarks.clear"
+                },
+                {
+                    "key": "x",
+                    "name": "Clear bookmarks (all files)",
+                    "command": "bookmarks.clearFromAllFiles"
+                }
+            ]
+        }
         // typescript worksheets
         {
             "key": "m",
@@ -464,5 +530,7 @@
     "@azure.argTenant": "",
     "workbench.iconTheme": "vscode-icons",
     "git.confirmSync": false,
-    "workbench.activityBar.location": "hidden"
+    "workbench.activityBar.location": "hidden",
+    "notebook.formatOnSave.enabled": true,
+    "typescriptExplorer.typeTree.selection.enable": false
 }
