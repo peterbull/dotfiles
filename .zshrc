@@ -198,3 +198,11 @@ export NVM_DIR="$HOME/.nvm"
 nvm use default
 
 
+
+# pnpm
+export PNPM_HOME="/Users/peterbull/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end

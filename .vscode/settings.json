@@ -60,7 +60,6 @@
     "python.defaultInterpreterPath": "C:\\Users\\peter\\AppData\\Local\\Microsoft\\WindowsApps\\python3.10.exe",
     "workbench.startupEditor": "none",
     "editor.formatOnPaste": true,
-    "workbench.colorTheme": "One Dark Pro Flat",
     "jupyter.askForKernelRestart": false,
     "editor.accessibilitySupport": "off",
     "[python]": {
@@ -528,10 +527,20 @@
         }
     ],
     "@azure.argTenant": "",
-    "workbench.iconTheme": "vscode-icons",
     "git.confirmSync": false,
     "workbench.activityBar.location": "hidden",
     "notebook.formatOnSave.enabled": true,
     "typescriptExplorer.typeTree.selection.enable": false,
-    "go.gopath": "/Users/peterbull/go"
+    "go.gopath": "/Users/peterbull/go",
+    "leetcode.hint.configWebviewMarkdown": false,
+    "leetcode.workspaceFolder": "/Users/peterbull/.leetcode",
+    "go.toolsManagement.autoUpdate": true,
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[rust]": {
+        "editor.defaultFormatter": "jinxdash.prettier-rust",
+        "editor.formatOnSave": true
+    },
+    "workbench.colorTheme": "One Dark Pro Flat"
 }
