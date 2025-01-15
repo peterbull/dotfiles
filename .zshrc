@@ -204,3 +204,10 @@ case ":$PATH:" in
 esac
 # pnpm end
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Turn off annoying accented char suggestion on macos.
+# Note: On the first run this won't work, you have to log out and
+# log back in.
+# defaults write -g ApplePressAndHoldEnabled -bool false
+
+
