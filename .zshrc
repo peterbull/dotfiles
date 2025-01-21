@@ -77,7 +77,14 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
+plugins=(
+  git
+  docker
+  docker-compose
+)
+
+
+
 
 source $ZSH/oh-my-zsh.sh
 
@@ -209,5 +216,13 @@ esac
 # Note: On the first run this won't work, you have to log out and
 # log back in.
 # defaults write -g ApplePressAndHoldEnabled -bool false
+
+
+
+# Created by `pipx` on 2025-01-15 19:08:15
+export PATH="$PATH:/Users/peterbull/.local/bin"
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/Users/peterbull/.lmstudio/bin"
 
 
