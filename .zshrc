@@ -225,4 +225,5 @@ export PATH="$PATH:/Users/peterbull/.local/bin"
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/Users/peterbull/.lmstudio/bin"
 
-
+# Stop 10k prompt from appearing
+typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
