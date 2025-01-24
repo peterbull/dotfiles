@@ -225,6 +225,12 @@ export PATH="$PATH:/Users/peterbull/.local/bin"
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/Users/peterbull/.lmstudio/bin"
 
+# tab binds to suggestions
+bindkey '^I' complete-word
+
+# ctrl and space to do default "tab" behavior
+bindkey '^ ' complete-word
+
 # Stop 10k prompt from appearing
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
@@ -233,5 +239,6 @@ source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 # Macos -- make app switcher appear on all screens
 # defaults write com.apple.Dock appswitcher-all-displays -bool true; killall Dock
+
 
 
