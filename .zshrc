@@ -225,10 +225,8 @@ export PATH="$PATH:/Users/peterbull/.local/bin"
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/Users/peterbull/.lmstudio/bin"
 
-<<<<<<< Updated upstream
 # Stop 10k prompt from appearing
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
-=======
 source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
@@ -237,4 +235,3 @@ source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 # defaults write com.apple.Dock appswitcher-all-displays -bool true; killall Dock
 
 
->>>>>>> Stashed changes
