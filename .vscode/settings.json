@@ -1,15 +1,8 @@
 {
     "editor.renderWhitespace": "all",
-    "python.autoComplete.extraPaths": [
-        "C:\\Users\\peter\\Documents\\pyRevit-Master\\pyrevitlib\\",
-        "C:\\Users\\peter\\Documents\\Python_Scripts\\sharepoint\\bin"
-    ],
-    "python.analysis.extraPaths": [
-        "C:\\Users\\peter\\Documents\\pyRevit-Master\\pyrevitlib\\",
-        "C:\\Users\\peter\\Documents\\Python_Scripts\\sharepoint\\bin"
-    ],
     "editor.formatOnSave": true,
     "debug.javascript.autoAttachFilter": "always",
+    "debug.console.acceptSuggestionOnEnter": "on",
     "security.workspace.trust.untrustedFiles": "open",
     "notebook.editorOptionsCustomizations": {
         "editor.tabSize": 2,
@@ -17,7 +10,6 @@
     },
     // Wraps after 72 characters
     "rewrap.wrappingColumn": 79,
-    "tabnine.experimentalAutoImports": true,
     "vim.useSystemClipboard": true,
     "vim.insertModeKeyBindings": [
         {
@@ -191,6 +183,15 @@
             ],
             "commands": [
                 "editor.action.referenceSearch.trigger"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "s"
+            ],
+            "commands": [
+                "typescript.goToSourceDefinition"
             ]
         }
     ],
@@ -532,6 +533,12 @@
     "notebook.formatOnSave.enabled": true,
     "typescriptExplorer.typeTree.selection.enable": false,
     "go.gopath": "/Users/peterbull/go",
+    "[go]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "golang.go"
+    },
+    "go.formatTool": "goimports",
+    "go.useLanguageServer": true,
     "leetcode.hint.configWebviewMarkdown": false,
     "leetcode.workspaceFolder": "/Users/peterbull/.leetcode",
     "go.toolsManagement.autoUpdate": true,
@@ -542,5 +549,7 @@
         "editor.defaultFormatter": "jinxdash.prettier-rust",
         "editor.formatOnSave": true
     },
-    "workbench.colorTheme": "One Dark Pro Flat"
+    "workbench.colorTheme": "One Dark Pro Flat",
+    "workbench.iconTheme": "vscode-icons",
+    "redhat.telemetry.enabled": true
 }
