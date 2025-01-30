@@ -49,7 +49,6 @@
         }
     ],
     "git.autofetch": true,
-    "python.defaultInterpreterPath": "C:\\Users\\peter\\AppData\\Local\\Microsoft\\WindowsApps\\python3.10.exe",
     "workbench.startupEditor": "none",
     "editor.formatOnPaste": true,
     "jupyter.askForKernelRestart": false,
@@ -192,6 +191,15 @@
             ],
             "commands": [
                 "typescript.goToSourceDefinition"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "h"
+            ],
+            "commands": [
+                "editor.action.showDefinitionPreviewHover"
             ]
         }
     ],
@@ -529,7 +537,6 @@
     ],
     "@azure.argTenant": "",
     "git.confirmSync": false,
-    "workbench.activityBar.location": "hidden",
     "notebook.formatOnSave.enabled": true,
     "typescriptExplorer.typeTree.selection.enable": false,
     "go.gopath": "/Users/peterbull/go",
@@ -551,5 +558,8 @@
     },
     "workbench.colorTheme": "One Dark Pro Flat",
     "workbench.iconTheme": "vscode-icons",
-    "redhat.telemetry.enabled": true
+    "redhat.telemetry.enabled": true,
+    "database-client.autoSync": true,
+    "continue.enableTabAutocomplete": false,
+    "workbench.activityBar.location": "hidden"
 }
