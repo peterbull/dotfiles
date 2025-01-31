@@ -561,5 +561,6 @@
     "redhat.telemetry.enabled": true,
     "database-client.autoSync": true,
     "continue.enableTabAutocomplete": false,
-    "workbench.activityBar.location": "hidden"
+    "workbench.activityBar.location": "hidden",
+    "vsicons.dontShowNewVersionMessage": true
 }
