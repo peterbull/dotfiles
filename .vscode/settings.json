@@ -72,7 +72,7 @@
     "github.copilot.enable": {
         "quarto": true,
         "*": false,
-        "yaml": true,
+        "yaml": false,
         "plaintext": false,
         "markdown": false,
         "scminput": false,
@@ -106,10 +106,12 @@
     "git.terminalGitEditor": true,
     "typescript.format.enable": false,
     "[typescript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2
     },
     "[typescriptreact]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2
     },
     "remote.autoForwardPortsSource": "hybrid",
     "[css]": {
@@ -231,8 +233,20 @@
     "whichkey.bindings": [
         {
             "key": "/",
-            "name": "Search in workspace",
-            "command": "search.action.openNewEditorToSide"
+            "name": "Search...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "/",
+                    "name": "Periscope Search",
+                    "command": "periscope.search"
+                },
+                {
+                    "key": "s",
+                    "name": "Search in New Editor",
+                    "command": "search.action.openNewEditorToSide"
+                }
+            ]
         },
         {
             "key": "e",
@@ -422,7 +436,7 @@
                     "command": "workbench.action.debug.stop"
                 },
                 {
-                    "key": "r",
+                    "key": "v",
                     "name": "Run Without Debugging",
                     "command": "workbench.action.debug.run"
                 },
@@ -430,6 +444,11 @@
                     "key": "d",
                     "name": "Open Debug View",
                     "command": "workbench.view.debug"
+                },
+                {
+                    "key": "r",
+                    "name": "Restart Debugging",
+                    "command": "workbench.action.debug.restart"
                 }
             ]
         },
@@ -556,12 +575,9 @@
         "editor.defaultFormatter": "jinxdash.prettier-rust",
         "editor.formatOnSave": true
     },
-    "workbench.colorTheme": "One Dark Pro Flat",
-    "workbench.iconTheme": "vscode-icons",
     "redhat.telemetry.enabled": true,
     "database-client.autoSync": true,
     "continue.enableTabAutocomplete": false,
-    "workbench.activityBar.location": "hidden",
     "vsicons.dontShowNewVersionMessage": true,
     "[c]": {
         "editor.wordBasedSuggestions": "off",
@@ -569,5 +585,12 @@
         "editor.stickyScroll.defaultModel": "foldingProviderModel",
         "editor.suggest.insertMode": "replace",
     },
-    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0}"
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0}",
+    "workbench.iconTheme": "vscode-icons",
+    "workbench.colorTheme": "One Dark Pro Flat",
+    "workbench.activityBar.location": "hidden",
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ],
 }
