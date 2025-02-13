@@ -73,7 +73,7 @@
         "command": "workbench.debug.viewlet.action.disableAllBreakpoints"
     },
     {
-        "key": "shift+alt+6 shift+alt+8",
+        "key": "shift+alt+7 shift+alt+5",
         "command": "workbench.debug.viewlet.action.enableAllBreakpoints"
     },
     {

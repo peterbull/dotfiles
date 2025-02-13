@@ -83,14 +83,12 @@
     },
     "notebook.output.wordWrap": true,
     "git.openRepositoryInParentFolders": "never",
-    "CodeGPT.model": "gpt-4",
     "settingsSync.ignoredExtensions": [
         "github.copilot-chat"
     ],
     "notebook.output.scrolling": false,
     "liveServer.settings.useLocalIp": true,
     "liveServer.settings.AdvanceCustomBrowserCmdLine": "",
-    "inlineChat.showDiff": false,
     "editor.inlineSuggest.suppressSuggestions": true,
     "javascript.format.semicolons": "insert",
     "[javascriptreact]": {
@@ -225,11 +223,11 @@
     "search.useIgnoreFiles": true,
     "search.useGlobalIgnoreFiles": true,
     "search.useParentIgnoreFiles": true,
-    "symbolExtractor.exclude": {
-        "**/node_modules/**": true,
-        "**/dist/**": true,
-        "**/build/**": true
-    },
+    // "symbolExtractor.exclude": {
+    //     "**/node_modules/**": true,
+    //     "**/dist/**": true,
+    //     "**/build/**": true
+    // },
     "whichkey.bindings": [
         {
             "key": "/",
