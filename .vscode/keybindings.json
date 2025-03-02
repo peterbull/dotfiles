@@ -55,6 +55,11 @@
         "when": "!hasSearchResult && !inSearchEditor"
     },
     {
+        "key": "ctrl+h",
+        "command": "workbench.debug.action.focusVariablesView",
+        "when": "debugState === 'running"
+    },
+    {
         "key": "enter",
         "command": "list.select",
         "when": "explorerViewFocus && !inputFocus"
@@ -216,5 +221,25 @@
     {
         "key": "alt+r",
         "command": "rust-analyzer.debug"
+    },
+    {
+        "key": "l",
+        "command": "notebook.cell.toggleLineNumbers",
+        "when": "notebookEditorFocused && !inputFocus && !notebookOutputInputFocused"
+    },
+    {
+        "key": "l",
+        "command": "-notebook.cell.toggleLineNumbers",
+        "when": "notebookEditorFocused && !inputFocus && !notebookOutputInputFocused"
+    },
+    {
+        "key": "shift+p",
+        "command": "notebook.toggleLineNumbers",
+        "when": "notebookEditorFocused && !inputFocus && !notebookOutputInputFocused"
+    },
+    {
+        "key": "shift+l",
+        "command": "-notebook.toggleLineNumbers",
+        "when": "notebookEditorFocused && !inputFocus && !notebookOutputInputFocused"
     }
 ]

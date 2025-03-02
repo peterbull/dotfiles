@@ -194,6 +194,16 @@
             ]
         },
         {
+            "when": "editorTextFocus && editorLangId == 'typescriptreact'",
+            "before": [
+                "g",
+                "s"
+            ],
+            "commands": [
+                "typescript.goToSourceDefinition"
+            ]
+        },
+        {
             "when": "editorTextFocus && editorLangId == 'c'",
             "before": [
                 "g",
@@ -202,6 +212,16 @@
             "commands": [
                 "manpages.openFromCursor"
             ]
+        },
+        {
+            "before": [
+                "g",
+                "l"
+            ],
+            "commands": [
+                "editor.action.openLink"
+            ],
+            "when": "editorTextFocus && vim.mode == 'Normal'"
         },
         {
             "before": [
@@ -398,6 +418,16 @@
                     "key": "h",
                     "name": "Split horizontal",
                     "command": "workbench.action.splitEditorDown"
+                },
+                {
+                    "key": "l",
+                    "name": "Close primary sidebar",
+                    "command": "workbench.action.closeSidebar"
+                },
+                {
+                    "key": "r",
+                    "name": "Close secondary sidebar",
+                    "command": "workbench.action.closeAuxiliaryBar"
                 }
             ]
         },
@@ -560,6 +590,23 @@
                     "command": "ts-worksheet.run"
                 },
             ]
+        },
+        {
+            "key": "p",
+            "name": "POWER MODE",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "e",
+                    "name": "enable power mode",
+                    "command": "powermode.enablePowerMode"
+                },
+                {
+                    "key": "d",
+                    "name": "disable power mode",
+                    "command": "powermode.disablePowerMode"
+                },
+            ]
         }
     ],
     "git.confirmSync": false,
@@ -599,4 +646,5 @@
         "workbench.action.tasks.runTask"
     ],
     "workbench.activityBar.location": "hidden",
+    "powermode.enabled": false,
 }
