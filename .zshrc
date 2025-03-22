@@ -150,7 +150,9 @@ alias dlog="docker compose logs -f"
 alias dbuild="docker compose build"
 
 ## Cursor
-alias cursor="cursor . --profile peter-og"
+alias cursor="cursor . profile peter-og"
+
+alias c="code ."
 
 # Conda initialization (disabled by default)
 conda_init() {
