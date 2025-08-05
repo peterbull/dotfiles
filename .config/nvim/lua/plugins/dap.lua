@@ -201,6 +201,13 @@ return {
       desc = desc("Toggle REPL"),
     },
     {
+      "<leader>dR",
+      function()
+        require("dap").restart()
+      end,
+      desc = desc("Restart"),
+    },
+    {
       "<leader>ds",
       function()
         require("dap").session()
@@ -227,8 +234,15 @@ return {
     local dapui = require("dapui")
     local icons = require("utils.icons")
 
+    -- Auto-open/close DAP UI
     dap.listeners.after.event_initialized["dapui_config"] = function()
       dapui.open({})
+    end
+    dap.listeners.before.event_terminated["dapui_config"] = function()
+      dapui.close({})
+    end
+    dap.listeners.before.event_exited["dapui_config"] = function()
+      dapui.close({})
     end
 
     if not dap.adapters["node"] then
@@ -327,9 +341,12 @@ return {
           url = function()
             local co = coroutine.running()
             return coroutine.create(function()
-              vim.ui.input({ prompt = "Enter URL: ", default = "http://localhost:3000" }, function(url)
+              vim.ui.input({
+                prompt = "Enter URL: ",
+                default = "http://localhost:3000",
+              }, function(url)
                 if url == nil or url == "" then
-                  return
+                  coroutine.resume(co, "http://localhost:3000") -- fallback to default
                 else
                   coroutine.resume(co, url)
                 end
@@ -344,9 +361,6 @@ return {
             "${workspaceFolder}/**",
             "!**/node_modules/**",
           },
-
-          -- From https://github.com/lukas-reineke/dotfiles/blob/master/vim/lua/plugins/dap.lua
-          -- To test how it behaves
           rootPath = "${workspaceFolder}",
           cwd = "${workspaceFolder}",
           console = "integratedTerminal",

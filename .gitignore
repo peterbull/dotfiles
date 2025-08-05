@@ -40,3 +40,4 @@ debug
 foo.*
 *.log
 data
+.secrets

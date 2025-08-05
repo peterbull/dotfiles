@@ -37,7 +37,7 @@
       "**/.pytest_cache",
       "**/.ruff_cache"
     ],
-    "mode": "eager",
+    "mode": "subtle",
     "copilot": {
       "proxy": null,
       "proxy_no_verify": null
@@ -58,7 +58,7 @@
     },
     "version": "2"
   },
-  "show_edit_predictions": true,
+  "show_edit_predictions": false,
   "languages": {
     "Python": {
       "language_servers": ["ruff", "basedpyright", "!pyright"],
