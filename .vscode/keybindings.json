@@ -27,16 +27,16 @@
         "command": "deno.kernel.restart",
         "when": "isWorkspaceTrusted && notebookType == 'nbts'"
     },
-    {
-        "key": "shift+l",
-        "command": "workbench.action.nextEditor",
-        "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
-    },
-    {
-        "key": "shift+h",
-        "command": "workbench.action.previousEditor",
-        "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
-    },
+    // {
+    //     "key": "shift+l",
+    //     "command": "workbench.action.nextEditor",
+    //     "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
+    // },
+    // {
+    //     "key": "shift+h",
+    //     "command": "workbench.action.previousEditor",
+    //     "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
+    // },
     {
         "key": "ctrl+l",
         "command": "workbench.action.navigateRight"
@@ -315,7 +315,7 @@
     },
     {
         "key": "ctrl+h",
-        "command": "workbench.scm.action.focusNextInput",
+        "command": "workbench.scm.action.focusNextResourceGroup",
         "when": "editorTextFocus && activeViewlet == 'workbench.view.scm' && sideBarVisible && !searchViewletFocus && !inSearchEditor && !hasSearchResult"
     },
     {
@@ -324,15 +324,10 @@
         "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm' && !searchViewletFocus && !inSearchEditor"
     },
     {
-        "key": "ctrl+k",
-        "command": "workbench.scm.action.focusNextInput",
-        "when": "scmRepository && listFocus && !resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm' && !searchViewletFocus && !inSearchEditor && !hasSearchResult"
-    },
-    {
         "key": "ctrl+j",
-        "command": "list.focusFirst",
+        "command": "workbench.scm.action.focusNextResourceGroup",
         "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm' && !searchViewletFocus && !inSearchEditor"
-    },
+    }
     /*
     USEFUL CONTEXT KEYS FOR SCM AND NAVIGATION:
 

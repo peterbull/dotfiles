@@ -407,10 +407,15 @@
                     "commands": [
                         "workbench.action.closeSidebar",
                         "workbench.action.closePanel",
-                        "workbench.action.closeEditorsInOtherGroups",
+                        // "workbench.action.closeEditorsInOtherGroups",
                         "workbench.action.closeAuxiliaryBar",
                         "workbench.action.activityBarLocation.hide"
                     ]
+                },
+                {
+                    "key": "g",
+                    "name": "Close Other Groups",
+                    "command": "workbench.action.closeEditorsInOtherGroups",
                 },
                 {
                     "key": "m",
