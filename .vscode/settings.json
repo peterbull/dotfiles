@@ -380,6 +380,11 @@
             "type": "bindings",
             "bindings": [
                 {
+                    "key": "b",
+                    "name": "Show open buffers",
+                    "command": "workbench.action.quickOpenPreviousRecentlyUsedEditorInGroup"
+                },
+                {
                     "key": "o",
                     "name": "Close other buffers",
                     "command": "workbench.action.closeOtherEditors"
@@ -894,4 +899,5 @@
     "zig.path": "/Users/peterbull/.local/zig/zig",
     "zig.zls.zigLibPath": "/Users/peterbull/.local/zig/lib",
     "C_Cpp.intelliSenseEngine": "default",
+    "workbench.editor.showTabs": "none"
 }

@@ -45,10 +45,15 @@
         "key": "ctrl+k",
         "command": "workbench.action.navigateUp"
     },
+    // {
+    //     "key": "ctrl+j",
+    //     "command": "workbench.action.navigateDown",
+    //     "when": "!hasSearchResult && !inSearchEditor"
+    // },
     {
         "key": "ctrl+j",
         "command": "workbench.action.navigateDown",
-        "when": "!hasSearchResult && !inSearchEditor"
+        "when": "!hasSearchResult && !inSearchEditor && !searchViewletFocus && !activeViewlet == 'workbench.view.scm'"
     },
     {
         "key": "ctrl+h",
@@ -311,27 +316,22 @@
     {
         "key": "ctrl+h",
         "command": "workbench.scm.action.focusNextInput",
-        "when": "editorTextFocus && activeViewlet == 'workbench.view.scm' && sideBarVisible"
+        "when": "editorTextFocus && activeViewlet == 'workbench.view.scm' && sideBarVisible && !searchViewletFocus && !inSearchEditor && !hasSearchResult"
     },
     {
         "key": "ctrl+l",
         "command": "workbench.action.focusActiveEditorGroup",
-        "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
-    },
-    {
-        "key": "ctrl+j",
-        "command": "list.focusDown",
-        "when": "scmRepository && listFocus && !resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
+        "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm' && !searchViewletFocus && !inSearchEditor"
     },
     {
         "key": "ctrl+k",
         "command": "workbench.scm.action.focusNextInput",
-        "when": "scmRepository && listFocus && !resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
+        "when": "scmRepository && listFocus && !resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm' && !searchViewletFocus && !inSearchEditor && !hasSearchResult"
     },
     {
         "key": "ctrl+j",
         "command": "list.focusFirst",
-        "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
+        "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm' && !searchViewletFocus && !inSearchEditor"
     },
     /*
     USEFUL CONTEXT KEYS FOR SCM AND NAVIGATION:
