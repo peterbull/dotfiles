@@ -1,1 +1,380 @@
-/Users/peterbull/Library/Application Support/Code/User/keybindings.json
+// Place your key bindings in this file to override the defaults
+[
+    {
+        "key": "cmd+; cmd+.",
+        "command": "notebook.cell.clearOutputs",
+        "when": "notebookCellEditable && notebookCellHasOutputs && notebookEditable && notebookEditorFocused && !inputFocus"
+    },
+    {
+        "key": "alt+delete",
+        "command": "-notebook.cell.clearOutputs",
+        "when": "notebookCellEditable && notebookCellHasOutputs && notebookEditable && notebookEditorFocused && !inputFocus"
+    },
+    {
+        "key": "cmd+; cmd+.",
+        "command": "notebook.clearAllCellsOutputs"
+    },
+    {
+        "key": "cmd+' cmd+/",
+        "command": "deno.kernel.restart"
+    },
+    {
+        "key": "cmd+' cmd+/",
+        "command": "jupyter.restartkernel"
+    },
+    {
+        "key": "cmd+' cmd+/",
+        "command": "deno.kernel.restart",
+        "when": "isWorkspaceTrusted && notebookType == 'nbts'"
+    },
+    {
+        "key": "shift+l",
+        "command": "workbench.action.nextEditor",
+        "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
+    },
+    {
+        "key": "shift+h",
+        "command": "workbench.action.previousEditor",
+        "when": "(inSearchEditor || (vim.active && vim.mode != 'Insert' && vim.mode != 'Replace' && vim.operator != 'r')) && !filesExplorerFocus && !renameInputVisible"
+    },
+    {
+        "key": "ctrl+l",
+        "command": "workbench.action.navigateRight"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "workbench.action.navigateUp"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "workbench.action.navigateDown",
+        "when": "!hasSearchResult && !inSearchEditor"
+    },
+    {
+        "key": "ctrl+h",
+        "command": "workbench.action.navigateLeft",
+        "when": "!inDebugMode || (inDebugMode && activeViewlet != 'workbench.view.debug')"
+    },
+    {
+        "key": "ctrl+h",
+        "command": "workbench.debug.action.focusVariablesView",
+        "when": "inDebugMode && activeViewlet == 'workbench.view.debug' && (debugState == 'running' || debugState == 'stopped') && workbench.debug.variablesView.visible"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "workbench.debug.action.focusCallStackView",
+        "when": "inDebugMode && activeViewlet == 'workbench.view.debug' && (debugState == 'running' || debugState == 'stopped') && !workbench.debug.callStackView.focused"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "workbench.debug.action.focusVariablesView",
+        "when": "inDebugMode && activeViewlet == 'workbench.view.debug' && (debugState == 'running' || debugState == 'stopped') && !workbench.debug.variablesView.focused"
+    },
+    {
+        "key": "enter",
+        "command": "list.select",
+        "when": "explorerViewFocus && !inputFocus"
+    },
+    {
+        "key": "cmd+enter",
+        "command": "renameFile",
+        "when": "explorerViewFocus && !inputFocus"
+    },
+    {
+        "key": "shift+cmd+8 shift+cmd+6",
+        "command": "workbench.debug.viewlet.action.removeAllBreakpoints"
+    },
+    {
+        "key": "shift+alt+8 shift+alt+6",
+        "command": "workbench.debug.viewlet.action.disableAllBreakpoints"
+    },
+    {
+        "key": "shift+alt+7 shift+alt+5",
+        "command": "workbench.debug.viewlet.action.enableAllBreakpoints"
+    },
+    {
+        "key": "escape",
+        "command": "notifications.hideToasts",
+        "when": "notificationToastsVisible"
+    },
+    {
+        "key": "escape",
+        "command": "workbench.action.closeMessages",
+        "when": "globalMessageVisible"
+    },
+    {
+        "key": "enter",
+        "command": "acceptSelectedSuggestion",
+        "when": "suggestWidgetVisible && textInputFocus && debugConsoleInputFocus"
+    },
+    {
+        "key": "shift+enter",
+        "command": "repl.action.acceptInput",
+        "when": "suggestWidgetVisible && textInputFocus && debugConsoleInputFocus"
+    },
+    {
+        "key": "ctrl+\\",
+        "command": "workbench.action.terminal.toggleTerminal"
+    },
+    {
+        "key": "n",
+        "command": "explorer.newFile",
+        "when": "filesExplorerFocus && !inputFocus"
+    },
+    {
+        "key": "shift+n",
+        "command": "explorer.newFolder",
+        "when": "filesExplorerFocus && !inputFocus"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "list.focusDown",
+        "when": "searchViewletFocus"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "search.focus.previousInputBox",
+        "when": "searchViewletFocus && !inputBoxFocus"
+    },
+    {
+        "key": "r",
+        "command": "renameFile",
+        "when": "explorerViewletFocus && filesExplorerFocus && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "chat.action.focusLastCodeBlock",
+        "when": "inChat && chatInputFocus"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "chat.action.focusNextCodeBlock",
+        "when": "inChat && chatFocused"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "chat.action.focusPreviousCodeBlock",
+        "when": "inChat && chatFocused && !chatInputFocus"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "search.action.focusQueryEditorWidget",
+        "when": "inSearchEditor"
+    },
+    {
+        "key": "escape",
+        "command": "-search.action.focusQueryEditorWidget",
+        "when": "inSearchEditor"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "search.focus.nextInputBox",
+        "when": "inSearchEditor && inputBoxFocus || inputBoxFocus && searchViewletVisible"
+    },
+    {
+        "key": "cmd+down",
+        "command": "-search.focus.nextInputBox",
+        "when": "inSearchEditor && inputBoxFocus || inputBoxFocus && searchViewletVisible"
+    },
+    // return focus to main window if not in it
+    {
+        "key": "ctrl+;",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "!editorFocus"
+    },
+    {
+        "key": "shift+alt+0 shift+alt+0",
+        "command": "editor.debug.action.selectionToWatch"
+    },
+    {
+        "key": "cmd+p",
+        "command": "workbench.action.quickOpen",
+        "when": "!editorFocus && !inputFocus"
+    },
+    {
+        "key": "cmd+p",
+        "command": "-workbench.action.quickOpen"
+    },
+    {
+        "key": "shift+alt+-",
+        "command": "notebook.cell.executeCellsAbove"
+    },
+    {
+        "key": "ctrl+u",
+        "command": "editor.action.pageUpHover",
+        "when": "editorHoverFocused",
+    },
+    {
+        "key": "ctrl+d",
+        "command": "editor.action.pageDownHover",
+        "when": "editorHoverFocused",
+    },
+    {
+        "key": "k",
+        "command": "editor.action.scrollUpHover",
+        "when": "editorHoverFocused",
+    },
+    {
+        "key": "j",
+        "command": "editor.action.scrollDownHover",
+        "when": "editorHoverFocused",
+    },
+    {
+        "key": "alt+r",
+        "command": "rust-analyzer.debug"
+    },
+    {
+        "key": "l",
+        "command": "-notebook.cell.toggleLineNumbers",
+        "when": "notebookEditorFocused && !inputFocus && !notebookOutputInputFocused"
+    },
+    {
+        "key": "shift+p",
+        "command": "notebook.toggleLineNumbers",
+        "when": "notebookEditorFocused && !inputFocus && !notebookOutputInputFocused"
+    },
+    {
+        "key": "shift+l",
+        "command": "-notebook.toggleLineNumbers",
+        "when": "notebookEditorFocused && !inputFocus && !notebookOutputInputFocused"
+    },
+    // {
+    //     "key": "alt+c",
+    //     "command": "extension.multiCommand.execute",
+    //     "args": {
+    //         "sequence": [
+    //             "editor.action.selectAll",
+    //             "editor.action.clipboardCopyAction",
+    //             "cancelSelection"
+    //         ]
+    //     },
+    //     "when": "editorTextFocus"
+    // },
+    // {
+    //     "key": "space",
+    //     "command": "workbench.action.debug.showLoadedScripts",
+    //     "when": "debuggersAvailable && debugState == 'stopped' && focusedView == 'workbench.debug.variablesView'"
+    // }
+    {
+        "key": "alt+c",
+        "command": "code-to-clipboard.copyCurrentTabCode",
+    },
+    {
+        "key": "shift+alt+c",
+        "command": "code-to-clipboard.copyCode",
+    },
+    {
+        "key": "shift+enter",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": {
+            "text": "\\\r\n"
+        },
+        "when": "terminalFocus"
+    },
+    {
+        "key": "shift+cmd+f9",
+        "command": "-workbench.action.chat.previousFileTree",
+        "when": "chatIsEnabled && inChat"
+    },
+    {
+        "key": "shift+cmd+f9",
+        "command": "editor.debug.action.conditionalBreakpoint"
+    },
+    {
+        "key": "shift+alt+f9",
+        "command": "-editor.action.previousCommentThreadAction"
+    },
+    {
+        "key": "shift+alt+f9",
+        "command": "editor.debug.action.editBreakpoint"
+    },
+    {
+        "key": "ctrl+alt+h",
+        "command": "workbench.action.increaseViewWidth"
+    },
+    {
+        "key": "ctrl+alt+l",
+        "command": "workbench.action.decreaseViewWidth"
+    },
+    {
+        "key": "ctrl+alt+j",
+        "command": "workbench.action.increaseViewHeight"
+    },
+    {
+        "key": "ctrl+alt+k",
+        "command": "workbench.action.decreaseViewHeight"
+    },
+    {
+        "key": "ctrl+alt+c",
+        "command": "notebook.cellOutput.copy"
+    },
+    {
+        "key": "ctrl+h",
+        "command": "workbench.scm.action.focusNextInput",
+        "when": "editorTextFocus && activeViewlet == 'workbench.view.scm' && sideBarVisible"
+    },
+    {
+        "key": "ctrl+l",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "list.focusDown",
+        "when": "scmRepository && listFocus && !resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "workbench.scm.action.focusNextInput",
+        "when": "scmRepository && listFocus && !resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "list.focusFirst",
+        "when": "resourceScheme =~ /scminput/ && activeViewlet == 'workbench.view.scm'"
+    },
+    /*
+    USEFUL CONTEXT KEYS FOR SCM AND NAVIGATION:
+
+    SCM Context Keys:
+    - resourceScheme =~ /scminput/ : Currently focused on SCM input box
+    - scmRepository : SCM repository is available
+    - scmActiveResourceHasChanges : Active resource has changes
+    - scmProviderCount : Number of SCM providers
+    - scmInputIsInFirstPosition : Cursor at first position in SCM input
+    - scmInputIsInLastPosition : Cursor at last position in SCM input
+
+    Editor Context Keys:
+    - editorTextFocus : Editor text area has focus
+    - editorFocus : Editor or editor widget has focus
+    - textInputFocus : Any text input has focus
+    - !editorFocus : NOT in editor
+
+    List/Tree Context Keys:
+    - listFocus : List widget has focus
+    - treeFocus : Tree widget has focus
+    - explorerViewletFocus : Explorer sidebar is focused
+    - searchViewletFocus : Search sidebar is focused
+
+    View Context Keys:
+    - activeViewlet == 'workbench.view.scm' : SCM view is active
+    - sideBarFocus : Any sidebar has focus
+    - panelFocus : Bottom panel has focus
+
+    General Context Keys:
+    - inputFocus : Any input field has focus
+    - !inputFocus : NOT in an input field
+    - suggestWidgetVisible : Autocomplete suggestions visible
+    - renameInputVisible : File rename input is visible
+
+    Debug Context Keys:
+    - inDebugMode : Debug session is active
+    - debugState == 'stopped' : Debugger is stopped at breakpoint
+
+    Vim Extension Context Keys (if using VSCode Vim):
+    - vim.active : Vim extension is active
+    - vim.mode != 'Insert' : Not in vim insert mode
+    - vim.mode != 'Replace' : Not in vim replace mode
+    */
+    // added symlink
+]

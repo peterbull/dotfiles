@@ -51,10 +51,13 @@
     "workbench.startupEditor": "none",
     "editor.formatOnPaste": true,
     "jupyter.askForKernelRestart": false,
+    "[jupyter]": {
+        "python.linting.enabled": false
+    },
     "editor.accessibilitySupport": "off",
     "[python]": {
         "editor.formatOnType": true,
-        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit",
             "source.organizeImports.ruff": "explicit"
@@ -81,7 +84,6 @@
         "ignore": false
     },
     "notebook.output.wordWrap": true,
-    "git.openRepositoryInParentFolders": "never",
     "settingsSync.ignoredExtensions": [
         "github.copilot-chat"
     ],
@@ -144,7 +146,6 @@
             "command": "vscode-neovim.escape",
         },
     },
-    "github.copilot.chat.temporalContext.enabled": true,
     "github.copilot.advanced": {},
     "typescript.updateImportsOnFileMove.enabled": "always",
     "workbench.list.defaultFindMode": "highlight",
@@ -207,7 +208,7 @@
             "when": "editorTextFocus && editorLangId == 'c'",
             "before": [
                 "g",
-                "s"
+                "t"
             ],
             "commands": [
                 "manpages.openFromCursor"
@@ -231,6 +232,15 @@
             "commands": [
                 "editor.action.showDefinitionPreviewHover"
             ]
+        },
+        {
+            "before": [
+                "g",
+                "m"
+            ],
+            "commands": [
+                "mdnDocs.showMdnDocs"
+            ]
         }
     ],
     "vim.visualModeKeyBindingsNonRecursive": [
@@ -243,13 +253,6 @@
             ]
         }
     ],
-    "search.exclude": {
-        "**/node_modules": true,
-        "**/bower_components": true,
-        "**/dist": true,
-        "**/build": true,
-        "**/.git": true
-    },
     "search.useIgnoreFiles": true,
     "search.useGlobalIgnoreFiles": true,
     "search.useParentIgnoreFiles": true,
@@ -334,6 +337,11 @@
                     "key": "t",
                     "name": "Toggle Terminal",
                     "command": "workbench.action.terminal.toggleTerminal"
+                },
+                {
+                    "key": "d",
+                    "name": "Toggle todo view",
+                    "command": "workbench.view.extension.todo-tree-container"
                 },
                 {
                     "key": "e",
@@ -421,13 +429,18 @@
                 },
                 {
                     "key": "l",
-                    "name": "Close primary sidebar",
-                    "command": "workbench.action.closeSidebar"
+                    "name": "Toggle primary sidebar",
+                    "command": "workbench.action.toggleSidebarVisibility"
                 },
                 {
                     "key": "r",
-                    "name": "Close secondary sidebar",
-                    "command": "workbench.action.closeAuxiliaryBar"
+                    "name": "Toggle secondary sidebar",
+                    "command": "workbench.action.toggleAuxiliaryBar"
+                },
+                {
+                    "key": "b",
+                    "name": "Toggle bottom window",
+                    "command": "workbench.action.togglePanel"
                 }
             ]
         },
@@ -607,12 +620,23 @@
                     "command": "powermode.disablePowerMode"
                 },
             ]
-        }
+        },
+        {
+            "key": "i",
+            "name": "Insert...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "t",
+                    "name": "Insert Twoslash Query",
+                    "command": "orta.vscode-twoslash-queries.insert-twoslash-query"
+                }
+            ]
+        },
     ],
     "git.confirmSync": false,
     "notebook.formatOnSave.enabled": true,
     "typescriptExplorer.typeTree.selection.enable": false,
-    "go.gopath": "/Users/peterbull/go",
     "[go]": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "golang.go"
@@ -645,6 +669,260 @@
         "workbench.action.tasks.configureTaskRunner",
         "workbench.action.tasks.runTask"
     ],
-    "workbench.activityBar.location": "hidden",
     "powermode.enabled": false,
+    "github.copilot.chat.editor.temporalContext.enabled": true,
+    "window.newWindowProfile": "Default",
+    "debug.allowBreakpointsEverywhere": true,
+    "debug.showBreakpointsInOverviewRuler": true,
+    "notebook.output.textLineLimit": 50,
+    "terminal.integrated.scrollback": 10000,
+    "terminal.integrated.enablePersistentSessions": false,
+    "dataWrangler.outputRenderer.pagination.defaultSize": 25,
+    "codeToClipboard.excludePatterns": [
+        "*.lock",
+        "*.log",
+        "node_modules/",
+        "__pycache__/",
+        "*.pyc",
+        "*.pyo",
+        "*.pyd",
+        ".venv/",
+        "env/",
+        "venv/",
+        ".env/",
+        "dist/",
+        "build/",
+        ".git/",
+        ".idea/",
+        ".vscode/",
+        ".DS_Store",
+        "*.exe",
+        "*.dll",
+        "*.so",
+        "*.dylib",
+        "*.bin",
+        "*.obj",
+        "*.o",
+        "*.a",
+        "*.lib",
+        "*.out",
+        "*.class",
+        "*.jar",
+        "*.war"
+    ],
+    "python.analysis.typeCheckingMode": "standard",
+    "python.defaultInterpreterPath": "/opt/homebrew/bin/python3",
+    "rust-analyzer.showSyntaxTree": true,
+    "gitlens.views.scm.grouped.views": {
+        "commits": true,
+        "branches": true,
+        "remotes": true,
+        "stashes": true,
+        "tags": true,
+        "worktrees": true,
+        "contributors": true,
+        "fileHistory": true,
+        "repositories": false,
+        "searchAndCompare": true,
+        "launchpad": false
+    },
+    "editor.inlayHints.maximumLength": 120,
+    "python.analysis.inlayHints.variableTypes": false,
+    "python.analysis.inlayHints.functionReturnTypes": false,
+    "python.analysis.inlayHints.callArgumentNames": "off",
+    "python.analysis.inlayHints.pytestParameters": false,
+    "workbench.colorCustomizations": {
+        "[One Dark Pro Flat]": {
+            "editorInlayHint.foreground": "#8b949e99", // Lighter grey with transparency
+            "editorInlayHint.background": "#2d333b55", // Very subtle dark background
+            "editorInlayHint.typeForeground": "#56b6c288", // Lighter blue for types
+            "editorInlayHint.parameterForeground": "#98c37988", // Lighter green for parameters
+            "editorInlayHint.typeBackground": "#2d333b55", // Subtle background for types
+            "editorInlayHint.parameterBackground": "#2d333b55" // Subtle background for parameters
+        }
+    },
+    "totalTypeScript.hideAllTips": false,
+    "totalTypeScript.hideBasicTips": false,
+    "git.openRepositoryInParentFolders": "never",
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "prettier.trailingComma": "all",
+    "todo-tree.general.periodicRefreshInterval": 10,
+    "inlineChat.lineNaturalLanguageHint": false,
+    "github.copilot.chat.codesearch.enabled": true,
+    "pgsql.serverGroups": [
+        {
+            "name": "Servers",
+            "id": "C071A796-96F4-4862-9D43-E249EE64FD88",
+            "isDefault": true
+        }
+    ],
+    "pgsql.connections": [
+        {
+            "id": "8AA9E0D5-97DF-481F-84E3-E99E5B0019BA",
+            "groupId": "C071A796-96F4-4862-9D43-E249EE64FD88",
+            "authenticationType": "SqlLogin",
+            "connectTimeout": 15,
+            "applicationName": "vscode-pgsql",
+            "clientEncoding": "utf8",
+            "sslmode": "prefer",
+            "server": "localhost",
+            "user": "postgres",
+            "password": "",
+            "savePassword": true,
+            "database": "postgres",
+            "profileName": "basis",
+            "expiresOn": 0
+        }
+    ],
+    "docker.extension.enableComposeLanguageServer": false,
+    "azapi.survey": {
+        "surveyPromptDate": "2025-07-07T17:42:37.380Z",
+        "surveyPromptIgnoredCount": 0
+    },
+    "remote.SSH.defaultExtensions": [
+        "4ops.terraform",
+        "aaron-bond.better-comments",
+        "agutierrezr.emmet-keybindings",
+        "alefragnani.bookmarks",
+        "alexcvzz.vscode-sqlite",
+        "andenetalexander.vim-cheatsheet",
+        "antfu.goto-alias",
+        "anthropic.claude-code",
+        "asvetliakov.vscode-neovim",
+        "avetis.tokyo-night",
+        "bradlc.vscode-tailwindcss",
+        "charliermarsh.ruff",
+        "christian-kohler.npm-intellisense",
+        "chwoerz.ts-worksheet",
+        "ckolkman.vscode-postgres",
+        "connor4312.esbuild-problem-matchers",
+        "corygross.vscode-mdn-docs",
+        "damildrizzy.fastapi-snippets",
+        "danielroedl.meld-diff",
+        "dbaeumer.vscode-eslint",
+        "denoland.vscode-deno",
+        "dkundel.vscode-new-file",
+        "docker.docker",
+        "dongli.python-preview",
+        "donjayamanne.typescript-notebook",
+        "dsznajder.es7-react-js-snippets",
+        "dvirtz.parquet-viewer",
+        "eamodio.gitlens",
+        "ecmel.vscode-html-css",
+        "enkia.tokyo-night",
+        "entuent.fira-code-nerd-font",
+        "esbenp.prettier-vscode",
+        "firefox-devtools.vscode-firefox-debug",
+        "formulahendry.code-runner",
+        "freecodecamp.freecodecamp-courses",
+        "freecodecamp.freecodecamp-dark-vscode-theme",
+        "github.copilot",
+        "github.copilot-chat",
+        "github.vscode-github-actions",
+        "golang.go",
+        "graphql.vscode-graphql-syntax",
+        "gruntfuggly.todo-tree",
+        "hamelhusain.nbdev",
+        "howcasperwhat.comment-formula",
+        "howcasperwhat.mathjax-highlight",
+        "humao.rest-client",
+        "james-yu.latex-workshop",
+        "janisdd.vscode-edit-csv",
+        "jinxdash.prettier-rust",
+        "jithurjacob.nbpreviewer",
+        "joshmu.periscope",
+        "laurencebahiirwa.deno-std-lib-snippets",
+        "lextudio.restructuredtext",
+        "mechatroner.rainbow-csv",
+        "mhutchie.git-graph",
+        "ms-azuretools.vscode-azureresourcegroups",
+        "ms-azuretools.vscode-containers",
+        "ms-azuretools.vscode-docker",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "ms-ossdata.vscode-pgsql",
+        "ms-python.autopep8",
+        "ms-python.black-formatter",
+        "ms-python.debugpy",
+        "ms-python.flake8",
+        "ms-python.isort",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-keymap",
+        "ms-toolsai.jupyter-renderers",
+        "ms-toolsai.vscode-jupyter-cell-tags",
+        "ms-toolsai.vscode-jupyter-slideshow",
+        "ms-vscode-remote.remote-containers",
+        "ms-vscode-remote.remote-ssh",
+        "ms-vscode-remote.remote-ssh-edit",
+        "ms-vscode-remote.remote-wsl",
+        "ms-vscode-remote.vscode-remote-extensionpack",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpptools-themes",
+        "ms-vscode.extension-test-runner",
+        "ms-vscode.hexeditor",
+        "ms-vscode.js-debug-nightly",
+        "ms-vscode.makefile-tools",
+        "ms-vscode.powershell",
+        "ms-vscode.remote-explorer",
+        "ms-vscode.remote-server",
+        "ms-vscode.vscode-speech",
+        "ms-vscode.vscode-typescript-next",
+        "ms-vsliveshare.vsliveshare",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-sqlite",
+        "mutantdino.resourcemonitor",
+        "mxsdev.typescript-explorer",
+        "mylesmurphy.prettify-ts",
+        "orta.vscode-twoslash-queries",
+        "peakchen90.open-html-in-browser",
+        "planbcoding.vscode-react-refactor",
+        "pomdtr.excalidraw-editor",
+        "prisma.prisma",
+        "quarto.quarto",
+        "redhat.vscode-yaml",
+        "redking00.vscode-nbts",
+        "rioj7.vscode-remove-comments",
+        "ritwickdey.liveserver",
+        "robbowen.synthwave-vscode",
+        "rust-lang.rust-analyzer",
+        "seonglae.one-dark-teal",
+        "shd101wyy.markdown-preview-enhanced",
+        "shinotatwu-ds.file-tree-generator",
+        "sourcegraph.cody-ai",
+        "spacian.vim-marks",
+        "stkb.rewrap",
+        "streetsidesoftware.code-spell-checker",
+        "svelte.svelte-vscode",
+        "tamasfe.even-better-toml",
+        "tanvir.ollama-modelfile",
+        "teamsdevapp.ms-teams-vscode-extension",
+        "technovangelist.ollamamodelfile",
+        "tht13.rst-vscode",
+        "tobermory.es6-string-html",
+        "trond-snekvik.simple-rst",
+        "twxs.cmake",
+        "vadimcn.vscode-lldb",
+        "vintharas.learn-vim",
+        "vscode-icons-team.vscode-icons",
+        "vscodevim.vim",
+        "vspacecode.whichkey",
+        "vue.volar",
+        "webrender.synthwave-x-fluoromachine",
+        "wholroyd.jinja",
+        "yoavbls.pretty-ts-errors",
+        "yuichinakamura.code-to-clipboard",
+        "yummygum.city-lights-theme",
+        "zhuangtongfa.material-theme"
+    ],
+    "workbench.activityBar.location": "hidden",
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+    "editor.minimap.enabled": false,
+    "zig.zls.enabled": "on",
+    "zig.path": "/Users/peterbull/.local/zig/zig",
+    "zig.zls.zigLibPath": "/Users/peterbull/.local/zig/lib",
+    "C_Cpp.intelliSenseEngine": "default",
 }
