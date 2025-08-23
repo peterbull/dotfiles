@@ -153,9 +153,10 @@ alias ddown="docker compose down"
 alias dlog="docker compose logs -f"
 alias dbuild="docker compose build"
 
-## Cursor
-alias cursor="cursor . profile peter-og"
-
+## Editor launches
+alias n="nvim ."
+alias nc="nvim ~/.config/nvim"
+alias nz="nvim ~/.zshrc"
 alias c="code ."
 
 # Conda initialization (disabled by default)
@@ -199,6 +200,14 @@ alias t1="tree -L 1 | tee >(pbcopy)"
 alias t2="tree -L 2 | tee >(pbcopy)"
 alias t3="tree -L 3 | tee >(pbcopy)"
 alias t4="tree -L 4 | tee >(pbcopy)"
+
+clipdump() {
+	local dir="${1:-.}"
+	find "$dir" -type f -print0 | xargs -0 cat | pbcopy
+	echo "Contents of files in '$dir' copied to clipboard"
+}
+
+alias clp="clipdump"
 
 
 
