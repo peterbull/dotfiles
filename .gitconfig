@@ -1,6 +1,6 @@
 [user]
 	name = peter bull
-	email = petercbull@gmail.com
+	email = 17122363+peterbull@users.noreply.github.com
 [filter "lfs"]
 	required = true
 	clean = git-lfs clean -- %f
