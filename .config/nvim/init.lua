@@ -191,6 +191,8 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
+vim.keymap.set('t', 'jk', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
 -- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
@@ -205,12 +207,21 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+vim.keymap.set('n', '<C-h>', '<C-w>h', { remap = true })
+vim.keymap.set('n', '<C-j>', '<C-w>j', { remap = true })
+vim.keymap.set('n', '<C-k>', '<C-w>k', { remap = true })
+vim.keymap.set('n', '<C-l>', '<C-w>l', { remap = true })
+vim.keymap.set('n', '<C-A-k>', '<cmd>resize +2<cr>', { desc = 'Increase Window Height' })
+vim.keymap.set('n', '<C-A-j>', '<cmd>resize -2<cr>', { desc = 'Decrease Window Height' })
+--
+vim.keymap.set('n', '<C-A-l>', '<cmd>resize +2<cr>', { desc = 'Increase Window Width' })
+vim.keymap.set('n', '<C-A-h>', '<cmd>resize -2<cr>', { desc = 'Decrease Window Width' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
--- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
--- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
--- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
--- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
+vim.keymap.set('n', '<C-S-h>', '<C-w>H', { desc = 'Move window to the left' })
+vim.keymap.set('n', '<C-S-l>', '<C-w>L', { desc = 'Move window to the right' })
+vim.keymap.set('n', '<C-S-j>', '<C-w>J', { desc = 'Move window to the lower' })
+vim.keymap.set('n', '<C-S-k>', '<C-w>K', { desc = 'Move window to the upper' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -307,6 +318,15 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+    keys = {
+      {
+        '<leader>grh',
+        function()
+          require('gitsigns').reset_hunk()
+        end,
+        desc = 'Reset Hunk',
+      },
+    },
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -371,7 +391,6 @@ require('lazy').setup({
       spec = {
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
       },
     },
   },
@@ -597,6 +616,15 @@ require('lazy').setup({
           --  the definition of its *type*, not where it was *defined*.
           map('grt', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
 
+          map('grm', function()
+            local word = vim.fn.expand '<cword>'
+            if word and word ~= '' then
+              vim.cmd('Man ' .. word)
+            else
+              require('telescope.builtin').man_pages()
+            end
+          end, '[G]oto [M]anual Page')
+          --
           -- This function resolves a difference between neovim nightly (version 0.11) and stable (version 0.10)
           ---@param client vim.lsp.Client
           ---@param method vim.lsp.protocol.Method
@@ -696,18 +724,18 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
-        -- pyright = {},
-        -- rust_analyzer = {},
+        pyright = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
         --
+        ts_ls = {},
 
         lua_ls = {
           -- cmd = { ... },
@@ -797,7 +825,7 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -831,7 +859,39 @@ require('lazy').setup({
           --   end,
           -- },
         },
-        opts = {},
+        opts = {
+
+          menu = {
+
+            draw = {
+              columns = {
+                { 'kind_icon', 'label', gap = 1 },
+                { 'kind' },
+              },
+              components = {
+                kind_icon = {
+                  text = function(item)
+                    local kind = require('lspkind').symbol_map[item.kind] or ''
+                    return kind .. ' '
+                  end,
+                  highlight = 'CmpItemKind',
+                },
+                label = {
+                  text = function(item)
+                    return item.label
+                  end,
+                  highlight = 'CmpItemAbbr',
+                },
+                kind = {
+                  text = function(item)
+                    return item.kind
+                  end,
+                  highlight = 'CmpItemKind',
+                },
+              },
+            },
+          },
+        },
       },
       'folke/lazydev.nvim',
     },
@@ -912,14 +972,16 @@ require('lazy').setup({
       ---@diagnostic disable-next-line: missing-fields
       require('tokyonight').setup {
         styles = {
-          comments = { italic = true }, -- Disable italics in comments
+          -- comments = { italic = true }, -- Disable italics in comments
+          keywords = { italic = true },
+          functions = { bold = true },
         },
       }
 
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-moon'
+      vim.cmd.colorscheme 'tokyonight-storm'
     end,
   },
 
@@ -994,15 +1056,44 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
+  { -- Highlight, edit, and navigate code
+    'nvim-treesitter/nvim-treesitter',
+    build = ':TSUpdate',
+    main = 'nvim-treesitter.configs',
+    opts = {
+      ensure_installed = {
+        'bash',
+        'c',
+        'cpp',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'javascript',
+        'typescript',
+        'json', -- Added JS/TS/JSON
+      },
+      auto_install = true,
+      highlight = {
+        enable = true,
+        additional_vim_regex_highlighting = { 'ruby' },
+      },
+      indent = { enable = true, disable = { 'ruby' } },
+    },
+  },
+
   -- Debug setup
   {
     'mfussenegger/nvim-dap',
     dependencies = {
-      -- Creates a beautiful debugger UI
       'rcarriga/nvim-dap-ui',
-      -- virtual text for the debugger
+      'jbyuki/one-small-step-for-vimkind',
       { 'theHamsta/nvim-dap-virtual-text', opts = {} },
-      -- Mason integration for DAP
       {
         'jay-babu/mason-nvim-dap.nvim',
         dependencies = 'mason.nvim',
@@ -1012,15 +1103,18 @@ require('lazy').setup({
           handlers = {},
           ensure_installed = {
             'js-debug-adapter',
+            'codelldb', -- Add LLDB for C/C++/Rust
           },
         },
       },
-      -- Ensure js-debug-adapter is installed via Mason
       {
         'williamboman/mason.nvim',
         opts = function(_, opts)
           opts.ensure_installed = opts.ensure_installed or {}
-          table.insert(opts.ensure_installed, 'js-debug-adapter')
+          vim.list_extend(opts.ensure_installed, {
+            'js-debug-adapter',
+            'codelldb', -- Add LLDB
+          })
         end,
       },
     },
@@ -1186,6 +1280,57 @@ require('lazy').setup({
         end,
         desc = 'Load launch.json',
       },
+      {
+        '<leader>dE',
+        function()
+          local dap = require 'dap'
+          local breakpoints = require 'dap.breakpoints'
+
+          if vim.g.dap_breakpoints_saved then
+            -- Restore breakpoints
+            for bufnr, buf_bps in pairs(vim.g.dap_breakpoints_saved) do
+              for _, bp in pairs(buf_bps) do
+                breakpoints.set({
+                  condition = bp.condition,
+                  hit_condition = bp.hitCondition,
+                  log_message = bp.logMessage,
+                }, bufnr, bp.line)
+              end
+            end
+            vim.g.dap_breakpoints_saved = nil
+            vim.notify('Breakpoints restored', vim.log.levels.INFO)
+          else
+            -- Save and clear breakpoints
+            local bps = breakpoints.get()
+            local has_breakpoints = false
+            for _, buf_bps in pairs(bps) do
+              if next(buf_bps) then
+                has_breakpoints = true
+                break
+              end
+            end
+
+            if has_breakpoints then
+              vim.g.dap_breakpoints_saved = vim.deepcopy(bps)
+              dap.clear_breakpoints()
+              vim.notify('Breakpoints cleared (saved)', vim.log.levels.INFO)
+            else
+              vim.notify('No breakpoints to clear', vim.log.levels.INFO)
+            end
+          end
+        end,
+        desc = 'Toggle Clear/Restore All Breakpoints',
+      },
+      {
+        '<leader>dR',
+        function()
+          local dap = require 'dap'
+          dap.clear_breakpoints()
+          vim.g.dap_breakpoints_saved = nil
+          vim.notify('All breakpoints permanently removed', vim.log.levels.INFO)
+        end,
+        desc = 'Remove All Breakpoints Permanently',
+      },
     },
     config = function()
       local dap = require 'dap'
@@ -1193,7 +1338,7 @@ require('lazy').setup({
       -- Enable DAP logging for debugging issues
       dap.set_log_level 'INFO'
 
-      -- Setup pwa-node adapter (the modern way)
+      -- Setup pwa-node adapter (JavaScript/TypeScript)
       dap.adapters['pwa-node'] = {
         type = 'server',
         host = 'localhost',
@@ -1234,6 +1379,67 @@ require('lazy').setup({
         },
       }
 
+      -- Setup LLDB adapter for C/C++/Rust
+      dap.adapters.lldb = {
+        type = 'executable',
+        command = vim.fn.stdpath 'data' .. '/mason/packages/codelldb/extension/adapter/codelldb',
+        name = 'lldb',
+      }
+
+      -- Setup codelldb adapter (alternative name)
+      dap.adapters.codelldb = dap.adapters.lldb
+
+      -- -- LUA
+      -- dap.adapters['local-lua'] = {
+      --   type = 'executable',
+      --   command = 'node',
+      --   args = {
+      --     vim.fn.stdpath 'data' .. '/mason/packages/local-lua-debugger-vscode/extension/extension/debugAdapter.js',
+      --   },
+      --   enrich_config = function(config, on_config)
+      --     if not config['extensionPath'] then
+      --       local c = vim.deepcopy(config)
+      --       c.extensionPath = vim.fn.stdpath 'data' .. '/mason/packages/local-lua-debugger-vscode/extension/'
+      --       on_config(c)
+      --     else
+      --       on_config(config)
+      --     end
+      --   end,
+      -- }
+      -- dap.configurations.lua = {
+      --   {
+      --     name = 'Current file (local-lua-dbg, nlua)',
+      --     type = 'local-lua',
+      --     request = 'launch',
+      --     cwd = '${workspaceFolder}',
+      --     program = {
+      --       lua = 'nlua.lua',
+      --       file = '${file}',
+      --     },
+      --     verbose = true,
+      --     args = {},
+      --   },
+      -- }
+      dap.adapters.nlua = function(callback, config)
+        callback { type = 'server', host = config.host or '127.0.0.1', port = config.port or 8086 }
+      end
+
+      dap.configurations.lua = {
+        {
+          type = 'nlua',
+          request = 'attach',
+          name = 'Attach to running Neovim instance',
+        },
+      }
+
+      vim.keymap.set('n', '<leader>dl', function()
+        require('osv').launch { port = 8086 }
+      end, { noremap = true, desc = 'require("osv").launch()' })
+      vim.keymap.set('n', '<leader>dw', function()
+        local widgets = require 'dap.ui.widgets'
+        widgets.hover()
+      end, { noremap = true, desc = 'require("dap.ui.widgets").hover()' })
+
       local js_filetypes = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact' }
 
       -- Setup vscode compatibility
@@ -1241,26 +1447,74 @@ require('lazy').setup({
       vscode.type_to_filetypes['node'] = js_filetypes
       vscode.type_to_filetypes['pwa-node'] = js_filetypes
       vscode.type_to_filetypes['pwa-chrome'] = js_filetypes
+      vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust' }
+      vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust' }
 
-      -- Setup configurations for each filetype
+      -- Setup JavaScript/TypeScript configurations
       for _, language in ipairs(js_filetypes) do
         dap.configurations[language] = {
           {
             type = 'pwa-node',
             request = 'launch',
-            name = 'Launch file',
+            name = 'Launch Current Node File(File Dir)',
             program = '${file}',
-            cwd = '${workspaceFolder}',
+            cwd = '${fileDirName}',
+            console = 'integratedTerminal',
           },
           {
             type = 'pwa-node',
-            request = 'attach',
-            name = 'Attach',
-            processId = require('dap.utils').pick_process,
+            request = 'launch',
+            name = 'Launch Current Node File (Project Dir with args)',
+            program = '${file}',
             cwd = '${workspaceFolder}',
+            console = 'integratedTerminal',
+            args = function()
+              local args_str = vim.fn.input 'Arguments: '
+              return vim.split(args_str, ' ')
+            end,
           },
+
+          -- {
+          --   type = 'pwa-node',
+          --   request = 'attach',
+          --   name = 'Attach',
+          --   processId = require('dap.utils').pick_process,
+          --   cwd = '${workspaceFolder}',
+          -- },
         }
       end
+
+      -- Setup C/C++ configurations
+      dap.configurations.c = {
+        {
+          name = 'Launch',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+      }
+      dap.configurations.cpp = dap.configurations.c
+      dap.configurations.rust = dap.configurations.c
+
+      -- dap.configurations.lua = {
+      --   {
+      --     name = 'Current file (local-lua-dbg, lua)',
+      --     type = 'nlua',
+      --     request = 'launch',
+      --     cwd = '${workspaceFolder}',
+      --     program = {
+      --       lua = 'nlua',
+      --       file = '${file}',
+      --     },
+      --     args = {},
+      --     verbose = true,
+      --   },
+      -- }
 
       -- Auto-load launch.json when entering a directory
       vim.api.nvim_create_autocmd('DirChanged', {
@@ -1272,6 +1526,8 @@ require('lazy').setup({
               ['pwa-chrome'] = js_filetypes,
               ['node'] = js_filetypes,
               ['chrome'] = js_filetypes,
+              ['lldb'] = { 'c', 'cpp', 'rust' },
+              ['codelldb'] = { 'c', 'cpp', 'rust' },
             })
             print('Auto-loaded: ' .. launch_json)
           end
@@ -1286,6 +1542,8 @@ require('lazy').setup({
           ['pwa-chrome'] = js_filetypes,
           ['node'] = js_filetypes,
           ['chrome'] = js_filetypes,
+          ['lldb'] = { 'c', 'cpp', 'rust' },
+          ['codelldb'] = { 'c', 'cpp', 'rust' },
         })
       end
 
@@ -1300,6 +1558,7 @@ require('lazy').setup({
         BreakpointRejected = { ' ', 'DiagnosticError' },
         LogPoint = '.>',
       }
+
       for name, sign in pairs(dap_icons) do
         vim.fn.sign_define('Dap' .. name, {
           text = sign[1],
@@ -1309,13 +1568,26 @@ require('lazy').setup({
         })
       end
 
-      -- Debug function to check adapter status
+      -- Debug function to check adapter status (safer version)
       vim.api.nvim_create_user_command('DapStatus', function()
         print('DAP adapters:', vim.inspect(vim.tbl_keys(dap.adapters)))
-        print('DAP log file:', dap.get_log_file_path())
+        if dap.get_log_file_path then
+          print('DAP log file:', dap.get_log_file_path())
+        end
         local js_configs = dap.configurations.javascript or {}
         print('JavaScript configs:', #js_configs)
+        local c_configs = dap.configurations.c or {}
+        print('C configs:', #c_configs)
       end, { desc = 'Show DAP status' })
+    end,
+  },
+  {
+    'jonathan-elize/dap-info.nvim',
+    dependencies = {
+      'mfussenegger/nvim-dap',
+    },
+    config = function()
+      require('dap-info').setup {}
     end,
   },
 
@@ -1356,56 +1628,208 @@ require('lazy').setup({
       end
     end,
   },
-
-  -- fancy UI for the debugger
   {
-    'rcarriga/nvim-dap-ui',
-    dependencies = { 'nvim-neotest/nvim-nio' },
-  -- stylua: ignore
-  keys = {
-    { "<leader>du", function() require("dapui").toggle({ }) end, desc = "Dap UI" },
-    { "<leader>de", function() require("dapui").eval() end, desc = "Eval", mode = {"n", "v"} },
+    -- Lua
+    {
+      'folke/persistence.nvim',
+      event = 'BufReadPre', -- this will only start session saving when an actual file was opened
+      opts = {
+        -- add any custom options here
+      },
+      keys = {
+        {
+          '<leader>qs',
+          function()
+            require('persistence').load()
+          end,
+          desc = 'Load session for current dir',
+        },
+        {
+          '<leader>qS',
+          function()
+            require('persistence').select()
+          end,
+          desc = 'Select session to load',
+        },
+        {
+          '<leader>ql',
+          function()
+            require('persistence').load { last = true }
+          end,
+          desc = 'Load last session',
+        },
+        {
+          '<leader>qd',
+          function()
+            require('persistence').stop()
+          end,
+          desc = 'Stop session saving',
+        },
+      },
+    },
   },
-    opts = {},
-    config = function(_, opts)
-      local dap = require 'dap'
-      local dapui = require 'dapui'
-      dapui.setup(opts)
-      dap.listeners.after.event_initialized['dapui_config'] = function()
-        dapui.open {}
-      end
-      dap.listeners.before.event_terminated['dapui_config'] = function()
-        dapui.close {}
-      end
-      dap.listeners.before.event_exited['dapui_config'] = function()
-        dapui.close {}
-      end
+
+  {
+    'akinsho/toggleterm.nvim',
+    version = '*',
+    config = function()
+      require('toggleterm').setup {
+        size = function(term)
+          if term.direction == 'horizontal' then
+            return 15
+          elseif term.direction == 'vertical' then
+            return vim.o.columns * 0.4 -- 40% of screen width
+          end
+        end,
+        open_mapping = [[<C-\>]], -- Default toggle with Ctrl+\
+        hide_numbers = true,
+        shade_terminals = false,
+        start_in_insert = true,
+        insert_mappings = true,
+        terminal_mappings = true,
+        persist_size = true,
+        direction = 'vertical', -- Opens to the right
+        close_on_exit = true,
+        shell = vim.o.shell,
+      }
+
+      -- Simple keymap to toggle terminal
+      vim.keymap.set('n', '<leader>tt', '<cmd>ToggleTerm direction=vertical<CR>', { desc = 'Toggle Terminal (Right)' })
+      vim.keymap.set('t', '<leader>tt', '<cmd>ToggleTerm<CR>', { desc = 'Toggle Terminal (Right)' })
+
+      -- Optional: Add a horizontal terminal toggle too
+      vim.keymap.set('n', '<leader>th', '<cmd>ToggleTerm direction=horizontal<CR>', { desc = 'Toggle Terminal (Bottom)' })
     end,
   },
 
-  -- mason.nvim integration
+  -- Fugitive plugin
   {
-    'jay-babu/mason-nvim-dap.nvim',
-    dependencies = 'mason.nvim',
-    cmd = { 'DapInstall', 'DapUninstall' },
-    opts = {
-      -- Makes a best effort to setup the various debuggers with
-      -- reasonable debug configurations
-      automatic_installation = true,
+    'tpope/vim-fugitive',
+    cmd = { 'Git', 'G', 'Gdiffsplit', 'Gread', 'Gwrite', 'Ggrep', 'GMove', 'GDelete', 'GBrowse' },
+    keys = {
+      -- Git status (like lazygit's main view)
+      { '<leader>gs', '<cmd>Git<CR>', desc = 'Git Status' },
 
-      -- You can provide additional configuration to the handlers,
-      -- see mason-nvim-dap README for more information
-      handlers = {},
+      -- Git log
+      { '<leader>gl', '<cmd>Git log --oneline<CR>', desc = 'Git Log' },
 
-      -- You'll need to check that you have the required things installed
-      -- online, please don't ask me how to install them :)
-      ensure_installed = {
-        -- Update this to ensure that you have the debuggers for the langs you want
-      },
+      -- Git add current file
+      { '<leader>ga', '<cmd>Gwrite<CR>', desc = 'Git Add Current File' },
+
+      -- Git commit
+      { '<leader>gc', '<cmd>Git commit<CR>', desc = 'Git Commit' },
+
+      -- Git push
+      { '<leader>gp', '<cmd>Git push<CR>', desc = 'Git Push' },
+
+      -- Git pull
+      { '<leader>gP', '<cmd>Git pull<CR>', desc = 'Git Pull' },
     },
-    -- mason-nvim-dap is loaded when nvim-dap loads
-    config = function() end,
   },
+
+  {
+    'sindrets/diffview.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    cmd = { 'DiffviewOpen', 'DiffviewClose', 'DiffviewFileHistory' },
+    keys = {
+      {
+        '<leader>gd',
+        function()
+          require 'diffview'
+          local lib = require 'diffview.lib'
+
+          if next(lib.views) == nil then
+            vim.cmd 'DiffviewOpen'
+          else
+            vim.cmd 'DiffviewClose'
+          end
+        end,
+        desc = 'Current file changes (staged/unstaged)',
+      },
+      {
+        '<leader>gm',
+        function()
+          require 'diffview'
+          local lib = require 'diffview.lib'
+
+          if next(lib.views) == nil then
+            vim.cmd 'DiffviewOpen main'
+          else
+            vim.cmd 'DiffviewClose'
+          end
+        end,
+        desc = 'Current file vs main',
+      },
+      {
+        '<leader>gM',
+        function()
+          require 'diffview'
+          local lib = require 'diffview.lib'
+          -- Get current branch name
+          local current_branch = vim.fn.system('git branch --show-current'):gsub('\n', '')
+          local cmd
+          if current_branch == 'main' or current_branch == 'master' then
+            -- On main/master: show only working tree changes
+            cmd = 'DiffviewOpen'
+          else
+            -- On feature branch: show all changes since main (branch commits + working tree)
+            cmd = 'DiffviewOpen main..HEAD'
+          end
+
+          if next(lib.views) == nil then
+            vim.cmd(cmd)
+          else
+            vim.cmd 'DiffviewClose'
+          end
+        end,
+        desc = 'Smart diff: working tree (on main) or branch+working tree vs main',
+      },
+
+      config = function()
+        require('diffview').setup {
+          use_icons = vim.g.have_nerd_font,
+          view = {
+            default = {
+              layout = 'diff2_horizontal',
+            },
+          },
+          keymap = {
+            view = {
+              -- Reset hunk in diffview
+              ['<leader>grh'] = function()
+                vim.cmd 'DiffviewClose'
+                -- Switch to the actual file and reset hunk
+                vim.schedule(function()
+                  require('gitsigns').reset_hunk()
+                end)
+              end,
+            },
+          },
+        }
+      end,
+    },
+  },
+  -- {
+  --   'piersolenski/import.nvim',
+  --   dependencies = {
+  --     -- One of the following pickers is required:
+  --     'nvim-telescope/telescope.nvim',
+  --     -- 'folke/snacks.nvim',
+  --     -- 'ibhagwan/fzf-lua',
+  --   },
+  --   opts = {
+  --     picker = 'telescope',
+  --   },
+  --   keys = {
+  --     {
+  --       '<leader>si',
+  --       function()
+  --         require('import').pick()
+  --       end,
+  --       desc = '[S]earch [I]mports',
+  --     },
+  --   },
+  -- },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and

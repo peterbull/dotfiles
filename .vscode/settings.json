@@ -261,6 +261,14 @@
     //     "**/dist/**": true,
     //     "**/build/**": true
     // },
+    "whichkey.bindingOverrides": [
+        {
+            "keys": " ",
+            "name": "Show open buffers",
+            "type": "command",
+            "command": "workbench.action.quickOpenPreviousRecentlyUsedEditorInGroup"
+        }
+    ],
     "whichkey.bindings": [
         {
             "key": "/",
@@ -380,11 +388,6 @@
             "type": "bindings",
             "bindings": [
                 {
-                    "key": "b",
-                    "name": "Show open buffers",
-                    "command": "workbench.action.quickOpenPreviousRecentlyUsedEditorInGroup"
-                },
-                {
                     "key": "o",
                     "name": "Close other buffers",
                     "command": "workbench.action.closeOtherEditors"
@@ -477,7 +480,7 @@
             ]
         },
         {
-            "key": "a",
+            "key": "d",
             "name": "Debug...",
             "type": "bindings",
             "bindings": [
@@ -492,14 +495,9 @@
                     "command": "editor.debug.action.toggleBreakpoint"
                 },
                 {
-                    "key": "s",
+                    "key": "t",
                     "name": "Stop Debugging",
                     "command": "workbench.action.debug.stop"
-                },
-                {
-                    "key": "v",
-                    "name": "Run Without Debugging",
-                    "command": "workbench.action.debug.run"
                 },
                 {
                     "key": "d",
@@ -510,18 +508,6 @@
                     "key": "r",
                     "name": "Restart Debugging",
                     "command": "workbench.action.debug.restart"
-                }
-            ]
-        },
-        {
-            "key": "d",
-            "name": "Database",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "d",
-                    "name": "Open Database Client",
-                    "command": "github.cweijan.mysql.focus"
                 }
             ]
         },

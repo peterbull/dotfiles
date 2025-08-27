@@ -208,7 +208,7 @@ clipdump() {
 }
 
 alias clp="clipdump"
-
+alias lg="lazygit"
 
 
 # Python Path
@@ -267,3 +267,4 @@ export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 
 export PATH="~/.local/zig:$PATH"
 
+export PATH=$PATH:$HOME/.luarocks/bin
