@@ -33,7 +33,7 @@ What is Kickstart?
     or immediately breaking it into modular pieces. It's up to you!
 
     If you don't know anything about Lua, I recommend taking some time to read through
-    a guide. One possible example which will only take 10-15 minutes:
+    a guide. One possible example which will only take 11-15 minutes:
       - https://learnxinyminutes.com/docs/lua/
 
     After understanding a bit more about Lua, you can use `:help lua-guide` as a
@@ -89,6 +89,14 @@ P.S. You can delete this when you're done too. It's your config now! :)
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+
+--- https://github.com/fredrikaverpil/dotfiles/blob/82b161d397d27772e2eb34422058df5fd44b06a7/nvim-fredrik/lua/fredrik/init.lua#L7
+---@diagnostic disable-next-line: undefined-global
+if init_debug then
+  local osvpath = vim.fn.stdpath 'data' .. '/lazy/one-small-step-for-vimkind'
+  vim.opt.rtp:prepend(osvpath)
+  require('osv').launch { port = 8086, blocking = true }
+end
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
@@ -211,17 +219,19 @@ vim.keymap.set('n', '<C-h>', '<C-w>h', { remap = true })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { remap = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { remap = true })
 vim.keymap.set('n', '<C-l>', '<C-w>l', { remap = true })
-vim.keymap.set('n', '<C-A-k>', '<cmd>resize +2<cr>', { desc = 'Increase Window Height' })
-vim.keymap.set('n', '<C-A-j>', '<cmd>resize -2<cr>', { desc = 'Decrease Window Height' })
+vim.keymap.set('n', '<C-A-k>', '<C-w>+', { desc = 'Increase Window Height' })
+vim.keymap.set('n', '<C-A-j>', '<C-w>-', { desc = 'Decrease Window Height' })
 --
-vim.keymap.set('n', '<C-A-l>', '<cmd>resize +2<cr>', { desc = 'Increase Window Width' })
-vim.keymap.set('n', '<C-A-h>', '<cmd>resize -2<cr>', { desc = 'Decrease Window Width' })
+vim.keymap.set('n', '<C-A-l>', '<C-w>>', { desc = 'Increase Window Width' })
+vim.keymap.set('n', '<C-A-h>', '<C-w><', { desc = 'Decrease Window Width' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 vim.keymap.set('n', '<C-S-h>', '<C-w>H', { desc = 'Move window to the left' })
 vim.keymap.set('n', '<C-S-l>', '<C-w>L', { desc = 'Move window to the right' })
 vim.keymap.set('n', '<C-S-j>', '<C-w>J', { desc = 'Move window to the lower' })
 vim.keymap.set('n', '<C-S-k>', '<C-w>K', { desc = 'Move window to the upper' })
+
+vim.keymap.set('n', '<leader>bd', ':bd<CR>', { desc = '[D]elete Current Buffer' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -252,15 +262,26 @@ end
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
+-- Store the last used arguments globally
+local last_args = {}
+
 ---@param config {type?:string, args?:string[]|fun():string[]?}
 local function get_args(config)
   local args = type(config.args) == 'function' and (config.args() or {}) or config.args or {} --[[@as string[] | string ]]
   local args_str = type(args) == 'table' and table.concat(args, ' ') or args --[[@as string]]
 
+  -- Get the last used args for this configuration type, or fall back to current args_str
+  local config_key = config.type or 'default'
+  local default_args = last_args[config_key] or args_str
+
   config = vim.deepcopy(config)
   ---@cast args string[]
   config.args = function()
-    local new_args = vim.fn.expand(vim.fn.input('Run with args: ', args_str)) --[[@as string]]
+    local new_args = vim.fn.expand(vim.fn.input('Run with args: ', default_args)) --[[@as string]]
+
+    -- Store the new args for future use
+    last_args[config_key] = new_args
+
     if config.type and config.type == 'java' then
       ---@diagnostic disable-next-line: return-type-mismatch
       return new_args
@@ -309,6 +330,7 @@ require('lazy').setup({
   -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
+    event = { 'BufReadPre', 'BufNewFile' },
     opts = {
       signs = {
         add = { text = '+' },
@@ -318,6 +340,7 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+
     keys = {
       {
         '<leader>grh',
@@ -325,6 +348,14 @@ require('lazy').setup({
           require('gitsigns').reset_hunk()
         end,
         desc = 'Reset Hunk',
+      },
+      {
+        '<leader>gB',
+        function()
+          local gitsigns = require 'gitsigns'
+          gitsigns.blame()
+        end,
+        desc = '[B]lame for Current Buffer',
       },
     },
   },
@@ -391,6 +422,8 @@ require('lazy').setup({
       spec = {
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
+        { '<leader>d', group = '[D]ebug' },
+        { '<leader>b', group = '[B]uffer' },
       },
     },
   },
@@ -855,12 +888,12 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
         opts = {
 
@@ -1096,6 +1129,7 @@ require('lazy').setup({
     dependencies = {
       'rcarriga/nvim-dap-ui',
       'jbyuki/one-small-step-for-vimkind',
+      'nvim-neotest/nvim-nio',
       { 'theHamsta/nvim-dap-virtual-text', opts = {} },
       {
         'jay-babu/mason-nvim-dap.nvim',
@@ -1106,17 +1140,17 @@ require('lazy').setup({
           handlers = {},
           ensure_installed = {
             'js-debug-adapter',
-            'codelldb', -- Add LLDB for C/C++/Rust
+            'codelldb',
           },
         },
       },
       {
-        'williamboman/mason.nvim',
+        'mason-org/mason.nvim',
         opts = function(_, opts)
           opts.ensure_installed = opts.ensure_installed or {}
           vim.list_extend(opts.ensure_installed, {
             'js-debug-adapter',
-            'codelldb', -- Add LLDB
+            'codelldb',
           })
         end,
       },
@@ -1423,9 +1457,6 @@ require('lazy').setup({
       --     args = {},
       --   },
       -- }
-      dap.adapters.nlua = function(callback, config)
-        callback { type = 'server', host = config.host or '127.0.0.1', port = config.port or 8086 }
-      end
 
       dap.configurations.lua = {
         {
@@ -1434,14 +1465,16 @@ require('lazy').setup({
           name = 'Attach to running Neovim instance',
         },
       }
-
-      vim.keymap.set('n', '<leader>dl', function()
+      dap.adapters.nlua = function(callback, config)
+        callback { type = 'server', host = config.host or '127.0.0.1', port = config.port or 8086 }
+      end
+      vim.keymap.set('n', '<leader>dN', function()
         require('osv').launch { port = 8086 }
-      end, { noremap = true, desc = 'require("osv").launch()' })
+      end, { noremap = true, desc = 'Launch [N]vim Debug Server' })
       vim.keymap.set('n', '<leader>dw', function()
         local widgets = require 'dap.ui.widgets'
         widgets.hover()
-      end, { noremap = true, desc = 'require("dap.ui.widgets").hover()' })
+      end, { noremap = true, desc = 'Hover [W]idget' })
 
       local js_filetypes = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact' }
 
@@ -1571,7 +1604,6 @@ require('lazy').setup({
         })
       end
 
-      -- Debug function to check adapter status (safer version)
       vim.api.nvim_create_user_command('DapStatus', function()
         print('DAP adapters:', vim.inspect(vim.tbl_keys(dap.adapters)))
         if dap.get_log_file_path then
@@ -1763,6 +1795,7 @@ require('lazy').setup({
         end,
         desc = 'Current file vs main',
       },
+
       {
         '<leader>gM',
         function()
@@ -1775,8 +1808,8 @@ require('lazy').setup({
             -- On main/master: show only working tree changes
             cmd = 'DiffviewOpen'
           else
-            -- On feature branch: show all changes since main (branch commits + working tree)
-            cmd = 'DiffviewOpen main..HEAD'
+            -- On feature branch: show all changes since main INCLUDING working tree
+            cmd = 'DiffviewOpen main'
           end
 
           if next(lib.views) == nil then
@@ -1811,6 +1844,67 @@ require('lazy').setup({
         }
       end,
     },
+  },
+
+  {
+    'folke/trouble.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    opts = {},
+    cmd = 'Trouble',
+    keys = {
+      {
+        '<leader>xx',
+        '<cmd>Trouble diagnostics toggle<cr>',
+        desc = 'Diagnostics (Trouble)',
+      },
+      {
+        '<leader>xX',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+        desc = 'Buffer Diagnostics (Trouble)',
+      },
+    },
+  },
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      local harpoon = require 'harpoon'
+      harpoon:setup {}
+
+      -- basic telescope configuration
+      local conf = require('telescope.config').values
+      local function toggle_telescope(harpoon_files)
+        local file_paths = {}
+        for _, item in ipairs(harpoon_files.items) do
+          table.insert(file_paths, item.value)
+        end
+
+        require('telescope.pickers')
+          .new({}, {
+            prompt_title = 'Harpoon',
+            finder = require('telescope.finders').new_table {
+              results = file_paths,
+            },
+            previewer = conf.file_previewer {},
+            sorter = conf.generic_sorter {},
+          })
+          :find()
+      end
+
+      vim.keymap.set('n', '<C-e>', function()
+        toggle_telescope(harpoon:list())
+      end, { desc = 'Open harpoon window' })
+      vim.keymap.set('n', '<leader>a', function()
+        harpoon:list():add()
+      end, { desc = 'Add to harpoon' })
+      vim.keymap.set('n', '<C-S-P>', function()
+        harpoon:list():prev()
+      end)
+      vim.keymap.set('n', '<C-S-N>', function()
+        harpoon:list():next()
+      end)
+    end,
   },
   -- {
   --   'piersolenski/import.nvim',

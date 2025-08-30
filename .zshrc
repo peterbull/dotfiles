@@ -92,22 +92,6 @@ source $ZSH/oh-my-zsh.sh
 if [ -f ~/.secrets ]; then
     source ~/.secrets
 fi
-# User configuration
-
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
 
 # Set personal aliases, overriding those provided by Oh My Zsh libs,
 # plugins, and themes. Aliases can be placed here, though Oh My Zsh
@@ -157,7 +141,9 @@ alias dbuild="docker compose build"
 alias n="nvim ."
 alias nc="nvim ~/.config/nvim"
 alias nz="nvim ~/.zshrc"
+alias nd="nvim --cmd \"lua init_debug=true\""
 alias c="code ."
+
 
 # Conda initialization (disabled by default)
 conda_init() {
