@@ -174,6 +174,7 @@ vim.o.scrolloff = 10
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+-- base language configs
 vim.g.python_recommended_style = 0
 vim.g.rust_recommended_style = 0
 vim.opt.tabstop = 2
@@ -187,7 +188,10 @@ vim.opt.expandtab = true
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+
+-- remap escape
 vim.keymap.set('i', 'jk', '<ESC>', { noremap = true, silent = true })
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -198,7 +202,6 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
-
 vim.keymap.set('t', 'jk', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
@@ -219,9 +222,10 @@ vim.keymap.set('n', '<C-h>', '<C-w>h', { remap = true })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { remap = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { remap = true })
 vim.keymap.set('n', '<C-l>', '<C-w>l', { remap = true })
+
+-- Window Resizing
 vim.keymap.set('n', '<C-A-k>', '<C-w>+', { desc = 'Increase Window Height' })
 vim.keymap.set('n', '<C-A-j>', '<C-w>-', { desc = 'Decrease Window Height' })
---
 vim.keymap.set('n', '<C-A-l>', '<C-w>>', { desc = 'Increase Window Width' })
 vim.keymap.set('n', '<C-A-h>', '<C-w><', { desc = 'Decrease Window Width' })
 
@@ -262,35 +266,6 @@ end
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
--- Store the last used arguments globally
-local last_args = {}
-
----@param config {type?:string, args?:string[]|fun():string[]?}
-local function get_args(config)
-  local args = type(config.args) == 'function' and (config.args() or {}) or config.args or {} --[[@as string[] | string ]]
-  local args_str = type(args) == 'table' and table.concat(args, ' ') or args --[[@as string]]
-
-  -- Get the last used args for this configuration type, or fall back to current args_str
-  local config_key = config.type or 'default'
-  local default_args = last_args[config_key] or args_str
-
-  config = vim.deepcopy(config)
-  ---@cast args string[]
-  config.args = function()
-    local new_args = vim.fn.expand(vim.fn.input('Run with args: ', default_args)) --[[@as string]]
-
-    -- Store the new args for future use
-    last_args[config_key] = new_args
-
-    if config.type and config.type == 'java' then
-      ---@diagnostic disable-next-line: return-type-mismatch
-      return new_args
-    end
-    return require('dap.utils').splitstr(new_args)
-  end
-  return config
-end
---
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -350,7 +325,7 @@ require('lazy').setup({
         desc = 'Reset Hunk',
       },
       {
-        '<leader>gB',
+        '<leader>gb',
         function()
           local gitsigns = require 'gitsigns'
           gitsigns.blame()
@@ -855,7 +830,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'isort', 'black' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
@@ -1008,7 +983,7 @@ require('lazy').setup({
       ---@diagnostic disable-next-line: missing-fields
       require('tokyonight').setup {
         styles = {
-          -- comments = { italic = true }, -- Disable italics in comments
+          comments = { italic = true },
           keywords = { italic = true },
           functions = { bold = true },
         },
@@ -1112,7 +1087,7 @@ require('lazy').setup({
         'vimdoc',
         'javascript',
         'typescript',
-        'json', -- Added JS/TS/JSON
+        'json',
       },
       auto_install = true,
       highlight = {
@@ -1211,13 +1186,6 @@ require('lazy').setup({
           require('dap').continue()
         end,
         desc = 'Run/Continue',
-      },
-      {
-        '<leader>da',
-        function()
-          require('dap').continue { before = get_args }
-        end,
-        desc = 'Run with Args',
       },
       {
         '<leader>dC',
@@ -1520,14 +1488,52 @@ require('lazy').setup({
         }
       end
 
-      -- Setup C/C++ configurations
+      local function get_rust_package_name()
+        local cargo_toml_path = vim.fn.getcwd() .. '/Cargo.toml'
+
+        if vim.fn.filereadable(cargo_toml_path) == 1 then
+          local cargo_content = vim.fn.readfile(cargo_toml_path)
+
+          for _, line in ipairs(cargo_content) do
+            local name = line:match '^name%s*=%s*"([^"]+)"'
+            if name then
+              return name
+            end
+          end
+        end
+
+        return nil
+      end
+
+      -- C/Rust config
       dap.configurations.c = {
         {
-          name = 'Launch',
+          name = 'Launch C Default',
           type = 'lldb',
           request = 'launch',
           program = function()
-            return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
+            local extension = vim.fn.expand '%:e'
+            if extension == 'c' then
+              local result = vim.fn.system 'make'
+              if vim.v.shell_error ~= 0 then
+                vim.notify('Build failed: ' .. result, vim.log.levels.ERROR)
+                return nil
+              end
+              local exe_path = vim.fn.getcwd() .. '/build/main'
+
+              vim.fn.system('chmod +x ' .. exe_path)
+              return exe_path
+            end
+            if extension == 'rs' then
+              local result = vim.fn.system 'cargo build'
+              if vim.v.shell_error ~= 0 then
+                vim.notify('Build failed: ' .. result, vim.log.levels.ERROR)
+                return nil
+              end
+            end
+            local package_name = get_rust_package_name() or 'backend'
+            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
+            return exe_path
           end,
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
@@ -1897,7 +1903,7 @@ require('lazy').setup({
       end, { desc = 'Open harpoon window' })
       vim.keymap.set('n', '<leader>a', function()
         harpoon:list():add()
-      end, { desc = 'Add to harpoon' })
+      end, { desc = '[A]dd to harpoon' })
       vim.keymap.set('n', '<C-S-P>', function()
         harpoon:list():prev()
       end)
