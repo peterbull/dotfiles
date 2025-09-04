@@ -399,6 +399,7 @@ require('lazy').setup({
         { '<leader>t', group = '[T]oggle' },
         { '<leader>d', group = '[D]ebug' },
         { '<leader>b', group = '[B]uffer' },
+        { '<leader>h', group = '[H]arpoon' },
       },
     },
   },
@@ -1098,6 +1099,21 @@ require('lazy').setup({
     },
   },
 
+  -- https://github.com/nicbytes/nvim/commit/a6022c8cc1166f4a87315b3c2199476101239b8b#diff-198b05cba517df75101c39ad19ff87fed6db322ea83a1af861c2ae7105b3ba4bR200
+  -- for rust formatting in lldb
+
+  {
+    'mrcjkb/rustaceanvim',
+    version = '^5',
+    lazy = false,
+    config = function()
+      vim.g.rustaceanvim = {
+        dap = {
+          load_rust_types = true,
+        },
+      }
+    end,
+  },
   -- Debug setup
   {
     'mfussenegger/nvim-dap',
@@ -1477,14 +1493,13 @@ require('lazy').setup({
               return vim.split(args_str, ' ')
             end,
           },
-
-          -- {
-          --   type = 'pwa-node',
-          --   request = 'attach',
-          --   name = 'Attach',
-          --   processId = require('dap.utils').pick_process,
-          --   cwd = '${workspaceFolder}',
-          -- },
+          {
+            type = 'pwa-node',
+            request = 'attach',
+            name = 'Attach',
+            processId = require('dap.utils').pick_process,
+            cwd = '${workspaceFolder}',
+          },
         }
       end
 
@@ -1794,12 +1809,12 @@ require('lazy').setup({
           local lib = require 'diffview.lib'
 
           if next(lib.views) == nil then
-            vim.cmd 'DiffviewOpen main'
+            vim.cmd 'DiffviewOpen'
           else
             vim.cmd 'DiffviewClose'
           end
         end,
-        desc = 'Current file vs main',
+        desc = 'Diff vs previous commit',
       },
 
       {
@@ -1901,7 +1916,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<C-e>', function()
         toggle_telescope(harpoon:list())
       end, { desc = 'Open harpoon window' })
-      vim.keymap.set('n', '<leader>a', function()
+      vim.keymap.set('n', '<leader>ha', function()
         harpoon:list():add()
       end, { desc = '[A]dd to harpoon' })
       vim.keymap.set('n', '<C-S-P>', function()
@@ -1910,6 +1925,9 @@ require('lazy').setup({
       vim.keymap.set('n', '<C-S-N>', function()
         harpoon:list():next()
       end)
+      vim.keymap.set('n', '<leader>hc', function()
+        harpoon:list():clear()
+      end, { desc = '[C]lear harpoon' })
     end,
   },
   -- {

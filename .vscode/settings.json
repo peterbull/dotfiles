@@ -890,5 +890,10 @@
     "zig.path": "/Users/peterbull/.local/zig/zig",
     "zig.zls.zigLibPath": "/Users/peterbull/.local/zig/lib",
     "C_Cpp.intelliSenseEngine": "default",
-    "workbench.editor.showTabs": "none"
+    "workbench.editor.showTabs": "none",
+    "azureFunctions.showProjectWarning": false,
+    "azureFunctions.deploySubpath": "dist",
+    "azureFunctions.projectLanguage": "TypeScript",
+    "azureFunctions.projectRuntime": "~4",
+    "typescript.preferences.importModuleSpecifier": "relative"
 }
