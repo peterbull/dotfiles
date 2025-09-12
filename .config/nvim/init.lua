@@ -192,6 +192,12 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 -- remap escape
 vim.keymap.set('i', 'jk', '<ESC>', { noremap = true, silent = true })
 
+-- quit trying to record macros when i sloppy-type
+
+vim.keymap.set('n', 'q', '<Nop>', { noremap = true, silent = true })
+vim.keymap.set('v', 'q', '<Nop>', { noremap = true, silent = true })
+
+-- vim.keymap.set('i', 'jj', '<ESC>', { noremap = true, silent = true })
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -468,7 +474,9 @@ require('lazy').setup({
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
-            require('telescope.themes').get_dropdown(),
+            require('telescope.themes').get_dropdown {
+              layout_config = { width = 0.8 },
+            },
           },
         },
       }
@@ -973,30 +981,55 @@ require('lazy').setup({
     },
   },
 
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
+  -- { -- You can easily change to a different colorscheme.
+  --   -- Change the name of the colorscheme plugin below, and then
+  --   -- change the command in the config to whatever the name of that colorscheme is.
+  --   --
+  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --   'folke/tokyonight.nvim',
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   config = function()
+  --     ---@diagnostic disable-next-line: missing-fields
+  --     require('tokyonight').setup {
+  --       styles = {
+  --         comments = { italic = true },
+  --         keywords = { italic = true },
+  --         functions = { bold = true },
+  --       },
+  --     }
+  --
+  --     -- Load the colorscheme here.
+  --     -- Like many other themes, this one has different styles, and you could load
+  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'tokyonight-storm'
+  --   end,
+  -- },
+  {
+    'olimorris/onedarkpro.nvim',
+    priority = 1000,
     config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
+      require('onedarkpro').setup {
+        highlights = {
+          ['@lsp.typemod.variable.readonly.typescript'] = { fg = '#f0d090' },
+          -- ['@type'] = { fg = '#f5e6b8' },
+          ['@type.builtin'] = { fg = '#e0a070' },
+          -- ['@type'] = { fg = '#fde68a', style = 'italic' }, -- Light gold
+          ['@type'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
+          -- ['@type'] = { fg = '#7dd3fc' },
+          -- ['@lsp.type.class'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
+          Type = { fg = '#d19a66' },
+        },
+
         styles = {
-          comments = { italic = true },
-          keywords = { italic = true },
-          functions = { bold = true },
+          functions = 'bold',
+          comments = 'italic',
+          variables = 'NONE',
+          types = 'NONE',
         },
       }
-
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-storm'
+      vim.cmd 'colorscheme onedark'
     end,
   },
-
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -1038,7 +1071,9 @@ require('lazy').setup({
       require('mini.files').setup()
 
       vim.keymap.set('n', '<leader>e', function()
-        require('mini.files').open()
+        local mini_files = require 'mini.files'
+        mini_files.open(vim.api.nvim_buf_get_name(0), false)
+        mini_files.reveal_cwd()
       end, { desc = 'Open mini file [E]xplorer' })
     end,
   },
@@ -1155,21 +1190,21 @@ require('lazy').setup({
         desc = 'Debug: Start/Continue',
       },
       {
-        '<F1>',
+        '<F11>',
         function()
           require('dap').step_into()
         end,
         desc = 'Debug: Step Into',
       },
       {
-        '<F2>',
+        '<F10>',
         function()
           require('dap').step_over()
         end,
         desc = 'Debug: Step Over',
       },
       {
-        '<F3>',
+        '<F9>',
         function()
           require('dap').step_out()
         end,
@@ -1660,6 +1695,15 @@ require('lazy').setup({
         desc = 'Dap UI',
       },
       {
+        '<leader>dU',
+        function()
+          local dapui = require 'dapui'
+          dapui.close()
+          dapui.open { reset = true }
+        end,
+        desc = 'Reset Dap UI',
+      },
+      {
         '<leader>de',
         function()
           require('dapui').eval()
@@ -1674,13 +1718,13 @@ require('lazy').setup({
       local dapui = require 'dapui'
       dapui.setup(opts)
       dap.listeners.after.event_initialized['dapui_config'] = function()
-        dapui.open {}
+        -- dapui.open {}
       end
       dap.listeners.before.event_terminated['dapui_config'] = function()
-        dapui.close {}
+        -- dapui.close {}
       end
       dap.listeners.before.event_exited['dapui_config'] = function()
-        dapui.close {}
+        -- dapui.close {}
       end
     end,
   },

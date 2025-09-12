@@ -145,34 +145,14 @@ alias nd="nvim --cmd \"lua init_debug=true\""
 alias c="code ."
 
 
-# Conda initialization (disabled by default)
-conda_init() {
-    # >>> conda initialize >>>
-    # !! Contents within this block are managed by 'conda init' !!
-    __conda_setup="$('/Users/peterbull/miniforge3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-    if [ $? -eq 0 ]; then
-        eval "$__conda_setup"
-    else
-        if [ -f "/Users/peterbull/miniforge3/etc/profile.d/conda.sh" ]; then
-            . "/Users/peterbull/miniforge3/etc/profile.d/conda.sh"
-        else
-            export PATH="/Users/peterbull/miniforge3/bin:$PATH"
-        fi
-    fi
-    unset __conda_setup
 
-    if [ -f "/Users/peterbull/miniforge3/etc/profile.d/mamba.sh" ]; then
-        . "/Users/peterbull/miniforge3/etc/profile.d/mamba.sh"
-    fi
-    # <<< conda initialize <<<
-}
-
-# To initialize conda, run the 'conda_init' function
-
+## Rust
+alias cb="cargo build"
+alias cr="RUST_BACKTRACE=1 cargo run"
+alias crf="RUST_BACKTRACE=full cargo run"
+alias ca="cargo build && RUST_BACKTRACE=1 cargo run"
+alias caf="cargo build && RUST_BACKTRACE=full cargo run"
 ## Git"
-alias branch_hist="git for-each-ref --sort=-committerdate --format='%(refname:short) - %(committerdate:relative)' refs/heads/"
-. "/Users/peterbull/.deno/env"
-. "$HOME/.cargo/env"
 
 alias gs-apply='git stash apply $(git stash list | fzf | awk "{print \$1}" | tr -d ":")'; 
 gs-archive() {
