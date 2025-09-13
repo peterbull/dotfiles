@@ -1590,6 +1590,55 @@ require('lazy').setup({
           args = {},
         },
       }
+
+      dap.configurations.zig = {
+        {
+          name = 'Launch Zig Workspace',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local result = vim.fn.system 'zig build'
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            local exe_path = vim.fn.getcwd() .. '/zig-out/bin/'
+            local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ':t')
+            exe_path = exe_path .. project_name
+
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+        {
+          name = 'Launch Zig Current File',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local current_file = vim.fn.expand '%:p'
+            local file_name = vim.fn.expand '%:t:r'
+            local exe_path = vim.fn.getcwd() .. '/zig-out/bin/' .. file_name
+
+            vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/zig-out/bin')
+
+            local compile_cmd = string.format('zig build-exe -femit-bin=%s %s', exe_path, current_file)
+            local result = vim.fn.system(compile_cmd)
+
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Zig compile failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+      }
       dap.configurations.cpp = dap.configurations.c
       dap.configurations.rust = dap.configurations.c
 
@@ -1927,6 +1976,26 @@ require('lazy').setup({
         '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
         desc = 'Buffer Diagnostics (Trouble)',
       },
+      {
+        '<leader>cs',
+        '<cmd>Trouble symbols toggle focus=false<cr>',
+        desc = 'Symbols (Trouble)',
+      },
+      {
+        '<leader>cl',
+        '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
+        desc = 'LSP Definitions / references / ... (Trouble)',
+      },
+      {
+        '<leader>xL',
+        '<cmd>Trouble loclist toggle<cr>',
+        desc = 'Location List (Trouble)',
+      },
+      {
+        '<leader>xQ',
+        '<cmd>Trouble qflist toggle<cr>',
+        desc = 'Quickfix List (Trouble)',
+      },
     },
   },
   {
@@ -1973,6 +2042,30 @@ require('lazy').setup({
         harpoon:list():clear()
       end, { desc = '[C]lear harpoon' })
     end,
+  },
+  {
+    'linux-cultist/venv-selector.nvim',
+    dependencies = {
+      'neovim/nvim-lspconfig',
+      { 'nvim-telescope/telescope.nvim', branch = '0.1.x', dependencies = { 'nvim-lua/plenary.nvim' } }, -- optional: you can also use fzf-lua, snacks, mini-pick instead.
+    },
+    ft = 'python', -- Load when opening Python files
+    keys = {
+      -- { ',v', '<cmd>VenvSelect<cr>' }, -- Open picker on keymap
+    },
+    opts = { -- this can be an empty lua table - just showing below for clarity.
+      search = {}, -- if you add your own searches, they go here.
+      options = {}, -- if you add plugin options, they go here.
+    },
+  },
+  {
+    'iamcco/markdown-preview.nvim',
+    cmd = { 'MarkdownPreviewToggle', 'MarkdownPreview', 'MarkdownPreviewStop' },
+    build = 'cd app && yarn install',
+    init = function()
+      vim.g.mkdp_filetypes = { 'markdown' }
+    end,
+    ft = { 'markdown' },
   },
   -- {
   --   'piersolenski/import.nvim',
