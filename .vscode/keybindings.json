@@ -372,7 +372,7 @@
         "key": "tab",
         "command": "-workbench.action.terminal.acceptSelectedSuggestion",
         "when": "terminalFocus && terminalHasBeenCreated && terminalIsOpen && terminalSuggestWidgetVisible || terminalFocus && terminalIsOpen && terminalProcessSupported && terminalSuggestWidgetVisible"
-    }
+    },
     /*
     USEFUL CONTEXT KEYS FOR SCM AND NAVIGATION:
 

@@ -152,6 +152,11 @@ alias cr="RUST_BACKTRACE=1 cargo run"
 alias crf="RUST_BACKTRACE=full cargo run"
 alias ca="cargo build && RUST_BACKTRACE=1 cargo run"
 alias caf="cargo build && RUST_BACKTRACE=full cargo run"
+
+
+## Zig
+alias zb="zig build"
+
 ## Git"
 
 alias gs-apply='git stash apply $(git stash list | fzf | awk "{print \$1}" | tr -d ":")'; 

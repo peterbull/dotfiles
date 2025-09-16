@@ -1,7 +1,7 @@
 {
     "editor.renderWhitespace": "all",
     "editor.formatOnSave": true,
-    "debug.javascript.autoAttachFilter": "always",
+    "debug.javascript.autoAttachFilter": "smart",
     "security.workspace.trust.untrustedFiles": "open",
     "notebook.editorOptionsCustomizations": {
         "editor.tabSize": 2,
@@ -156,8 +156,77 @@
         "**/.git": true
     },
     "explorer.confirmPasteNative": false,
-    "vim.leader": "<space>",
+    // "vim.leader": "<space>",
     "vim.normalModeKeyBindingsNonRecursive": [
+        {
+            "before": [
+                "<C-w>",
+                "o"
+            ],
+            "commands": [
+                "workbench.action.closeSidebar",
+                "workbench.action.closePanel",
+                "workbench.action.closeAuxiliaryBar",
+                "workbench.action.activityBarLocation.hide",
+                "workbench.action.closeEditorsInOtherGroups"
+            ]
+        },
+        {
+            "before": [
+                "<C-w>",
+                "v"
+            ],
+            "command": "workbench.action.splitEditorRight"
+        },
+        {
+            "before": [
+                "<C-w>",
+                "s"
+            ],
+            "command": "workbench.action.splitEditorDown"
+        },
+        {
+            "before": [
+                "<C-w>",
+                "c"
+            ],
+            "command": "workbench.action.closeActiveEditor"
+        },
+        {
+            "before": [
+                "<C-w>",
+                "h"
+            ],
+            "command": "workbench.action.focusLeftGroup"
+        },
+        {
+            "before": [
+                "<C-w>",
+                "j"
+            ],
+            "command": "workbench.action.focusBelowGroup"
+        },
+        {
+            "before": [
+                "<C-w>",
+                "k"
+            ],
+            "command": "workbench.action.focusAboveGroup"
+        },
+        {
+            "before": [
+                "<C-w>",
+                "l"
+            ],
+            "command": "workbench.action.focusRightGroup"
+        },
+        {
+            "before": [
+                "<C-w>",
+                "w"
+            ],
+            "command": "workbench.action.focusNextGroup"
+        },
         {
             "before": [
                 "<space>"
@@ -241,6 +310,74 @@
             "commands": [
                 "mdnDocs.showMdnDocs"
             ]
+        },
+        {
+            "before": [
+                "g",
+                "r",
+                "n"
+            ],
+            "commands": [
+                "editor.action.rename"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "r",
+                "a"
+            ],
+            "commands": [
+                "editor.action.quickFix"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "r",
+                "r"
+            ],
+            "commands": [
+                "references-view.findReferences"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "r",
+                "d"
+            ],
+            "commands": [
+                "editor.action.revealDefinition"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "r",
+                "i"
+            ],
+            "commands": [
+                "editor.action.goToImplementation"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "O"
+            ],
+            "commands": [
+                "workbench.action.gotoSymbol"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "W"
+            ],
+            "commands": [
+                "workbench.action.showAllSymbols"
+            ]
         }
     ],
     "vim.visualModeKeyBindingsNonRecursive": [
@@ -253,14 +390,6 @@
             ]
         }
     ],
-    "search.useIgnoreFiles": true,
-    "search.useGlobalIgnoreFiles": true,
-    "search.useParentIgnoreFiles": true,
-    // "symbolExtractor.exclude": {
-    //     "**/node_modules/**": true,
-    //     "**/dist/**": true,
-    //     "**/build/**": true
-    // },
     "whichkey.bindingOverrides": [
         {
             "keys": " ",
@@ -277,8 +406,8 @@
             "bindings": [
                 {
                     "key": "/",
-                    "name": "Periscope Search",
-                    "command": "periscope.search"
+                    "name": "Search in current buffer",
+                    "command": "actions.find"
                 },
                 {
                     "key": "s",
@@ -294,25 +423,8 @@
         },
         {
             "key": "f",
-            "name": "File...",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "f",
-                    "name": "Find file",
-                    "command": "workbench.action.quickOpen"
-                },
-                {
-                    "key": "r",
-                    "name": "Recent files",
-                    "command": "workbench.action.openRecent"
-                },
-                {
-                    "key": "t",
-                    "name": "Find text",
-                    "command": "workbench.action.findInFiles"
-                }
-            ]
+            "name": "Format Document",
+            "command": "editor.action.formatDocument"
         },
         {
             "key": "g",
@@ -325,58 +437,59 @@
                     "command": "workbench.view.scm"
                 },
                 {
-                    "key": "b",
-                    "name": "Blame",
-                    "command": "gitlens.toggleFileBlame"
-                }
-            ]
-        },
-        {
-            "key": "t",
-            "name": "Toggle...",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "a",
-                    "name": "Toggle Activity Bar",
-                    "command": "workbench.action.toggleActivityBarVisibility"
+                    "key": "s",
+                    "name": "Git Status",
+                    "command": "workbench.view.scm"
                 },
                 {
-                    "key": "t",
-                    "name": "Toggle Terminal",
-                    "command": "workbench.action.terminal.toggleTerminal"
+                    "key": "b",
+                    "name": "Blame/Toggle Blame",
+                    "command": "gitlens.toggleFileBlame"
+                },
+                {
+                    "key": "l",
+                    "name": "Git Log",
+                    "command": "git.viewHistory"
+                },
+                {
+                    "key": "a",
+                    "name": "Git Add Current File",
+                    "command": "git.stage"
+                },
+                {
+                    "key": "c",
+                    "name": "Git Commit",
+                    "command": "git.commit"
+                },
+                {
+                    "key": "p",
+                    "name": "Git Push",
+                    "command": "git.push"
+                },
+                {
+                    "key": "P",
+                    "name": "Git Pull",
+                    "command": "git.pull"
                 },
                 {
                     "key": "d",
-                    "name": "Toggle todo view",
-                    "command": "workbench.view.extension.todo-tree-container"
+                    "name": "Diff View",
+                    "command": "git.openChange"
                 },
                 {
-                    "key": "e",
-                    "name": "TypeScript Explorer...",
+                    "key": "m",
+                    "name": "Diff vs previous commit",
+                    "command": "git.openChange"
+                },
+                {
+                    "key": "r",
+                    "name": "Git...",
                     "type": "bindings",
                     "bindings": [
                         {
-                            "key": "a",
-                            "name": "Toggle TypeScript Explorer",
-                            "command": "type-tree.focus"
-                        },
-                        {
-                            "key": "s",
-                            "name": "Focus type symbol in tree",
-                            "command": "typescriptExplorer.selection.select"
-                        },
-                        {
-                            "key": "d",
-                            "name": "Disable TypeScript Explorer",
-                            "command": "workbench.extensions.disableExtension",
-                            "args": "type-tree.type-tree"
-                        },
-                        {
-                            "key": "e",
-                            "name": "Enable TypeScript Explorer",
-                            "command": "workbench.extensions.enableExtension",
-                            "args": "type-tree.type-tree"
+                            "key": "h",
+                            "name": "Reset Hunk",
+                            "command": "git.revertSelectedRanges"
                         }
                     ]
                 }
@@ -400,72 +513,39 @@
             ]
         },
         {
-            "key": "w",
-            "name": "Window...",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "o",
-                    "name": "Close other windows",
-                    "commands": [
-                        "workbench.action.closeSidebar",
-                        "workbench.action.closePanel",
-                        // "workbench.action.closeEditorsInOtherGroups",
-                        "workbench.action.closeAuxiliaryBar",
-                        "workbench.action.activityBarLocation.hide"
-                    ]
-                },
-                {
-                    "key": "g",
-                    "name": "Close Other Groups",
-                    "command": "workbench.action.closeEditorsInOtherGroups",
-                },
-                {
-                    "key": "m",
-                    "name": "Maximize editor",
-                    "command": "workbench.action.toggleEditorWidths"
-                },
-                {
-                    "key": "d",
-                    "name": "Close window",
-                    "command": "workbench.action.closeWindow"
-                },
-                {
-                    "key": "v",
-                    "name": "Split vertical",
-                    "command": "workbench.action.splitEditorRight"
-                },
-                {
-                    "key": "h",
-                    "name": "Split horizontal",
-                    "command": "workbench.action.splitEditorDown"
-                },
-                {
-                    "key": "l",
-                    "name": "Toggle primary sidebar",
-                    "command": "workbench.action.toggleSidebarVisibility"
-                },
-                {
-                    "key": "r",
-                    "name": "Toggle secondary sidebar",
-                    "command": "workbench.action.toggleAuxiliaryBar"
-                },
-                {
-                    "key": "b",
-                    "name": "Toggle bottom window",
-                    "command": "workbench.action.togglePanel"
-                }
-            ]
-        },
-        {
             "key": "s",
             "name": "Search/Symbol...",
             "type": "bindings",
             "bindings": [
                 {
+                    "key": "h",
+                    "name": "Search Help",
+                    "command": "workbench.action.showCommands"
+                },
+                {
+                    "key": "k",
+                    "name": "Search Keymaps",
+                    "command": "workbench.action.openGlobalKeybindings"
+                },
+                {
+                    "key": "f",
+                    "name": "Search Files",
+                    "command": "workbench.action.quickOpen"
+                },
+                {
                     "key": "s",
                     "name": "Search Symbols",
                     "command": "workbench.action.showAllSymbols"
+                },
+                {
+                    "key": "w",
+                    "name": "Search current Word",
+                    "command": "editor.action.addSelectionToNextFindMatch"
+                },
+                {
+                    "key": "g",
+                    "name": "Search by Grep",
+                    "command": "workbench.action.findInFiles"
                 },
                 {
                     "key": "d",
@@ -476,6 +556,21 @@
                     "key": "p",
                     "name": "Project Symbols",
                     "command": "workbench.action.showAllSymbols"
+                },
+                {
+                    "key": "r",
+                    "name": "Search Resume",
+                    "command": "workbench.action.findInFiles"
+                },
+                {
+                    "key": ".",
+                    "name": "Search Recent Files",
+                    "command": "workbench.action.openRecent"
+                },
+                {
+                    "key": "n",
+                    "name": "Search Neovim files",
+                    "command": "workbench.action.quickOpen"
                 }
             ]
         },
@@ -490,9 +585,19 @@
                     "command": "workbench.action.debug.start"
                 },
                 {
+                    "key": "c",
+                    "name": "Continue",
+                    "command": "workbench.action.debug.continue"
+                },
+                {
                     "key": "b",
                     "name": "Toggle Breakpoint",
                     "command": "editor.debug.action.toggleBreakpoint"
+                },
+                {
+                    "key": "B",
+                    "name": "Conditional Breakpoint",
+                    "command": "editor.debug.action.conditionalBreakpoint"
                 },
                 {
                     "key": "t",
@@ -508,12 +613,37 @@
                     "key": "r",
                     "name": "Restart Debugging",
                     "command": "workbench.action.debug.restart"
+                },
+                {
+                    "key": "i",
+                    "name": "Step Into",
+                    "command": "workbench.action.debug.stepInto"
+                },
+                {
+                    "key": "o",
+                    "name": "Step Out",
+                    "command": "workbench.action.debug.stepOut"
+                },
+                {
+                    "key": "O",
+                    "name": "Step Over",
+                    "command": "workbench.action.debug.stepOver"
+                },
+                {
+                    "key": "u",
+                    "name": "Toggle Debug UI",
+                    "command": "workbench.debug.action.toggleRepl"
+                },
+                {
+                    "key": "e",
+                    "name": "Evaluate Expression",
+                    "command": "editor.debug.action.showDebugHover"
                 }
             ]
         },
         {
             "key": "c",
-            "name": "Copilot/Chat...",
+            "name": "Copilot/Chat/Code...",
             "type": "bindings",
             "bindings": [
                 {
@@ -525,24 +655,49 @@
                     "key": "d",
                     "name": "Close Chat",
                     "command": "workbench.action.closeAuxiliaryBar"
+                },
+                {
+                    "key": "s",
+                    "name": "Show Symbols (Trouble)",
+                    "command": "workbench.action.gotoSymbol"
+                },
+                {
+                    "key": "l",
+                    "name": "LSP References",
+                    "command": "references-view.findReferences"
                 }
             ]
         },
         {
             "key": "x",
-            "name": "Problems...",
+            "name": "Problems/Diagnostics...",
             "type": "bindings",
             "bindings": [
                 {
                     "key": "x",
                     "name": "Show All Problems",
                     "command": "workbench.actions.view.problems"
+                },
+                {
+                    "key": "X",
+                    "name": "Buffer Diagnostics",
+                    "command": "workbench.actions.view.problems"
+                },
+                {
+                    "key": "L",
+                    "name": "Location List",
+                    "command": "workbench.actions.view.problems"
+                },
+                {
+                    "key": "Q",
+                    "name": "Quickfix List",
+                    "command": "workbench.actions.view.problems"
                 }
             ]
         },
         {
             "key": "m",
-            "name": "Bookmarks...",
+            "name": "Bookmarks/Marks...",
             "type": "bindings",
             "bindings": [
                 {
@@ -584,51 +739,36 @@
                     "key": "x",
                     "name": "Clear bookmarks (all files)",
                     "command": "bookmarks.clearFromAllFiles"
-                }
-            ]
-        },
-        // typescript worksheets
-        {
-            "key": "m",
-            "name": "TypeScript Worksheets",
-            "type": "bindings",
-            "bindings": [
+                },
                 {
                     "key": "r",
-                    "name": "run worksheet",
+                    "name": "Run worksheet",
                     "command": "ts-worksheet.run"
-                },
-            ]
-        },
-        {
-            "key": "p",
-            "name": "POWER MODE",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "e",
-                    "name": "enable power mode",
-                    "command": "powermode.enablePowerMode"
-                },
-                {
-                    "key": "d",
-                    "name": "disable power mode",
-                    "command": "powermode.disablePowerMode"
-                },
-            ]
-        },
-        {
-            "key": "i",
-            "name": "Insert...",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "t",
-                    "name": "Insert Twoslash Query",
-                    "command": "orta.vscode-twoslash-queries.insert-twoslash-query"
                 }
             ]
         },
+        {
+            "key": "q",
+            "name": "Session/Quit...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "s",
+                    "name": "Save session",
+                    "command": "workbench.action.files.saveAll"
+                },
+                {
+                    "key": "l",
+                    "name": "Load last session",
+                    "command": "workbench.action.reopenClosedEditor"
+                },
+                {
+                    "key": "q",
+                    "name": "Open diagnostic quickfix list",
+                    "command": "workbench.actions.view.problems"
+                }
+            ]
+        }
     ],
     "git.confirmSync": false,
     "notebook.formatOnSave.enabled": true,

@@ -846,6 +846,7 @@ require('lazy').setup({
         typescript = { 'prettierd', 'prettier', stop_after_first = true },
         typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        zig = { 'zigfmt' },
       },
     },
   },
@@ -1502,8 +1503,8 @@ require('lazy').setup({
       vscode.type_to_filetypes['node'] = js_filetypes
       vscode.type_to_filetypes['pwa-node'] = js_filetypes
       vscode.type_to_filetypes['pwa-chrome'] = js_filetypes
-      vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust' }
-      vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust' }
+      vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust', 'zig' }
+      vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust', 'zig' }
 
       -- Setup JavaScript/TypeScript configurations
       for _, language in ipairs(js_filetypes) do
@@ -1605,6 +1606,8 @@ require('lazy').setup({
 
             local exe_path = vim.fn.getcwd() .. '/zig-out/bin/'
             local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ':t')
+            -- zig renames with underscore on build
+            project_name = string.gsub(project_name, '-', '_')
             exe_path = exe_path .. project_name
 
             return exe_path
@@ -1612,6 +1615,10 @@ require('lazy').setup({
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
           args = {},
+          initCommands = {
+            'type format add --format decimal uint8_t',
+            'type format add --format decimal "unsigned char"',
+          },
         },
         {
           name = 'Launch Zig Current File',
@@ -1637,6 +1644,10 @@ require('lazy').setup({
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
           args = {},
+          initCommands = {
+            'type format add --format decimal uint8_t',
+            'type format add --format decimal "unsigned char"',
+          },
         },
       }
       dap.configurations.cpp = dap.configurations.c
