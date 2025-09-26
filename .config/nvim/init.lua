@@ -243,6 +243,7 @@ vim.keymap.set('n', '<C-S-k>', '<C-w>K', { desc = 'Move window to the upper' })
 
 vim.keymap.set('n', '<leader>bd', ':bd<CR>', { desc = '[D]elete Current Buffer' })
 
+vim.g.python3_host_prog = vim.fn.expand '~/.virtualenvs/nvim/bin/python3'
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -406,6 +407,7 @@ require('lazy').setup({
         { '<leader>d', group = '[D]ebug' },
         { '<leader>b', group = '[B]uffer' },
         { '<leader>h', group = '[H]arpoon' },
+        { '<leader>m', group = '[M]olten' },
       },
     },
   },
@@ -1018,6 +1020,11 @@ require('lazy').setup({
           ['@type'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
           -- ['@type'] = { fg = '#7dd3fc' },
           -- ['@lsp.type.class'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
+          ['@lsp.typemod.variable.readonly.typescriptreact'] = { fg = '#e0de84' }, -- 25% lighter
+
+          -- light blue arrow func
+          ['@lsp.typemod.function.declaration.typescript'] = { fg = '#7dd3fc' },
+          ['@lsp.typemod.function.readonly.typescript'] = { fg = '#7dd3fc' },
           Type = { fg = '#d19a66' },
         },
 
@@ -1336,6 +1343,13 @@ require('lazy').setup({
           require('dap.ext.vscode').load_launchjs()
         end,
         desc = 'Load launch.json',
+      },
+      {
+        '<leader>da',
+        function()
+          vim.cmd 'DapNew Debug\\ pnpm\\ dev\\ (Node.js) Next.js:\\ debug\\ client-side Attach\\ to\\ Pipeline'
+        end,
+        desc = 'Launch compound',
       },
       {
         '<leader>dE',
@@ -2077,6 +2091,76 @@ require('lazy').setup({
       vim.g.mkdp_filetypes = { 'markdown' }
     end,
     ft = { 'markdown' },
+  },
+  {
+    '3rd/image.nvim',
+    opts = {
+      backend = 'kitty', -- or "ueberzug" or "sixel"
+      processor = 'magick_cli', -- or "magick_rock"
+      integrations = {
+        markdown = {
+          enabled = true,
+          clear_in_insert_mode = false,
+          download_remote_images = true,
+          only_render_image_at_cursor = false,
+          only_render_image_at_cursor_mode = 'popup', -- or "inline"
+          floating_windows = false, -- if true, images will be rendered in floating markdown windows
+          filetypes = { 'markdown', 'vimwiki' }, -- markdown extensions (ie. quarto) can go here
+        },
+        neorg = {
+          enabled = true,
+          filetypes = { 'norg' },
+        },
+        typst = {
+          enabled = true,
+          filetypes = { 'typst' },
+        },
+        html = {
+          enabled = false,
+        },
+        css = {
+          enabled = false,
+        },
+      },
+
+      scale_factor = 1.0,
+      max_width = 100, -- tweak to preference
+      max_height = 12, -- ^
+      max_height_window_percentage = math.huge,
+      max_width_window_percentage = math.huge,
+      window_overlap_clear_enabled = true, -- toggles images when windows are overlapped
+      window_overlap_clear_ft_ignore = { 'cmp_menu', 'cmp_docs', 'snacks_notif', 'scrollview', 'scrollview_sign' },
+      editor_only_render_when_focused = false, -- auto show/hide images when the editor gains/looses focus
+      tmux_show_only_in_active_window = false, -- auto show/hide images in the correct Tmux window (needs visual-activity off)
+      hijack_file_patterns = { '*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp', '*.avif' }, -- render image files as images when opened
+    },
+  },
+  {
+    'benlubas/molten-nvim',
+    version = '^1.0.0', -- use version <2.0.0 to avoid breaking changes
+    dependencies = { '3rd/image.nvim' },
+    build = ':UpdateRemotePlugins',
+    init = function()
+      -- these are examples, not defaults. Please see the readme
+      vim.g.molten_image_provider = 'image.nvim'
+      vim.g.molten_output_win_max_height = 20
+    end,
+    config = function()
+      -- Keybindings for Molten
+      vim.keymap.set('n', '<leader>mi', ':MoltenInit python3<CR>', { desc = 'Initialize Molten' })
+      vim.keymap.set('n', '<leader>ml', ':MoltenEvaluateLine<CR>', { desc = 'Evaluate line' })
+      vim.keymap.set('v', '<leader>me', ':<C-u>MoltenEvaluateVisual<CR>gv', { desc = 'Evaluate visual selection' })
+      vim.keymap.set('n', '<leader>mc', ':MoltenReevaluateCell<CR>', { desc = 'Re-evaluate cell' })
+      vim.keymap.set('n', '<leader>mo', ':MoltenShowOutput<CR>', { desc = 'Show output' })
+      vim.keymap.set('n', '<leader>mh', ':MoltenHideOutput<CR>', { desc = 'Hide output' })
+      vim.keymap.set('n', '<leader>md', ':MoltenDelete<CR>', { desc = 'Delete cell output' })
+      vim.keymap.set('n', '<leader>mn', ':MoltenNext<CR>', { desc = 'Next cell' })
+      vim.keymap.set('n', '<leader>mp', ':MoltenPrev<CR>', { desc = 'Previous cell' })
+      vim.keymap.set('n', '<leader>mq', ':MoltenDeinit<CR>', { desc = 'Quit Molten' })
+      vim.keymap.set('n', '<leader>mR', ':MoltenRestart<CR>', { desc = 'Restart Molten' })
+      vim.keymap.set('n', '<leader>ma', ':MoltenEvaluateOperator<CR>gg0VG', { desc = 'Run all cells' })
+      vim.keymap.set('n', '<leader>mx', ':MoltenHideOutput<CR>:MoltenDelete<CR>', { desc = 'Clear all outputs' })
+    end,
   },
   -- {
   --   'piersolenski/import.nvim',

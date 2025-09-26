@@ -164,6 +164,21 @@ gs-archive() {
   git stash save -u "$@" && git stash apply
 }
 
+
+
+create_issue_checkout_branch() {
+  if [[ -z "$1" ]]; then
+    echo "Please provide an issue name as a parameter"
+    echo "Usage: create_issue_ckout_branch <title> [description]"
+    return 1
+  fi
+  local output=$(gh issue create --assignee @me -t "$1" -b "${2:-}")
+  local issue_number=$(echo "$output" | awk -F'/' '{print $NF}')
+  gh issue develop $issue_number --checkout
+}
+alias ghc="create_issue_checkout_branch"
+
+#
 ## Gen purpose aliases 
 alias zr="source ~/.zshrc && echo 'shell session reset'"
 alias tf="tree | tee >(pbcopy)"
@@ -239,3 +254,6 @@ export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 export PATH="$HOME/.local/zig:$PATH"
 
 export PATH=$PATH:$HOME/.luarocks/bin
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /opt/homebrew/bin/terraform terraform
