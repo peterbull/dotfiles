@@ -200,6 +200,7 @@ vim.keymap.set('v', 'q', '<Nop>', { noremap = true, silent = true })
 -- vim.keymap.set('i', 'jj', '<ESC>', { noremap = true, silent = true })
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', 'gl', vim.diagnostic.open_float)
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -246,6 +247,12 @@ vim.keymap.set('n', '<leader>bd', ':bd<CR>', { desc = '[D]elete Current Buffer' 
 vim.g.python3_host_prog = vim.fn.expand '~/.virtualenvs/nvim/bin/python3'
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
+
+vim.filetype.add {
+  extension = {
+    edge = 'edge',
+  },
+}
 
 -- Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode
@@ -756,6 +763,20 @@ require('lazy').setup({
         --
         ts_ls = {},
 
+        html = {
+          filetypes = { 'html' },
+          init_options = {
+            configurationSection = { 'html', 'css', 'javascript' },
+            embeddedLanguages = {
+              css = true,
+              javascript = true,
+            },
+          },
+        },
+
+        emmet_language_server = {
+          filetypes = { 'html', 'css' },
+        },
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
@@ -1606,6 +1627,53 @@ require('lazy').setup({
         },
       }
 
+      dap.configurations.rust = {
+        {
+          name = 'Launch Rust Workspace',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local result = vim.fn.system 'cargo build'
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Cargo build failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            local package_name = get_rust_package_name() or 'backend'
+            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+        {
+          name = 'Launch Rust Current File',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local current_file = vim.fn.expand '%:p'
+            local file_name = vim.fn.expand '%:t:r'
+            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. file_name
+
+            vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/target/debug')
+
+            local compile_cmd = string.format('rustc -g --edition 2021 -o %s %s', exe_path, current_file)
+            local result = vim.fn.system(compile_cmd)
+
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Rust compile failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+      }
+
       dap.configurations.zig = {
         {
           name = 'Launch Zig Workspace',
@@ -1665,7 +1733,7 @@ require('lazy').setup({
         },
       }
       dap.configurations.cpp = dap.configurations.c
-      dap.configurations.rust = dap.configurations.c
+      -- dap.configurations.rust = dap.configurations.c
 
       -- dap.configurations.lua = {
       --   {
@@ -2162,6 +2230,51 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>mx', ':MoltenHideOutput<CR>:MoltenDelete<CR>', { desc = 'Clear all outputs' })
     end,
   },
+  {
+    'uga-rosa/ccc.nvim',
+    cmd = { 'CccPick', 'CccConvert', 'CccHighlighterToggle' },
+    keys = {
+      { '<leader>cp', '<cmd>CccPick<cr>', desc = 'Color picker' },
+      { '<leader>cc', '<cmd>CccConvert<cr>', desc = 'Convert color' },
+      { '<leader>ct', '<cmd>CccHighlighterToggle<cr>', desc = 'Toggle highlighter' },
+    },
+    config = function()
+      local ccc = require 'ccc'
+      ccc.setup {
+        highlighter = {
+          auto_enable = true,
+          lsp = true,
+          excludes = { 'lazy', 'mason', 'help', 'neo-tree' },
+        },
+        pickers = {
+          ccc.picker.hex,
+          ccc.picker.css_rgb,
+          ccc.picker.css_hsl,
+          ccc.picker.css_hwb,
+        },
+        alpha_show = 'auto',
+        recognize = { input = true, output = true },
+        inputs = { ccc.input.rgb, ccc.input.hsl, ccc.input.cmyk },
+        outputs = {
+          ccc.output.hex,
+          ccc.output.css_rgb,
+          ccc.output.css_hsl,
+        },
+      }
+    end,
+  },
+  -- {
+  --   'catgoose/nvim-colorizer.lua',
+  --   event = 'VeryLazy',
+  --   opts = {
+  --     lazy_load = true,
+  --     filetypes = {
+  --       'css',
+  --       'javascriptreact',
+  --       'typescriptreact',
+  --     },
+  --   },
+  -- },
   -- {
   --   'piersolenski/import.nvim',
   --   dependencies = {

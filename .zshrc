@@ -106,7 +106,6 @@ fi
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 
-plugins=(git ripgrep fd npm nvm docker)
 
 # never beep
 setopt NO_BEEP
@@ -157,13 +156,30 @@ alias caf="cargo build && RUST_BACKTRACE=full cargo run"
 ## Zig
 alias zb="zig build"
 
-## Git"
+## Git
 
 alias gs-apply='git stash apply $(git stash list | fzf | awk "{print \$1}" | tr -d ":")'; 
-gs-archive() {
-  git stash save -u "$@" && git stash apply
+
+## immediate stash and apply for a quick local save point
+gsarchive() {
+  local timestamp=$(TZ="America/New_York" date '+%Y-%m-%d %H:%M:%S EST')
+  local message="${*:-ARCHIVE: archive snapshot $timestamp}"
+  git stash save -u "$message" && git stash apply
 }
 
+alias gsa="gsarchive"
+
+unalias grepdiff 2>/dev/null
+grepdiff() {
+  local search_term="${1:-console.log}"
+  git diff HEAD --name-only | while read file; do
+    if grep -q "$search_term" "$file" 2>/dev/null; then
+      echo "=== $file ==="
+      grep -B 3 -A 3 "$search_term" "$file"
+      echo ""
+    fi
+  done
+}
 
 
 create_issue_checkout_branch() {
@@ -195,6 +211,9 @@ clipdump() {
 
 alias clp="clipdump"
 alias lg="lazygit"
+alias work="~/shift-projects"
+alias peter="~/peter-projects"
+
 
 
 # Python Path
