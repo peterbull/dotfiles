@@ -276,3 +276,4 @@ export PATH=$PATH:$HOME/.luarocks/bin
 
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /opt/homebrew/bin/terraform terraform
+source <(kubectl completion zsh)

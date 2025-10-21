@@ -231,10 +231,10 @@ vim.keymap.set('n', '<C-k>', '<C-w>k', { remap = true })
 vim.keymap.set('n', '<C-l>', '<C-w>l', { remap = true })
 
 -- Window Resizing
-vim.keymap.set('n', '<C-A-k>', '<C-w>+', { desc = 'Increase Window Height' })
-vim.keymap.set('n', '<C-A-j>', '<C-w>-', { desc = 'Decrease Window Height' })
-vim.keymap.set('n', '<C-A-l>', '<C-w>>', { desc = 'Increase Window Width' })
-vim.keymap.set('n', '<C-A-h>', '<C-w><', { desc = 'Decrease Window Width' })
+vim.keymap.set('n', '<C-A-k>', ':res +5<CR>', { desc = 'Increase Window Height' })
+vim.keymap.set('n', '<C-A-j>', ':res -5<CR>', { desc = 'Decrease Window Height' })
+vim.keymap.set('n', '<C-A-l>', ':vert res +5<CR>', { desc = 'Increase Window Width' })
+vim.keymap.set('n', '<C-A-h>', ':vert res -5<CR>', { desc = 'Decrease Window Width' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 vim.keymap.set('n', '<C-S-h>', '<C-w>H', { desc = 'Move window to the left' })
@@ -243,7 +243,7 @@ vim.keymap.set('n', '<C-S-j>', '<C-w>J', { desc = 'Move window to the lower' })
 vim.keymap.set('n', '<C-S-k>', '<C-w>K', { desc = 'Move window to the upper' })
 
 vim.keymap.set('n', '<leader>bd', ':bd<CR>', { desc = '[D]elete Current Buffer' })
-
+vim.keymap.set('n', '<leader>bo', ':%bd|edit#|bd#<CR>', { desc = '[D]elete All Other Buffers' })
 vim.g.python3_host_prog = vim.fn.expand '~/.virtualenvs/nvim/bin/python3'
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -777,6 +777,7 @@ require('lazy').setup({
         emmet_language_server = {
           filetypes = { 'html', 'css' },
         },
+
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
@@ -2260,6 +2261,18 @@ require('lazy').setup({
           ccc.output.css_rgb,
           ccc.output.css_hsl,
         },
+      }
+    end,
+  },
+
+  {
+    'cenk1cenk2/schema-companion.nvim',
+    dependencies = {
+      { 'nvim-lua/plenary.nvim' },
+    },
+    config = function()
+      require('schema-companion').setup {
+        log_level = vim.log.levels.INFO,
       }
     end,
   },

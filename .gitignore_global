@@ -7,3 +7,11 @@
 ehthumbs.db
 *.log
 Thumbs.db
+
+# secrets
+.env
+.env.local
+.secrets
+
+
+.plan
