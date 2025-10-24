@@ -373,6 +373,10 @@
         "command": "-workbench.action.terminal.acceptSelectedSuggestion",
         "when": "terminalFocus && terminalHasBeenCreated && terminalIsOpen && terminalSuggestWidgetVisible || terminalFocus && terminalIsOpen && terminalProcessSupported && terminalSuggestWidgetVisible"
     },
+    {
+        "key": "shift+k",
+        "command": "editor.action.showDefinitionPreviewHover"
+    },
     /*
     USEFUL CONTEXT KEYS FOR SCM AND NAVIGATION:
 

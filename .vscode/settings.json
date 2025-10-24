@@ -69,7 +69,6 @@
     ],
     "update.enableWindowsBackgroundUpdates": false,
     "git.enableSmartCommit": true,
-    "python.languageServer": "Pylance",
     "editor.inlineSuggest.enabled": true,
     "github.copilot.enable": {
         "quarto": true,
@@ -1035,5 +1034,10 @@
     "azureFunctions.deploySubpath": "dist",
     "azureFunctions.projectLanguage": "TypeScript",
     "azureFunctions.projectRuntime": "~4",
-    "typescript.preferences.importModuleSpecifier": "relative"
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "[github-actions-workflow]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "python.analysis.cacheLSPData": true,
+    "python-envs.terminal.showActivateButton": true
 }
