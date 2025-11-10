@@ -1047,6 +1047,10 @@ require('lazy').setup({
           -- light blue arrow func
           ['@lsp.typemod.function.declaration.typescript'] = { fg = '#7dd3fc' },
           ['@lsp.typemod.function.readonly.typescript'] = { fg = '#7dd3fc' },
+
+          -- python type hints
+          ['@lsp.type.namespace.python'] = { fg = '#f0d090', style = 'italic' },
+          ['@lsp.type.class.python'] = { fg = '#f0d090', style = 'italic' },
           Type = { fg = '#d19a66' },
         },
 
@@ -2275,6 +2279,13 @@ require('lazy').setup({
         log_level = vim.log.levels.INFO,
       }
     end,
+  },
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = true,
+    -- use opts = {} for passing setup options
+    -- this is equivalent to setup({}) function
   },
   -- {
   --   'catgoose/nvim-colorizer.lua',

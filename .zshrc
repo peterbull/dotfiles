@@ -143,7 +143,8 @@ alias nz="nvim ~/.zshrc"
 alias nd="nvim --cmd \"lua init_debug=true\""
 alias c="code ."
 
-
+## python
+alias va="source .venv/bin/activate"
 
 ## Rust
 alias cb="cargo build"
@@ -277,3 +278,4 @@ export PATH=$PATH:$HOME/.luarocks/bin
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /opt/homebrew/bin/terraform terraform
 source <(kubectl completion zsh)
+alias lzd='lazydocker'
