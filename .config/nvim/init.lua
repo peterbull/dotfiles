@@ -507,6 +507,17 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
+      vim.keymap.set('n', '<leader>saf', function()
+        builtin.find_files { hidden = true, no_ignore = true }
+      end, { desc = '[S]earch [A]ll [F]iles, includes hidden' })
+
+      vim.keymap.set('n', '<leader>sag', function()
+        builtin.live_grep {
+          additional_args = function()
+            return { '--hidden', '--no-ignore' }
+          end,
+        }
+      end, { desc = '[S]earch in [A]ll Files by [G]rep' })
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
@@ -855,6 +866,20 @@ require('lazy').setup({
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
               -- diagnostics = { disable = { 'missing-fields' } },
+            },
+          },
+        },
+
+        terraformls = {
+          filetypes = { 'terraform', 'tf', 'terraform-vars' },
+          settings = {
+            terraform = {
+              validate = {
+                enable = true,
+              },
+              format = {
+                enable = true,
+              },
             },
           },
         },
