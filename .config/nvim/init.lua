@@ -1578,6 +1578,54 @@ require('lazy').setup({
       -- Setup codelldb adapter (alternative name)
       dap.adapters.codelldb = dap.adapters.lldb
 
+      -- Bash Debug Adapter Setup
+      dap.adapters.sh = {
+        type = 'executable',
+        command = vim.fn.stdpath 'data' .. '/mason/bin/bash-debug-adapter',
+        name = 'sh',
+      }
+
+      dap.configurations.sh = {
+        {
+          name = 'Launch Bash debugger',
+          type = 'sh',
+          request = 'launch',
+          program = '${file}',
+          cwd = '${fileDirname}',
+          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
+          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
+          pathBash = 'bash',
+          pathCat = 'cat',
+          pathMkfifo = 'mkfifo',
+          pathPkill = 'pkill',
+          env = {},
+          args = {},
+        },
+        {
+          name = 'Launch Bash Script with Args',
+          type = 'sh',
+          request = 'launch',
+          program = '${file}',
+          cwd = '${fileDirname}',
+          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
+          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
+          pathBash = 'bash',
+          pathCat = 'cat',
+          pathMkfifo = 'mkfifo',
+          pathPkill = 'pkill',
+          env = {},
+          args = function()
+            local args_str = vim.fn.input 'Arguments: '
+            return vim.split(args_str, ' ')
+          end,
+        },
+      }
+
+      -- Also support .bash files
+      dap.configurations.bash = dap.configurations.sh
+
+      -- Also support .bash files
+      dap.configurations.bash = dap.configurations.sh
       -- -- LUA
       -- dap.adapters['local-lua'] = {
       --   type = 'executable',
@@ -1637,7 +1685,7 @@ require('lazy').setup({
       vscode.type_to_filetypes['pwa-chrome'] = js_filetypes
       vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust', 'zig' }
       vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust', 'zig' }
-
+      vscode.type_to_filetypes['sh'] = { 'sh', 'bash' }
       -- Setup JavaScript/TypeScript configurations
       for _, language in ipairs(js_filetypes) do
         dap.configurations[language] = {
@@ -1859,6 +1907,7 @@ require('lazy').setup({
               ['chrome'] = js_filetypes,
               ['lldb'] = { 'c', 'cpp', 'rust' },
               ['codelldb'] = { 'c', 'cpp', 'rust' },
+              ['sh'] = { 'sh', 'bash' },
             })
             print('Auto-loaded: ' .. launch_json)
           end
@@ -1875,6 +1924,8 @@ require('lazy').setup({
           ['chrome'] = js_filetypes,
           ['lldb'] = { 'c', 'cpp', 'rust' },
           ['codelldb'] = { 'c', 'cpp', 'rust' },
+          ['bashdb'] = { 'sh', 'bash' },
+          ['sh'] = { 'sh', 'bash' },
         })
       end
 
