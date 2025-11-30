@@ -182,6 +182,108 @@ grepdiff() {
   done
 }
 
+unalias dirdump 2>/dev/null  
+dirdump() {
+    find . -type d \( \
+        -name ".git" -o \
+        -name ".venv" -o \
+        -name "venv" -o \
+        -name "env" -o \
+        -name "__pycache__" -o \
+        -name "function-source" -o \
+        -name "node_modules" -o \
+        -name "dist" -o \
+        -name "build" -o \
+        -name ".next" -o \
+        -name ".nuxt" -o \
+        -name ".svelte-kit" -o \
+        -name "target" -o \
+        -name "vendor" -o \
+        -name ".cache" -o \
+        -name ".tmp" -o \
+        -name "tmp" -o \
+        -name ".uv" -o \
+        -name ".deno" -o \
+        -name "deno_modules" -o \
+        -name ".bun" -o \
+        -name "bun_modules" -o \
+        -name ".pnpm-store" -o \
+        -name ".turbo" -o \
+        -name ".nx" -o \
+        -name "coverage" -o \
+        -name ".coverage" -o \
+        -name ".pytest_cache" -o \
+        -name ".mypy_cache" -o \
+        -name ".ruff_cache" -o \
+        -name ".tox" -o \
+        -name "htmlcov" -o \
+        -name ".husky" -o \
+        -name ".vscode" -o \
+        -name ".idea" -o \
+        -name "docs" -o \
+        -name "documentation" \
+    \) -prune -o -type f \( \
+        ! -name "*.lock" -a \
+        ! -name "package-lock.json" -a \
+        ! -name "yarn.lock" -a \
+        ! -name "pnpm-lock.yaml" -a \
+        ! -name "bun.lockb" -a \
+        ! -name "deno.lock" -a \
+        ! -name "uv.lock" -a \
+        ! -name "Pipfile.lock" -a \
+        ! -name "poetry.lock" -a \
+        ! -name "Cargo.lock" -a \
+        ! -name "composer.lock" -a \
+        ! -name "go.sum" -a \
+        ! -name "*.log" -a \
+        ! -name "*.tmp" -a \
+        ! -name "*.cache" -a \
+        ! -name ".DS_Store" -a \
+        ! -name "Thumbs.db" -a \
+        ! -name "*.pyc" -a \
+        ! -name "*.pyo" -a \
+        ! -name "*.so" -a \
+        ! -name "*.dll" -a \
+        ! -name "*.exe" -a \
+        ! -name "*.o" -a \
+        ! -name "*.a" -a \
+        ! -name "*.class" -a \
+        ! -name "*.wasm" -a \
+        ! -name "*.map" -a \
+        ! -name ".env" -a \
+        ! -name ".env.local" -a \
+        ! -name ".env.*.local" -a \
+        ! -name "swagger.json" -a \
+        ! -name "swagger.yml" -a \
+        ! -name "swagger.yaml" -a \
+        ! -name "openapi.json" -a \
+        ! -name "openapi.yml" -a \
+        ! -name "openapi.yaml" -a \
+        ! -name "*.md" -a \
+        ! -name "*.png" -a \
+        ! -name "*.jpg" -a \
+        ! -name "*.jpeg" -a \
+        ! -name "*.gif" -a \
+        ! -name "*.svg" -a \
+        ! -name "*.ico" -a \
+        ! -name "*.webp" -a \
+        ! -name "*.tldr" -a \
+        ! -name "Dockerfile*" -a \
+        ! -name ".dockerignore" -a \
+        ! -name "*.config.js" -a \
+        ! -name "*.config.ts" -a \
+        ! -name ".gitignore" -a \
+        ! -name ".gitattributes" -a \
+        ! -name ".editorconfig" -a \
+        ! -name ".prettierrc*" -a \
+        ! -name ".eslintrc*" -a \
+        ! -name "README*" -a \
+        ! -name "LICENSE*" -a \
+        ! -name "CHANGELOG*" -a \
+        ! -name "CONTRIBUTING*" \
+    \) -print | xargs cat | pbcopy
+}
+
 
 create_issue_checkout_branch() {
   if [[ -z "$1" ]]; then

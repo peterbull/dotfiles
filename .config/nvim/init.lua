@@ -415,6 +415,7 @@ require('lazy').setup({
         { '<leader>b', group = '[B]uffer' },
         { '<leader>h', group = '[H]arpoon' },
         { '<leader>m', group = '[M]olten' },
+        { '<leader>r', group = '[R]EPL' },
       },
     },
   },
@@ -514,10 +515,30 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sag', function()
         builtin.live_grep {
           additional_args = function()
-            return { '--hidden', '--no-ignore' }
+            return {
+              '--hidden',
+              '--no-ignore',
+              '--glob',
+              '!**/node_modules/**',
+              '--glob',
+              '!**/.venv/**',
+              '--glob',
+              '!**/.git/**',
+              '--glob',
+              '!**/dist/**',
+              '--glob',
+              '!**/build/**',
+              '--glob',
+              '!**/__pycache__/**',
+              '--glob',
+              '!**/.next/**',
+              '--glob',
+              '!**/coverage/**',
+            }
           end,
         }
       end, { desc = '[S]earch in [A]ll Files by [G]rep' })
+
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
@@ -559,48 +580,49 @@ require('lazy').setup({
   {
     'pmizio/typescript-tools.nvim',
     dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
-    opts = {},
-    settings = {
-      -- spawn additional tsserver instance to calculate diagnostics on it
-      separate_diagnostic_server = true,
-      -- "change"|"insert_leave" determine when the client asks the server about diagnostic
-      publish_diagnostic_on = 'insert_leave',
-      -- array of strings("fix_all"|"add_missing_imports"|"remove_unused"|
-      -- "remove_unused_imports"|"organize_imports") -- or string "all"
-      -- to include all supported code actions
-      -- specify commands exposed as code_actions
-      expose_as_code_action = {},
-      -- string|nil - specify a custom path to `tsserver.js` file, if this is nil or file under path
-      -- not exists then standard path resolution strategy is applied
-      tsserver_path = nil,
-      -- specify a list of plugins to load by tsserver, e.g., for support `styled-components`
-      -- (see 💅 `styled-components` support section)
-      tsserver_plugins = {},
-      -- this value is passed to: https://nodejs.org/api/cli.html#--max-old-space-sizesize-in-megabytes
-      -- memory limit in megabytes or "auto"(basically no limit)
-      tsserver_max_memory = 'auto',
-      -- described below
-      tsserver_format_options = {},
-      tsserver_file_preferences = {},
-      -- locale of all tsserver messages, supported locales you can find here:
-      -- https://github.com/microsoft/TypeScript/blob/3c221fc086be52b19801f6e8d82596d04607ede6/src/compiler/utilitiesPublic.ts#L620
-      tsserver_locale = 'en',
-      -- mirror of VSCode's `typescript.suggest.completeFunctionCalls`
-      complete_function_calls = false,
-      include_completions_with_insert_text = true,
-      -- CodeLens
-      -- WARNING: Experimental feature also in VSCode, because it might hit performance of server.
-      -- possible values: ("off"|"all"|"implementations_only"|"references_only")
-      code_lens = 'off',
-      -- by default code lenses are displayed on all referencable values and for some of you it can
-      -- be too much this option reduce count of them by removing member references from lenses
-      disable_member_code_lens = true,
-      -- JSXCloseTag
-      -- WARNING: it is disabled by default (maybe you configuration or distro already uses nvim-ts-autotag,
-      -- that maybe have a conflict if enable this feature. )
-      jsx_close_tag = {
-        enable = false,
-        filetypes = { 'javascriptreact', 'typescriptreact' },
+    opts = {
+      settings = {
+        -- spawn additional tsserver instance to calculate diagnostics on it
+        separate_diagnostic_server = true,
+        -- "change"|"insert_leave" determine when the client asks the server about diagnostic
+        publish_diagnostic_on = 'insert_leave',
+        -- array of strings("fix_all"|"add_missing_imports"|"remove_unused"|
+        -- "remove_unused_imports"|"organize_imports") -- or string "all"
+        -- to include all supported code actions
+        -- specify commands exposed as code_actions
+        expose_as_code_action = {},
+        -- string|nil - specify a custom path to `tsserver.js` file, if this is nil or file under path
+        -- not exists then standard path resolution strategy is applied
+        tsserver_path = nil,
+        -- specify a list of plugins to load by tsserver, e.g., for support `styled-components`
+        -- (see 💅 `styled-components` support section)
+        tsserver_plugins = {},
+        -- this value is passed to: https://nodejs.org/api/cli.html#--max-old-space-sizesize-in-megabytes
+        -- memory limit in megabytes or "auto"(basically no limit)
+        tsserver_max_memory = 'auto',
+        -- described below
+        tsserver_format_options = {},
+        tsserver_file_preferences = {},
+        -- locale of all tsserver messages, supported locales you can find here:
+        -- https://github.com/microsoft/TypeScript/blob/3c221fc086be52b19801f6e8d82596d04607ede6/src/compiler/utilitiesPublic.ts#L620
+        tsserver_locale = 'en',
+        -- mirror of VSCode's `typescript.suggest.completeFunctionCalls`
+        complete_function_calls = false,
+        include_completions_with_insert_text = true,
+        -- CodeLens
+        -- WARNING: Experimental feature also in VSCode, because it might hit performance of server.
+        -- possible values: ("off"|"all"|"implementations_only"|"references_only")
+        code_lens = 'off',
+        -- by default code lenses are displayed on all referencable values and for some of you it can
+        -- be too much this option reduce count of them by removing member references from lenses
+        disable_member_code_lens = true,
+        -- JSXCloseTag
+        -- WARNING: it is disabled by default (maybe you configuration or distro already uses nvim-ts-autotag,
+        -- that maybe have a conflict if enable this feature. )
+        jsx_close_tag = {
+          enable = false,
+          filetypes = { 'javascriptreact', 'typescriptreact' },
+        },
       },
     },
   },
@@ -838,7 +860,7 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         --
-        -- ts_ls = {},
+        ts_ls = false, -- using typescript tools now
 
         html = {
           filetypes = { 'html' },
@@ -920,7 +942,6 @@ require('lazy').setup({
       }
     end,
   },
-
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
@@ -963,6 +984,8 @@ require('lazy').setup({
         javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         rust = { 'rustfmt', lsp_format = 'fallback' },
         zig = { 'zigfmt' },
+        sh = { 'shfmt' },
+        bash = { 'shfmt' },
       },
     },
   },
@@ -1585,47 +1608,6 @@ require('lazy').setup({
         name = 'sh',
       }
 
-      dap.configurations.sh = {
-        {
-          name = 'Launch Bash debugger',
-          type = 'sh',
-          request = 'launch',
-          program = '${file}',
-          cwd = '${fileDirname}',
-          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
-          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
-          pathBash = 'bash',
-          pathCat = 'cat',
-          pathMkfifo = 'mkfifo',
-          pathPkill = 'pkill',
-          env = {},
-          args = {},
-        },
-        {
-          name = 'Launch Bash Script with Args',
-          type = 'sh',
-          request = 'launch',
-          program = '${file}',
-          cwd = '${fileDirname}',
-          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
-          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
-          pathBash = 'bash',
-          pathCat = 'cat',
-          pathMkfifo = 'mkfifo',
-          pathPkill = 'pkill',
-          env = {},
-          args = function()
-            local args_str = vim.fn.input 'Arguments: '
-            return vim.split(args_str, ' ')
-          end,
-        },
-      }
-
-      -- Also support .bash files
-      dap.configurations.bash = dap.configurations.sh
-
-      -- Also support .bash files
-      dap.configurations.bash = dap.configurations.sh
       -- -- LUA
       -- dap.adapters['local-lua'] = {
       --   type = 'executable',
@@ -1878,7 +1860,49 @@ require('lazy').setup({
         },
       }
       dap.configurations.cpp = dap.configurations.c
-      -- dap.configurations.rust = dap.configurations.c
+      dap.configurations.sh = {
+        {
+          name = 'Launch Bash debugger',
+          type = 'sh',
+          request = 'launch',
+          program = '${file}',
+          cwd = '${fileDirname}',
+          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
+          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
+          pathBash = 'bash',
+          pathCat = 'cat',
+          pathMkfifo = 'mkfifo',
+          pathPkill = 'pkill',
+          env = {},
+          args = {},
+          stopOnEntry = false,
+        },
+        {
+          name = 'Launch Bash Script with Args',
+          type = 'sh',
+          request = 'launch',
+          program = '${file}',
+          cwd = '${fileDirname}',
+          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
+          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
+          pathBash = 'bash',
+          pathCat = 'cat',
+          pathMkfifo = 'mkfifo',
+          pathPkill = 'pkill',
+          env = {},
+          stopOnEntry = false,
+          args = function()
+            local args_str = vim.fn.input 'Arguments: '
+            return vim.split(args_str, ' ')
+          end,
+        },
+      }
+
+      -- Also support .bash files
+      dap.configurations.bash = dap.configurations.sh
+
+      -- Also support .bash files
+      dap.configurations.bash = dap.configurations.sh
 
       -- dap.configurations.lua = {
       --   {
@@ -2413,6 +2437,84 @@ require('lazy').setup({
   },
 
   {
+    'Vigemus/iron.nvim',
+    config = function()
+      local iron = require 'iron.core'
+      local view = require 'iron.view'
+      local common = require 'iron.fts.common'
+
+      iron.setup {
+        config = {
+          -- Whether a repl should be discarded or not
+          scratch_repl = true,
+          -- Your repl definitions come here
+          repl_definition = {
+            sh = {
+              command = { 'zsh' },
+            },
+            python = {
+              command = { 'python3' }, -- or { "ipython", "--no-autoindent" }
+              format = common.bracketed_paste_python,
+              block_dividers = { '# %%', '#%%' },
+              env = { PYTHON_BASIC_REPL = '1' }, --this is needed for python3.13 and up.
+            },
+            javascript = {
+              command = { 'deno', 'repl' },
+            },
+            typescript = {
+              command = { 'deno', 'repl' },
+            },
+            rust = {
+              command = { 'evcxr' },
+            },
+          },
+          -- How the repl window will be displayed
+          repl_open_cmd = view.split.vertical.rightbelow(0.4), -- 40% width on the right
+
+          -- Set the file type of the newly created repl
+          repl_filetype = function(bufnr, ft)
+            return ft
+          end,
+
+          -- Send selections to the DAP repl if an nvim-dap session is running
+          dap_integration = true,
+        },
+
+        keymaps = {
+          toggle_repl = '<space>rr', -- Toggle REPL
+          restart_repl = '<space>rR', -- Restart REPL
+          send_motion = '<space>rc', -- Send motion (was <space>sc)
+          visual_send = '<space>rc', -- Send visual selection (was <space>sc)
+          send_file = '<space>rF', -- Send entire file (was <space>sf)
+          send_line = '<space>rl', -- Send current line (was <space>sl)
+          send_paragraph = '<space>rp', -- Send paragraph (was <space>sp)
+          send_until_cursor = '<space>ru', -- Send until cursor (was <space>su)
+          send_mark = '<space>rm', -- Send mark (was <space>sm)
+          send_code_block = '<space>rb', -- Send code block (was <space>sb)
+          send_code_block_and_move = '<space>rn', -- Send code block and move (was <space>sn)
+          mark_motion = '<space>rmc', -- Mark motion (was <space>mc)
+          mark_visual = '<space>rmc', -- Mark visual (was <space>mc)
+          remove_mark = '<space>rmd', -- Remove mark (was <space>md)
+          cr = '<space>r<cr>', -- Send carriage return (was <space>s<cr>)
+          interrupt = '<space>ri', -- Interrupt (was <space>s<space>)
+          exit = '<space>rq', -- Exit REPL (was <space>sq)
+          clear = '<space>rcl', -- Clear REPL (was <space>cl)
+        },
+
+        -- Highlight settings
+        highlight = {
+          italic = true,
+        },
+        ignore_blank_lines = true, -- ignore blank lines when sending visual select lines
+      }
+
+      -- Additional keymaps
+      vim.keymap.set('n', '<space>rf', '<cmd>IronFocus<cr>', { desc = 'Focus REPL' })
+      vim.keymap.set('n', '<space>rh', '<cmd>IronHide<cr>', { desc = 'Hide REPL' })
+    end,
+  },
+
+  {
     'cenk1cenk2/schema-companion.nvim',
     dependencies = {
       { 'nvim-lua/plenary.nvim' },
@@ -2510,6 +2612,13 @@ require('lazy').setup({
       lazy = '💤 ',
     },
   },
+})
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = { '*.env', '.env*' },
+  callback = function()
+    -- Disable all diagnostics for this buffer
+    vim.diagnostic.enable(false)
+  end,
 })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
