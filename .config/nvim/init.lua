@@ -2442,6 +2442,17 @@ require('lazy').setup({
       local iron = require 'iron.core'
       local view = require 'iron.view'
       local common = require 'iron.fts.common'
+      --
+      -- Test debug function
+      local function debug_test()
+        print 'DEBUG: Test function called!'
+        local test_var = 'Hello from debug test'
+        print('DEBUG: test_var =', test_var)
+        -- This is where you'll set your breakpoint
+        local another_var = 42
+        print('DEBUG: another_var =', another_var)
+        return test_var, another_var
+      end
 
       iron.setup {
         config = {
@@ -2458,11 +2469,28 @@ require('lazy').setup({
               block_dividers = { '# %%', '#%%' },
               env = { PYTHON_BASIC_REPL = '1' }, --this is needed for python3.13 and up.
             },
+
             javascript = {
-              command = { 'deno', 'repl' },
+              command = {
+                'deno',
+                'repl',
+                '--allow-all',
+                '--unstable-node-globals',
+                '--unstable-byonm',
+                '--unstable-ffi',
+                '--unstable-bare-node-builtins',
+              },
             },
             typescript = {
-              command = { 'deno', 'repl' },
+              command = {
+                'deno',
+                'repl',
+                '--allow-all',
+                '--unstable-node-globals',
+                '--unstable-byonm',
+                '--unstable-ffi',
+                '--unstable-bare-node-builtins',
+              },
             },
             rust = {
               command = { 'evcxr' },
@@ -2511,6 +2539,10 @@ require('lazy').setup({
       -- Additional keymaps
       vim.keymap.set('n', '<space>rf', '<cmd>IronFocus<cr>', { desc = 'Focus REPL' })
       vim.keymap.set('n', '<space>rh', '<cmd>IronHide<cr>', { desc = 'Hide REPL' })
+      vim.keymap.set('n', '<space>rt', function()
+        print 'DEBUG: Test keymap pressed!'
+        debug_test()
+      end, { desc = 'Debug Test Function' })
     end,
   },
 
