@@ -276,6 +276,13 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end
 
+-- Debug function
+local function my_custom_function()
+  print 'debug function executed!'
+end
+
+vim.keymap.set('n', '<leader>cf', my_custom_function, { desc = 'Run [C]ustom [F]unction' })
+---
 ---@type vim.Option
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
@@ -416,6 +423,7 @@ require('lazy').setup({
         { '<leader>h', group = '[H]arpoon' },
         { '<leader>m', group = '[M]olten' },
         { '<leader>r', group = '[R]EPL' },
+        { '<leader>c', group = '[C]ustom' },
       },
     },
   },
@@ -1219,6 +1227,37 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
       require('mini.files').setup()
 
+      local yank_file_content = function()
+        local MiniFiles = require 'mini.files'
+        local entry = MiniFiles.get_fs_entry()
+        if not entry then
+          return vim.notify 'Cursor is not on valid entry'
+        end
+
+        local path = entry.path
+
+        if entry.fs_type == 'file' then
+          local lines = vim.fn.readfile(path)
+          local content = '## ' .. path .. '\n\n' .. table.concat(lines, '\n')
+
+          -- Append to clipboard
+          local current_clipboard = vim.fn.getreg '+'
+          local new_content = current_clipboard .. '\n' .. content .. '\n'
+          vim.fn.setreg('+', new_content)
+
+          vim.notify('Appended file content to clipboard: ' .. path)
+        else
+          -- for directories do nothing,
+        end
+      end
+
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'MiniFilesBufferCreate',
+        callback = function(args)
+          local buf_id = args.data.buf_id
+          vim.keymap.set('n', 'gy', yank_file_content, { buffer = buf_id, desc = 'Yank path' })
+        end,
+      })
       vim.keymap.set('n', '<leader>e', function()
         local mini_files = require 'mini.files'
         mini_files.open(vim.api.nvim_buf_get_name(0), false)

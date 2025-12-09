@@ -182,15 +182,84 @@ grepdiff() {
   done
 }
 
-unalias dirdump 2>/dev/null  
-dirdump() {
+unalias dirdump_flat 2>/dev/null
+dirdump_flat() {
+    find . -maxdepth 1 -type f \( \
+        ! -name "*.lock" -a \
+        ! -name "package-lock.json" -a \
+        ! -name "yarn.lock" -a \
+        ! -name "pnpm-lock.yaml" -a \
+        ! -name "bun.lockb" -a \
+        ! -name "deno.lock" -a \
+        ! -name "uv.lock" -a \
+        ! -name "*.plan" -a \
+        ! -name "*.ipynb" -a \
+        ! -name "Pipfile.lock" -a \
+        ! -name "poetry.lock" -a \
+        ! -name "Cargo.lock" -a \
+        ! -name "composer.lock" -a \
+        ! -name "go.sum" -a \
+        ! -name "*.log" -a \
+        ! -name "*.tmp" -a \
+        ! -name "*.cache" -a \
+        ! -name ".DS_Store" -a \
+        ! -name "Thumbs.db" -a \
+        ! -name "*.pyc" -a \
+        ! -name "*.pyo" -a \
+        ! -name "*.so" -a \
+        ! -name "*.dll" -a \
+        ! -name "*.exe" -a \
+        ! -name "*.o" -a \
+        ! -name "*.a" -a \
+        ! -name "*.class" -a \
+        ! -name "*.wasm" -a \
+        ! -name "*.map" -a \
+        ! -name ".env" -a \
+        ! -name ".env.local" -a \
+        ! -name ".env.*.local" -a \
+        ! -name "swagger.json" -a \
+        ! -name "swagger.yml" -a \
+        ! -name "swagger.yaml" -a \
+        ! -name "openapi.json" -a \
+        ! -name "openapi.yml" -a \
+        ! -name "openapi.yaml" -a \
+        ! -name "*.md" -a \
+        ! -name "*.png" -a \
+        ! -name "*.jpg" -a \
+        ! -name "*.jpeg" -a \
+        ! -name "*.gif" -a \
+        ! -name "*.svg" -a \
+        ! -name "*.ico" -a \
+        ! -name "*.webp" -a \
+        ! -name "*.tldr" -a \
+        ! -name "*.config.js" -a \
+        ! -name "*.config.ts" -a \
+        ! -name ".gitignore" -a \
+        ! -name ".gitattributes" -a \
+        ! -name ".editorconfig" -a \
+        ! -name ".prettierrc*" -a \
+        ! -name ".eslintrc*" -a \
+        ! -name "README*" -a \
+        ! -name "LICENSE*" -a \
+        ! -name "CHANGELOG*" -a \
+        ! -name "CONTRIBUTING*" \
+    \) -print | while read -r file; do
+        echo "## ${file#./}"
+        echo
+        cat "$file"
+        echo
+        echo
+    done | pbcopy
+}
+
+unalias dirdump_all 2>/dev/null
+dirdump_all() {
     find . -type d \( \
         -name ".git" -o \
         -name ".venv" -o \
         -name "venv" -o \
         -name "env" -o \
         -name "__pycache__" -o \
-        -name "function-source" -o \
         -name "node_modules" -o \
         -name "dist" -o \
         -name "build" -o \
@@ -220,8 +289,22 @@ dirdump() {
         -name ".husky" -o \
         -name ".vscode" -o \
         -name ".idea" -o \
-        -name "docs" -o \
-        -name "documentation" \
+        -name "bin" -o \
+        -name "obj" -o \
+        -name "out" -o \
+        -name ".gradle" -o \
+        -name ".maven" -o \
+        -name ".m2" -o \
+        -name "cmake-build-*" -o \
+        -name ".cmake" -o \
+        -name "CMakeFiles" -o \
+        -name ".stack-work" -o \
+        -name "_build" -o \
+        -name "elm-stuff" -o \
+        -name ".terraform" -o \
+        -name ".ansible" -o \
+        -name "logs" -o \
+        -name "log" \
     \) -prune -o -type f \( \
         ! -name "*.lock" -a \
         ! -name "package-lock.json" -a \
@@ -268,8 +351,8 @@ dirdump() {
         ! -name "*.ico" -a \
         ! -name "*.webp" -a \
         ! -name "*.tldr" -a \
-        ! -name "Dockerfile*" -a \
-        ! -name ".dockerignore" -a \
+        ! -name "*.plan" -a \
+        ! -name "*.ipynb" -a \
         ! -name "*.config.js" -a \
         ! -name "*.config.ts" -a \
         ! -name ".gitignore" -a \
@@ -281,7 +364,13 @@ dirdump() {
         ! -name "LICENSE*" -a \
         ! -name "CHANGELOG*" -a \
         ! -name "CONTRIBUTING*" \
-    \) -print | xargs cat | pbcopy
+    \) -print | while read -r file; do
+        echo "## ${file#./}"
+        echo
+        cat "$file"
+        echo
+        echo
+    done | pbcopy
 }
 
 
