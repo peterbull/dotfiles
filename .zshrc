@@ -158,9 +158,8 @@ alias caf="cargo build && RUST_BACKTRACE=full cargo run"
 alias zb="zig build"
 
 ## Git
-
+alias gpc='gh pr create'
 alias gs-apply='git stash apply $(git stash list | fzf | awk "{print \$1}" | tr -d ":")'; 
-
 ## immediate stash and apply for a quick local save point
 gsarchive() {
   local timestamp=$(TZ="America/New_York" date '+%Y-%m-%d %H:%M:%S EST')

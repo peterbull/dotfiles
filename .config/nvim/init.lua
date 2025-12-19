@@ -590,48 +590,50 @@ require('lazy').setup({
     dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
     opts = {
       settings = {
-        -- spawn additional tsserver instance to calculate diagnostics on it
         separate_diagnostic_server = true,
-        -- "change"|"insert_leave" determine when the client asks the server about diagnostic
         publish_diagnostic_on = 'insert_leave',
-        -- array of strings("fix_all"|"add_missing_imports"|"remove_unused"|
-        -- "remove_unused_imports"|"organize_imports") -- or string "all"
-        -- to include all supported code actions
-        -- specify commands exposed as code_actions
-        expose_as_code_action = {},
-        -- string|nil - specify a custom path to `tsserver.js` file, if this is nil or file under path
-        -- not exists then standard path resolution strategy is applied
+        expose_as_code_action = {
+          'fix_all',
+          'add_missing_imports',
+          'remove_unused',
+          'remove_unused_imports',
+          'organize_imports',
+        },
         tsserver_path = nil,
-        -- specify a list of plugins to load by tsserver, e.g., for support `styled-components`
-        -- (see 💅 `styled-components` support section)
         tsserver_plugins = {},
-        -- this value is passed to: https://nodejs.org/api/cli.html#--max-old-space-sizesize-in-megabytes
-        -- memory limit in megabytes or "auto"(basically no limit)
         tsserver_max_memory = 'auto',
-        -- described below
-        tsserver_format_options = {},
-        tsserver_file_preferences = {},
-        -- locale of all tsserver messages, supported locales you can find here:
-        -- https://github.com/microsoft/TypeScript/blob/3c221fc086be52b19801f6e8d82596d04607ede6/src/compiler/utilitiesPublic.ts#L620
+        tsserver_format_options = {
+          allowIncompleteCompletions = false,
+          allowRenameOfImportPath = false,
+        },
+        tsserver_file_preferences = {
+          includeInlayParameterNameHints = 'all',
+          includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+          includeInlayFunctionParameterTypeHints = true,
+          includeInlayVariableTypeHints = true,
+          includeInlayPropertyDeclarationTypeHints = true,
+          includeInlayFunctionLikeReturnTypeHints = true,
+          includeInlayEnumMemberValueHints = true,
+          -- Monorepo specific settings
+          includePackageJsonAutoImports = 'auto',
+          includeCompletionsForModuleExports = true,
+          includeAutomaticOptionalChainCompletions = true,
+        },
         tsserver_locale = 'en',
-        -- mirror of VSCode's `typescript.suggest.completeFunctionCalls`
         complete_function_calls = false,
         include_completions_with_insert_text = true,
-        -- CodeLens
-        -- WARNING: Experimental feature also in VSCode, because it might hit performance of server.
-        -- possible values: ("off"|"all"|"implementations_only"|"references_only")
         code_lens = 'off',
-        -- by default code lenses are displayed on all referencable values and for some of you it can
-        -- be too much this option reduce count of them by removing member references from lenses
         disable_member_code_lens = true,
-        -- JSXCloseTag
-        -- WARNING: it is disabled by default (maybe you configuration or distro already uses nvim-ts-autotag,
-        -- that maybe have a conflict if enable this feature. )
         jsx_close_tag = {
           enable = false,
           filetypes = { 'javascriptreact', 'typescriptreact' },
         },
       },
+      -- Add root_dir function for monorepo support
+      root_dir = function(fname)
+        local util = require 'lspconfig.util'
+        return util.root_pattern('tsconfig.json', 'package.json', '.git')(fname)
+      end,
     },
   },
   {
@@ -868,7 +870,7 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         --
-        ts_ls = false, -- using typescript tools now
+        -- ts_ls = false, -- using typescript tools now
 
         html = {
           filetypes = { 'html' },
@@ -1345,6 +1347,59 @@ require('lazy').setup({
       'jbyuki/one-small-step-for-vimkind',
       'nvim-neotest/nvim-nio',
       { 'theHamsta/nvim-dap-virtual-text', opts = {} },
+      {
+        'mfussenegger/nvim-dap-python',
+        config = function()
+          require('dap-python').setup 'python3'
+
+          local dap = require 'dap'
+
+          table.insert(dap.configurations.python, {
+            name = 'Docker: Airflow Worker',
+            type = 'python',
+            request = 'attach',
+            connect = {
+              port = 5679,
+              host = 'localhost',
+            },
+            pathMappings = {
+              {
+                localRoot = vim.fn.getcwd(),
+                remoteRoot = '/opt/airflow',
+              },
+            },
+            justMyCode = false,
+            showReturnValue = true,
+          })
+
+          -- For attaching
+          vim.defer_fn(function()
+            print('Adapter type after setup:', type(dap.adapters.python))
+            if type(dap.adapters.python) ~= 'function' then
+              dap.adapters.python = function(cb, config)
+                if config.request == 'attach' then
+                  local port = (config.connect or config).port
+                  local host = (config.connect or config).host or '127.0.0.1'
+                  print('Connecting to ' .. host .. ':' .. port)
+                  cb {
+                    type = 'server',
+                    port = port,
+                    host = host,
+                    options = { source_filetype = 'python' },
+                  }
+                else
+                  cb {
+                    type = 'executable',
+                    command = '/Users/peterbull/.local/share/nvim/mason/bin/debugpy-adapter',
+                    options = { source_filetype = 'python' },
+                  }
+                end
+              end
+            end
+          end, 100)
+        end,
+        ft = 'python',
+      },
       {
         'jay-babu/mason-nvim-dap.nvim',
         dependencies = 'mason.nvim',
@@ -2219,15 +2274,42 @@ require('lazy').setup({
         function()
           require 'diffview'
           local lib = require 'diffview.lib'
+
           -- Get current branch name
           local current_branch = vim.fn.system('git branch --show-current'):gsub('\n', '')
+
+          -- Function to get the default branch (main or master)
+          local function get_default_branch()
+            -- Try to get the default branch from remote
+            local default_branch = vim.fn.system('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null'):gsub('refs/remotes/origin/', ''):gsub('\n', '')
+
+            -- If that fails, check if main or master exists
+            if default_branch == '' then
+              local main_exists = vim.fn.system 'git show-ref --verify --quiet refs/heads/main 2>/dev/null'
+              if vim.v.shell_error == 0 then
+                default_branch = 'main'
+              else
+                local master_exists = vim.fn.system 'git show-ref --verify --quiet refs/heads/master 2>/dev/null'
+                if vim.v.shell_error == 0 then
+                  default_branch = 'master'
+                else
+                  default_branch = 'main' -- fallback
+                end
+              end
+            end
+
+            return default_branch
+          end
+
+          local default_branch = get_default_branch()
           local cmd
-          if current_branch == 'main' or current_branch == 'master' then
-            -- On main/master: show only working tree changes
+
+          if current_branch == default_branch then
+            -- On default branch: show only working tree changes
             cmd = 'DiffviewOpen'
           else
-            -- On feature branch: show all changes since main INCLUDING working tree
-            cmd = 'DiffviewOpen main'
+            -- On feature branch: show all changes since default branch INCLUDING working tree
+            cmd = 'DiffviewOpen ' .. default_branch
           end
 
           if next(lib.views) == nil then
@@ -2236,7 +2318,6 @@ require('lazy').setup({
             vim.cmd 'DiffviewClose'
           end
         end,
-        desc = 'Smart diff: working tree (on main) or branch+working tree vs main',
       },
 
       config = function()
