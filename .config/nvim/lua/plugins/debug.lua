@@ -1,0 +1,797 @@
+return {
+  {
+    'mfussenegger/nvim-dap',
+    dependencies = {
+      'rcarriga/nvim-dap-ui',
+      'jbyuki/one-small-step-for-vimkind',
+      'nvim-neotest/nvim-nio',
+      { 'theHamsta/nvim-dap-virtual-text', opts = {} },
+      {
+        'mfussenegger/nvim-dap-python',
+        config = function()
+          require('dap-python').setup 'python3'
+
+          local dap = require 'dap'
+
+          table.insert(dap.configurations.python, {
+            name = 'Docker: Airflow Worker',
+            type = 'python',
+            request = 'attach',
+            connect = {
+              port = 5679,
+              host = 'localhost',
+            },
+            pathMappings = {
+              {
+                localRoot = vim.fn.getcwd(),
+                remoteRoot = '/opt/airflow',
+              },
+            },
+            justMyCode = false,
+            showReturnValue = true,
+          })
+
+          -- For attaching
+          vim.defer_fn(function()
+            print('Adapter type after setup:', type(dap.adapters.python))
+            if type(dap.adapters.python) ~= 'function' then
+              dap.adapters.python = function(cb, config)
+                if config.request == 'attach' then
+                  local port = (config.connect or config).port
+                  local host = (config.connect or config).host or '127.0.0.1'
+                  print('Connecting to ' .. host .. ':' .. port)
+                  cb {
+                    type = 'server',
+                    port = port,
+                    host = host,
+                    options = { source_filetype = 'python' },
+                  }
+                else
+                  cb {
+                    type = 'executable',
+                    command = '/Users/peterbull/.local/share/nvim/mason/bin/debugpy-adapter',
+                    options = { source_filetype = 'python' },
+                  }
+                end
+              end
+            end
+          end, 100)
+        end,
+        ft = 'python',
+      },
+      {
+        'jay-babu/mason-nvim-dap.nvim',
+        dependencies = 'mason.nvim',
+        cmd = { 'DapInstall', 'DapUninstall' },
+        opts = {
+          automatic_installation = true,
+          handlers = {},
+          ensure_installed = {
+            'js-debug-adapter',
+            'codelldb',
+          },
+        },
+      },
+      {
+        'mason-org/mason.nvim',
+        opts = function(_, opts)
+          opts.ensure_installed = opts.ensure_installed or {}
+          vim.list_extend(opts.ensure_installed, {
+            'js-debug-adapter',
+            'codelldb',
+          })
+        end,
+      },
+    },
+    keys = {
+      {
+        '<F5>',
+        function()
+          require('dap').continue()
+        end,
+        desc = 'Debug: Start/Continue',
+      },
+      {
+        '<F11>',
+        function()
+          require('dap').step_into()
+        end,
+        desc = 'Debug: Step Into',
+      },
+      {
+        '<F10>',
+        function()
+          require('dap').step_over()
+        end,
+        desc = 'Debug: Step Over',
+      },
+      {
+        '<F9>',
+        function()
+          require('dap').step_out()
+        end,
+        desc = 'Debug: Step Out',
+      },
+      {
+        '<F7>',
+        function()
+          require('dapui').toggle()
+        end,
+        desc = 'Debug: Toggle UI',
+      },
+      {
+        '<leader>dB',
+        function()
+          require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+        end,
+        desc = 'Breakpoint Condition',
+      },
+      {
+        '<leader>db',
+        function()
+          require('dap').toggle_breakpoint()
+        end,
+        desc = 'Toggle Breakpoint',
+      },
+      {
+        '<leader>dc',
+        function()
+          require('dap').continue()
+        end,
+        desc = 'Run/Continue',
+      },
+      {
+        '<leader>dC',
+        function()
+          require('dap').run_to_cursor()
+        end,
+        desc = 'Run to Cursor',
+      },
+      {
+        '<leader>dg',
+        function()
+          require('dap').goto_()
+        end,
+        desc = 'Go to Line (No Execute)',
+      },
+      {
+        '<leader>di',
+        function()
+          require('dap').step_into()
+        end,
+        desc = 'Step Into',
+      },
+      {
+        '<leader>dj',
+        function()
+          require('dap').down()
+        end,
+        desc = 'Down',
+      },
+      {
+        '<leader>dk',
+        function()
+          require('dap').up()
+        end,
+        desc = 'Up',
+      },
+      {
+        '<leader>dl',
+        function()
+          require('dap').run_last()
+        end,
+        desc = 'Run Last',
+      },
+      {
+        '<leader>do',
+        function()
+          require('dap').step_out()
+        end,
+        desc = 'Step Out',
+      },
+      {
+        '<leader>dO',
+        function()
+          require('dap').step_over()
+        end,
+        desc = 'Step Over',
+      },
+      {
+        '<leader>dP',
+        function()
+          require('dap').pause()
+        end,
+        desc = 'Pause',
+      },
+      {
+        '<leader>dr',
+        function()
+          require('dap').repl.toggle()
+        end,
+        desc = 'Toggle REPL',
+      },
+      {
+        '<leader>ds',
+        function()
+          require('dap').session()
+        end,
+        desc = 'Session',
+      },
+      {
+        '<leader>dt',
+        function()
+          require('dap').terminate()
+        end,
+        desc = 'Terminate',
+      },
+      {
+        '<leader>dw',
+        function()
+          require('dap.ui.widgets').hover()
+        end,
+        desc = 'Widgets',
+      },
+      {
+        '<leader>dL',
+        function()
+          require('dap.ext.vscode').load_launchjs()
+        end,
+        desc = 'Load launch.json',
+      },
+      {
+        '<leader>da',
+        function()
+          vim.cmd 'DapNew Debug\\ pnpm\\ dev\\ (Node.js) Next.js:\\ debug\\ client-side Attach\\ to\\ Pipeline'
+        end,
+        desc = 'Launch compound',
+      },
+      {
+        '<leader>dE',
+        function()
+          local dap = require 'dap'
+          local breakpoints = require 'dap.breakpoints'
+
+          if vim.g.dap_breakpoints_saved then
+            -- Restore breakpoints
+            for bufnr, buf_bps in pairs(vim.g.dap_breakpoints_saved) do
+              for _, bp in pairs(buf_bps) do
+                breakpoints.set({
+                  condition = bp.condition,
+                  hit_condition = bp.hitCondition,
+                  log_message = bp.logMessage,
+                }, bufnr, bp.line)
+              end
+            end
+            vim.g.dap_breakpoints_saved = nil
+            vim.notify('Breakpoints restored', vim.log.levels.INFO)
+          else
+            -- Save and clear breakpoints
+            local bps = breakpoints.get()
+            local has_breakpoints = false
+            for _, buf_bps in pairs(bps) do
+              if next(buf_bps) then
+                has_breakpoints = true
+                break
+              end
+            end
+
+            if has_breakpoints then
+              vim.g.dap_breakpoints_saved = vim.deepcopy(bps)
+              dap.clear_breakpoints()
+              vim.notify('Breakpoints cleared (saved)', vim.log.levels.INFO)
+            else
+              vim.notify('No breakpoints to clear', vim.log.levels.INFO)
+            end
+          end
+        end,
+        desc = 'Toggle Clear/Restore All Breakpoints',
+      },
+      {
+        '<leader>dR',
+        function()
+          local dap = require 'dap'
+          dap.clear_breakpoints()
+          vim.g.dap_breakpoints_saved = nil
+          vim.notify('All breakpoints permanently removed', vim.log.levels.INFO)
+        end,
+        desc = 'Remove All Breakpoints Permanently',
+      },
+    },
+    config = function()
+      local dap = require 'dap'
+
+      -- Enable DAP logging for debugging issues
+      dap.set_log_level 'INFO'
+
+      -- Setup pwa-node adapter (JavaScript/TypeScript)
+      dap.adapters['pwa-node'] = {
+        type = 'server',
+        host = 'localhost',
+        port = '${port}',
+        executable = {
+          command = 'node',
+          args = {
+            vim.fn.stdpath 'data' .. '/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js',
+            '${port}',
+          },
+        },
+      }
+
+      -- Setup node adapter (compatibility layer)
+      dap.adapters['node'] = function(cb, config)
+        if config.type == 'node' then
+          config.type = 'pwa-node'
+        end
+        local nativeAdapter = dap.adapters['pwa-node']
+        if type(nativeAdapter) == 'function' then
+          nativeAdapter(cb, config)
+        else
+          cb(nativeAdapter)
+        end
+      end
+
+      -- Setup Chrome adapter
+      dap.adapters['pwa-chrome'] = {
+        type = 'server',
+        host = 'localhost',
+        port = '${port}',
+        executable = {
+          command = 'node',
+          args = {
+            vim.fn.stdpath 'data' .. '/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js',
+            '${port}',
+          },
+        },
+      }
+
+      -- Setup LLDB adapter for C/C++/Rust
+      dap.adapters.lldb = {
+        type = 'executable',
+        command = vim.fn.stdpath 'data' .. '/mason/packages/codelldb/extension/adapter/codelldb',
+        name = 'lldb',
+      }
+
+      -- Setup codelldb adapter (alternative name)
+      dap.adapters.codelldb = dap.adapters.lldb
+
+      -- Bash Debug Adapter Setup
+      dap.adapters.sh = {
+        type = 'executable',
+        command = vim.fn.stdpath 'data' .. '/mason/bin/bash-debug-adapter',
+        name = 'sh',
+      }
+
+      -- -- LUA
+      -- dap.adapters['local-lua'] = {
+      --   type = 'executable',
+      --   command = 'node',
+      --   args = {
+      --     vim.fn.stdpath 'data' .. '/mason/packages/local-lua-debugger-vscode/extension/extension/debugAdapter.js',
+      --   },
+      --   enrich_config = function(config, on_config)
+      --     if not config['extensionPath'] then
+      --       local c = vim.deepcopy(config)
+      --       c.extensionPath = vim.fn.stdpath 'data' .. '/mason/packages/local-lua-debugger-vscode/extension/'
+      --       on_config(c)
+      --     else
+      --       on_config(config)
+      --     end
+      --   end,
+      -- }
+      -- dap.configurations.lua = {
+      --   {
+      --     name = 'Current file (local-lua-dbg, nlua)',
+      --     type = 'local-lua',
+      --     request = 'launch',
+      --     cwd = '${workspaceFolder}',
+      --     program = {
+      --       lua = 'nlua.lua',
+      --       file = '${file}',
+      --     },
+      --     verbose = true,
+      --     args = {},
+      --   },
+      -- }
+
+      dap.configurations.lua = {
+        {
+          type = 'nlua',
+          request = 'attach',
+          name = 'Attach to running Neovim instance',
+        },
+      }
+      dap.adapters.nlua = function(callback, config)
+        callback { type = 'server', host = config.host or '127.0.0.1', port = config.port or 8086 }
+      end
+      vim.keymap.set('n', '<leader>dN', function()
+        require('osv').launch { port = 8086 }
+      end, { noremap = true, desc = 'Launch [N]vim Debug Server' })
+      vim.keymap.set('n', '<leader>dw', function()
+        local widgets = require 'dap.ui.widgets'
+        widgets.hover()
+      end, { noremap = true, desc = 'Hover [W]idget' })
+
+      local js_filetypes = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact' }
+
+      -- Setup vscode compatibility
+      local vscode = require 'dap.ext.vscode'
+      vscode.type_to_filetypes['node'] = js_filetypes
+      vscode.type_to_filetypes['pwa-node'] = js_filetypes
+      vscode.type_to_filetypes['pwa-chrome'] = js_filetypes
+      vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust', 'zig' }
+      vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust', 'zig' }
+      vscode.type_to_filetypes['sh'] = { 'sh', 'bash' }
+      -- Setup JavaScript/TypeScript configurations
+      for _, language in ipairs(js_filetypes) do
+        dap.configurations[language] = {
+          {
+            type = 'pwa-node',
+            request = 'launch',
+            name = 'Launch Current Node File(File Dir)',
+            program = '${file}',
+            cwd = '${fileDirName}',
+            console = 'integratedTerminal',
+          },
+          {
+            type = 'pwa-node',
+            request = 'launch',
+            name = 'Launch Current Node File (Project Dir with args)',
+            program = '${file}',
+            cwd = '${workspaceFolder}',
+            console = 'integratedTerminal',
+            args = function()
+              local args_str = vim.fn.input 'Arguments: '
+              return vim.split(args_str, ' ')
+            end,
+          },
+          {
+            type = 'pwa-node',
+            request = 'attach',
+            name = 'Attach',
+            processId = require('dap.utils').pick_process,
+            cwd = '${workspaceFolder}',
+          },
+        }
+      end
+
+      local function get_rust_package_name()
+        local cargo_toml_path = vim.fn.getcwd() .. '/Cargo.toml'
+
+        if vim.fn.filereadable(cargo_toml_path) == 1 then
+          local cargo_content = vim.fn.readfile(cargo_toml_path)
+
+          for _, line in ipairs(cargo_content) do
+            local name = line:match '^name%s*=%s*"([^"]+)"'
+            if name then
+              return name
+            end
+          end
+        end
+
+        return nil
+      end
+
+      -- C/Rust config
+      dap.configurations.c = {
+        {
+          name = 'Launch C Default',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local extension = vim.fn.expand '%:e'
+            if extension == 'c' then
+              local result = vim.fn.system 'make'
+              if vim.v.shell_error ~= 0 then
+                vim.notify('Build failed: ' .. result, vim.log.levels.ERROR)
+                return nil
+              end
+              local exe_path = vim.fn.getcwd() .. '/build/main'
+
+              vim.fn.system('chmod +x ' .. exe_path)
+              return exe_path
+            end
+            if extension == 'rs' then
+              local result = vim.fn.system 'cargo build'
+              if vim.v.shell_error ~= 0 then
+                vim.notify('Build failed: ' .. result, vim.log.levels.ERROR)
+                return nil
+              end
+            end
+            local package_name = get_rust_package_name() or 'backend'
+            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+      }
+
+      dap.configurations.rust = {
+        {
+          name = 'Launch Rust Workspace',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local result = vim.fn.system 'cargo build'
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Cargo build failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            local package_name = get_rust_package_name() or 'backend'
+            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+        {
+          name = 'Launch Rust Current File',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local current_file = vim.fn.expand '%:p'
+            local file_name = vim.fn.expand '%:t:r'
+            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. file_name
+
+            vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/target/debug')
+
+            local compile_cmd = string.format('rustc -g --edition 2021 -o %s %s', exe_path, current_file)
+            local result = vim.fn.system(compile_cmd)
+
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Rust compile failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+      }
+
+      dap.configurations.zig = {
+        {
+          name = 'Launch Zig Workspace',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local result = vim.fn.system 'zig build'
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            local exe_path = vim.fn.getcwd() .. '/zig-out/bin/'
+            local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ':t')
+            -- zig renames with underscore on build
+            project_name = string.gsub(project_name, '-', '_')
+            exe_path = exe_path .. project_name
+
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+          initCommands = {
+            'type format add --format decimal uint8_t',
+            'type format add --format decimal "unsigned char"',
+          },
+        },
+        {
+          name = 'Launch Zig Current File',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local current_file = vim.fn.expand '%:p'
+            local file_name = vim.fn.expand '%:t:r'
+            local exe_path = vim.fn.getcwd() .. '/zig-out/bin/' .. file_name
+
+            vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/zig-out/bin')
+
+            local compile_cmd = string.format('zig build-exe -femit-bin=%s %s', exe_path, current_file)
+            local result = vim.fn.system(compile_cmd)
+
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Zig compile failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            return exe_path
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+          initCommands = {
+            'type format add --format decimal uint8_t',
+            'type format add --format decimal "unsigned char"',
+          },
+        },
+      }
+      dap.configurations.cpp = dap.configurations.c
+      dap.configurations.sh = {
+        {
+          name = 'Launch Bash debugger',
+          type = 'sh',
+          request = 'launch',
+          program = '${file}',
+          cwd = '${fileDirname}',
+          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
+          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
+          pathBash = 'bash',
+          pathCat = 'cat',
+          pathMkfifo = 'mkfifo',
+          pathPkill = 'pkill',
+          env = {},
+          args = {},
+          stopOnEntry = false,
+        },
+        {
+          name = 'Launch Bash Script with Args',
+          type = 'sh',
+          request = 'launch',
+          program = '${file}',
+          cwd = '${fileDirname}',
+          pathBashdb = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb',
+          pathBashdbLib = vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir',
+          pathBash = 'bash',
+          pathCat = 'cat',
+          pathMkfifo = 'mkfifo',
+          pathPkill = 'pkill',
+          env = {},
+          stopOnEntry = false,
+          args = function()
+            local args_str = vim.fn.input 'Arguments: '
+            return vim.split(args_str, ' ')
+          end,
+        },
+      }
+
+      -- Also support .bash files
+      dap.configurations.bash = dap.configurations.sh
+
+      -- Also support .bash files
+      dap.configurations.bash = dap.configurations.sh
+
+      -- dap.configurations.lua = {
+      --   {
+      --     name = 'Current file (local-lua-dbg, lua)',
+      --     type = 'nlua',
+      --     request = 'launch',
+      --     cwd = '${workspaceFolder}',
+      --     program = {
+      --       lua = 'nlua',
+      --       file = '${file}',
+      --     },
+      --     args = {},
+      --     verbose = true,
+      --   },
+      -- }
+
+      -- Auto-load launch.json when entering a directory
+      vim.api.nvim_create_autocmd('DirChanged', {
+        callback = function()
+          local launch_json = vim.fn.getcwd() .. '/.vscode/launch.json'
+          if vim.fn.filereadable(launch_json) == 1 then
+            require('dap.ext.vscode').load_launchjs(launch_json, {
+              ['pwa-node'] = js_filetypes,
+              ['pwa-chrome'] = js_filetypes,
+              ['node'] = js_filetypes,
+              ['chrome'] = js_filetypes,
+              ['lldb'] = { 'c', 'cpp', 'rust' },
+              ['codelldb'] = { 'c', 'cpp', 'rust' },
+              ['sh'] = { 'sh', 'bash' },
+            })
+            print('Auto-loaded: ' .. launch_json)
+          end
+        end,
+      })
+
+      -- Also load launch.json on startup if it exists
+      local startup_launch_json = vim.fn.getcwd() .. '/.vscode/launch.json'
+      if vim.fn.filereadable(startup_launch_json) == 1 then
+        require('dap.ext.vscode').load_launchjs(startup_launch_json, {
+          ['pwa-node'] = js_filetypes,
+          ['pwa-chrome'] = js_filetypes,
+          ['node'] = js_filetypes,
+          ['chrome'] = js_filetypes,
+          ['lldb'] = { 'c', 'cpp', 'rust' },
+          ['codelldb'] = { 'c', 'cpp', 'rust' },
+          ['bashdb'] = { 'sh', 'bash' },
+          ['sh'] = { 'sh', 'bash' },
+        })
+      end
+
+      -- Set up highlights
+      vim.api.nvim_set_hl(0, 'DapStoppedLine', { default = true, link = 'Visual' })
+
+      -- Set up DAP signs
+      local dap_icons = {
+        Stopped = { '󰁕 ', 'DiagnosticWarn', 'DapStoppedLine' },
+        Breakpoint = ' ',
+        BreakpointCondition = ' ',
+        BreakpointRejected = { ' ', 'DiagnosticError' },
+        LogPoint = '.>',
+      }
+
+      for name, sign in pairs(dap_icons) do
+        vim.fn.sign_define('Dap' .. name, {
+          text = sign[1],
+          texthl = sign[2] or 'DiagnosticInfo',
+          linehl = sign[3],
+          numhl = sign[3],
+        })
+      end
+
+      vim.api.nvim_create_user_command('DapStatus', function()
+        print('DAP adapters:', vim.inspect(vim.tbl_keys(dap.adapters)))
+        if dap.get_log_file_path then
+          print('DAP log file:', dap.get_log_file_path())
+        end
+        local js_configs = dap.configurations.javascript or {}
+        print('JavaScript configs:', #js_configs)
+        local c_configs = dap.configurations.c or {}
+        print('C configs:', #c_configs)
+      end, { desc = 'Show DAP status' })
+    end,
+  },
+  {
+    'jonathan-elize/dap-info.nvim',
+    dependencies = {
+      'mfussenegger/nvim-dap',
+    },
+    config = function()
+      require('dap-info').setup {}
+    end,
+  },
+  -- fancy UI for the debugger
+  {
+    'rcarriga/nvim-dap-ui',
+    dependencies = { 'nvim-neotest/nvim-nio' },
+    keys = {
+      {
+        '<leader>du',
+        function()
+          require('dapui').toggle {}
+        end,
+        desc = 'Dap UI',
+      },
+      {
+        '<leader>dU',
+        function()
+          local dapui = require 'dapui'
+          dapui.close()
+          dapui.open { reset = true }
+        end,
+        desc = 'Reset Dap UI',
+      },
+      {
+        '<leader>de',
+        function()
+          require('dapui').eval()
+        end,
+        desc = 'Eval',
+        mode = { 'n', 'v' },
+      },
+    },
+    opts = {},
+    config = function(_, opts)
+      local dap = require 'dap'
+      local dapui = require 'dapui'
+      dapui.setup(opts)
+      dap.listeners.after.event_initialized['dapui_config'] = function()
+        -- dapui.open {}
+      end
+      dap.listeners.before.event_terminated['dapui_config'] = function()
+        -- dapui.close {}
+      end
+      dap.listeners.before.event_exited['dapui_config'] = function()
+        -- dapui.close {}
+      end
+    end,
+  },
+}

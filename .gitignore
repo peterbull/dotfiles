@@ -1,11 +1,7 @@
 # First ignore everything
 *
 
-# Then unignore dirs
-!.config/
-!.vscode/
-
-# Then unignore specific files
+# Then unignore specific files in home directory
 !.ackrc
 !.bash_aliases
 !.bashrc.local
@@ -15,23 +11,28 @@
 !.tmux.conf
 !.bashrc
 !.vimrc
-!.gitconfig
-!.bashrc
 !.fzf.bash
 !.gitignore
 !.obsidian.vimrc
 !.p10k.zsh
 !.zshrc
 
-# Then unignore specific patterns in subdirectories
+!.config/
+!.vscode/
+
+!.config/nvim/
 !.config/nvim/**
+!.config/nvim.bak/
 !.config/nvim.bak/**
+
+# Unignore specific vscode files
+!.vscode/extensions/
 !.vscode/extensions/extensions.json
 !.vscode/settings.json
 !.vscode/keybindings.json
 
 # Finally, add specific ignores
-/.quarto/
+.quarto/
 tt.*
 .tests
 doc/tags
