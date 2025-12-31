@@ -239,13 +239,6 @@ return {
         desc = 'Load launch.json',
       },
       {
-        '<leader>da',
-        function()
-          vim.cmd 'DapNew Debug\\ pnpm\\ dev\\ (Node.js) Next.js:\\ debug\\ client-side Attach\\ to\\ Pipeline'
-        end,
-        desc = 'Launch compound',
-      },
-      {
         '<leader>dE',
         function()
           local dap = require 'dap'
@@ -300,10 +293,10 @@ return {
     config = function()
       local dap = require 'dap'
 
-      -- Enable DAP logging for debugging issues
+      -- logs
       dap.set_log_level 'INFO'
 
-      -- Setup pwa-node adapter (JavaScript/TypeScript)
+      -- node
       dap.adapters['pwa-node'] = {
         type = 'server',
         host = 'localhost',
@@ -317,7 +310,7 @@ return {
         },
       }
 
-      -- Setup node adapter (compatibility layer)
+      -- node (compat w/ vscode naming)
       dap.adapters['node'] = function(cb, config)
         if config.type == 'node' then
           config.type = 'pwa-node'
@@ -330,7 +323,7 @@ return {
         end
       end
 
-      -- Setup Chrome adapter
+      -- chrome
       dap.adapters['pwa-chrome'] = {
         type = 'server',
         host = 'localhost',
@@ -344,54 +337,20 @@ return {
         },
       }
 
-      -- Setup LLDB adapter for C/C++/Rust
+      -- lldb
       dap.adapters.lldb = {
         type = 'executable',
         command = vim.fn.stdpath 'data' .. '/mason/packages/codelldb/extension/adapter/codelldb',
         name = 'lldb',
       }
-
-      -- Setup codelldb adapter (alternative name)
       dap.adapters.codelldb = dap.adapters.lldb
 
-      -- Bash Debug Adapter Setup
+      -- bash
       dap.adapters.sh = {
         type = 'executable',
         command = vim.fn.stdpath 'data' .. '/mason/bin/bash-debug-adapter',
         name = 'sh',
       }
-
-      -- -- LUA
-      -- dap.adapters['local-lua'] = {
-      --   type = 'executable',
-      --   command = 'node',
-      --   args = {
-      --     vim.fn.stdpath 'data' .. '/mason/packages/local-lua-debugger-vscode/extension/extension/debugAdapter.js',
-      --   },
-      --   enrich_config = function(config, on_config)
-      --     if not config['extensionPath'] then
-      --       local c = vim.deepcopy(config)
-      --       c.extensionPath = vim.fn.stdpath 'data' .. '/mason/packages/local-lua-debugger-vscode/extension/'
-      --       on_config(c)
-      --     else
-      --       on_config(config)
-      --     end
-      --   end,
-      -- }
-      -- dap.configurations.lua = {
-      --   {
-      --     name = 'Current file (local-lua-dbg, nlua)',
-      --     type = 'local-lua',
-      --     request = 'launch',
-      --     cwd = '${workspaceFolder}',
-      --     program = {
-      --       lua = 'nlua.lua',
-      --       file = '${file}',
-      --     },
-      --     verbose = true,
-      --     args = {},
-      --   },
-      -- }
 
       dap.configurations.lua = {
         {
@@ -506,54 +465,78 @@ return {
           args = {},
         },
       }
+      local function rust_package()
+        local result = vim.fn.system 'cargo build'
+        if vim.v.shell_error ~= 0 then
+          vim.notify('Cargo build failed: ' .. result, vim.log.levels.ERROR)
+          return nil
+        end
 
+        local package_name = get_rust_package_name() or 'backend'
+        local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
+        return exe_path
+      end
+      local function rust_file()
+        local current_file = vim.fn.expand '%:p'
+        local file_name = vim.fn.expand '%:t:r'
+        local exe_path = vim.fn.getcwd() .. '/target/debug/' .. file_name
+
+        vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/target/debug')
+
+        local compile_cmd = string.format('rustc -g --edition 2021 -o %s %s', exe_path, current_file)
+        local result = vim.fn.system(compile_cmd)
+
+        if vim.v.shell_error ~= 0 then
+          vim.notify('Rust compile failed: ' .. result, vim.log.levels.ERROR)
+          return nil
+        end
+
+        return exe_path
+      end
       dap.configurations.rust = {
         {
           name = 'Launch Rust Workspace',
           type = 'lldb',
           request = 'launch',
-          program = function()
-            local result = vim.fn.system 'cargo build'
-            if vim.v.shell_error ~= 0 then
-              vim.notify('Cargo build failed: ' .. result, vim.log.levels.ERROR)
-              return nil
-            end
-
-            local package_name = get_rust_package_name() or 'backend'
-            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
-            return exe_path
-          end,
+          program = rust_package,
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
           args = {},
         },
         {
+          name = 'Launch Rust Workspace - Lox',
+          type = 'lldb',
+          request = 'launch',
+          program = rust_package,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          expressions = 'simple',
+          initCommands = {
+            -- https://github.com/cmrschwarz/rust-prettifier-for-lldb
+            -- lldb doesn't have great rust prettification support ootb
+            'command script import /Users/peterbull/peter-projects/rust-prettifier-for-lldb/rust_prettifier_for_lldb.py',
+          },
+          args = { 'tokenize', vim.fn.getcwd() .. '/lox/hello.lox' },
+        },
+        {
+          name = 'Launch Rust Workspace - Lox - REPL',
+          type = 'lldb',
+          request = 'launch',
+          program = rust_package,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = { 'repl' },
+        },
+        {
           name = 'Launch Rust Current File',
           type = 'lldb',
           request = 'launch',
-          program = function()
-            local current_file = vim.fn.expand '%:p'
-            local file_name = vim.fn.expand '%:t:r'
-            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. file_name
-
-            vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/target/debug')
-
-            local compile_cmd = string.format('rustc -g --edition 2021 -o %s %s', exe_path, current_file)
-            local result = vim.fn.system(compile_cmd)
-
-            if vim.v.shell_error ~= 0 then
-              vim.notify('Rust compile failed: ' .. result, vim.log.levels.ERROR)
-              return nil
-            end
-
-            return exe_path
-          end,
+          program = rust_file,
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
           args = {},
         },
       }
-
       dap.configurations.zig = {
         {
           name = 'Launch Zig Workspace',

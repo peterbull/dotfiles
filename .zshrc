@@ -85,7 +85,6 @@ plugins=(
 
 
 
-
 source $ZSH/oh-my-zsh.sh
 
 # get secrets
@@ -128,6 +127,8 @@ export NVM_DIR="$HOME/.nvm"
   [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" 
 
 
+EDITOR=nvim
+bindkey '^e' edit-command-line
 # Aliases
 
 ## Docker
