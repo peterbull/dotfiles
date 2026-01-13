@@ -128,7 +128,7 @@ export NVM_DIR="$HOME/.nvm"
 
 
 EDITOR=nvim
-bindkey '^e' edit-command-line
+
 # Aliases
 
 ## Docker
@@ -161,6 +161,7 @@ alias zb="zig build"
 ## Git
 alias gpc='gh pr create'
 alias gs-apply='git stash apply $(git stash list | fzf | awk "{print \$1}" | tr -d ":")'; 
+
 ## immediate stash and apply for a quick local save point
 gsarchive() {
   local timestamp=$(TZ="America/New_York" date '+%Y-%m-%d %H:%M:%S EST')
@@ -168,6 +169,7 @@ gsarchive() {
   git stash save -u "$message" && git stash apply
 }
 
+alias ghs='gh auth switch'
 alias gsa="gsarchive"
 
 unalias grepdiff 2>/dev/null

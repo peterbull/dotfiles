@@ -239,6 +239,20 @@ return {
         desc = 'Load launch.json',
       },
       {
+        '<leader>dsi',
+        function()
+          require('dap').up()
+        end,
+        desc = 'Debug: DAP Stack UP',
+      },
+      {
+        '<leader>dso',
+        function()
+          require('dap').down()
+        end,
+        desc = 'Debug: DAP Stack DOWN',
+      },
+      {
         '<leader>dE',
         function()
           local dap = require 'dap'
@@ -493,6 +507,13 @@ return {
 
         return exe_path
       end
+
+      -- https://github.com/cmrschwarz/rust-prettifier-for-lldb
+      -- lldb doesn't have great rust prettification support ootb
+      -- clone the repo somewhere and point to it here to use it instead
+      local rust_prettifier_file = '/Users/peterbull/peter-projects/rust-prettifier-for-lldb/rust_prettifier_for_lldb.py'
+      local rust_prettifier_init = 'command script import ' .. rust_prettifier_file
+
       dap.configurations.rust = {
         {
           name = 'Launch Rust Workspace',
@@ -501,10 +522,14 @@ return {
           program = rust_package,
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
+          expressions = 'simple',
+          initCommands = {
+            rust_prettifier_init,
+          },
           args = {},
         },
         {
-          name = 'Launch Rust Workspace - Lox',
+          name = 'Launch Rust Workspace - Reef',
           type = 'lldb',
           request = 'launch',
           program = rust_package,
@@ -512,19 +537,21 @@ return {
           stopOnEntry = false,
           expressions = 'simple',
           initCommands = {
-            -- https://github.com/cmrschwarz/rust-prettifier-for-lldb
-            -- lldb doesn't have great rust prettification support ootb
-            'command script import /Users/peterbull/peter-projects/rust-prettifier-for-lldb/rust_prettifier_for_lldb.py',
+            rust_prettifier_init,
           },
-          args = { 'tokenize', vim.fn.getcwd() .. '/lox/hello.lox' },
+          args = { 'tokenize', vim.fn.getcwd() .. '/reef/hello.reef' },
         },
         {
-          name = 'Launch Rust Workspace - Lox - REPL',
+          name = 'Launch Rust Workspace - Reef - REPL',
           type = 'lldb',
           request = 'launch',
           program = rust_package,
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
+          expressions = 'simple',
+          initCommands = {
+            rust_prettifier_init,
+          },
           args = { 'repl' },
         },
         {
@@ -534,6 +561,10 @@ return {
           program = rust_file,
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
+          expressions = 'simple',
+          initCommands = {
+            rust_prettifier_init,
+          },
           args = {},
         },
       }
@@ -761,7 +792,14 @@ return {
         mode = { 'n', 'v' },
       },
     },
-    opts = {},
+    opts = {
+      element_mappings = {
+        stacks = {
+          open = '<CR>',
+          expand = 'o',
+        },
+      },
+    },
     config = function(_, opts)
       local dap = require 'dap'
       local dapui = require 'dapui'

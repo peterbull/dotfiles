@@ -104,24 +104,74 @@ return {
             require('telescope.builtin').man_pages()
           end
         end, '[G]oto [M]anual Page')
+        -- map('grs', function()
+        --   -- go to source def in ts tools
+        --   local clients = vim.lsp.get_clients { bufnr = event.buf }
+        --   local has_tsserver = false
+        --
+        --   for _, client in ipairs(clients) do
+        --     if client.name == 'typescript-tools' or client.name == 'tsserver' or client.name == 'vtsls' then
+        --       has_tsserver = true
+        --       break
+        --     end
+        --   end
+        --
+        --   if has_tsserver then
+        --     vim.cmd 'TSToolsGoToSourceDefinition'
+        --   else
+        --     require('telescope.builtin').lsp_definitions()
+        --   end
+        -- end, '[G]oto [S]ource Definition')
+
         map('grs', function()
-          -- go to source def in ts tools
-          local clients = vim.lsp.get_clients { bufnr = event.buf }
-          local has_tsserver = false
+          local clients = vim.lsp.get_clients { bufnr = vim.api.nvim_get_current_buf() }
+          local vtsls_client = nil
 
           for _, client in ipairs(clients) do
-            if client.name == 'typescript-tools' or client.name == 'tsserver' then
-              has_tsserver = true
+            if client.name == 'vtsls' then
+              vtsls_client = client
               break
             end
           end
 
-          if has_tsserver then
-            vim.cmd 'TSToolsGoToSourceDefinition'
+          if vtsls_client then
+            -- Replicate what nvim-vtsls does
+            local winnr = vim.api.nvim_get_current_win()
+            local params = vim.lsp.util.make_position_params(winnr, vtsls_client.offset_encoding)
+
+            vim.lsp.buf_request(0, 'workspace/executeCommand', {
+              command = 'typescript.goToSourceDefinition',
+              arguments = { params.textDocument.uri, params.position },
+            }, function(err, result, ctx, config)
+              if err then
+                vim.notify('[vtsls]: ' .. tostring(err), vim.log.levels.ERROR)
+                return
+              end
+
+              -- Handle the response like nvim-vtsls does
+              local locations = result
+              if not locations or vim.tbl_isempty(locations) then
+                vim.notify('No source definition found', vim.log.levels.WARN)
+                return
+              elseif #locations == 1 then
+                -- Jump to single location
+                vim.lsp.util.show_document(locations[1], vtsls_client.offset_encoding, { reuse_win = false, focus = true })
+              else
+                -- Multiple locations - show in quickfix
+                local items = vim.lsp.util.locations_to_items(locations, vtsls_client.offset_encoding)
+                vim.fn.setqflist({}, ' ', {
+                  title = 'TS Source Definitions',
+                  items = items,
+                  context = ctx,
+                })
+                vim.api.nvim_command 'botright copen'
+              end
+            end)
           else
             require('telescope.builtin').lsp_definitions()
           end
         end, '[G]oto [S]ource Definition')
+
         --
         -- This function resolves a difference between neovim nightly (version 0.11) and stable (version 0.10)
         ---@param client vim.lsp.Client
@@ -264,7 +314,6 @@ return {
           },
         },
       },
-
       terraformls = {
         filetypes = { 'terraform', 'tf', 'terraform-vars' },
         settings = {
