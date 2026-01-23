@@ -30,6 +30,23 @@ return {
             justMyCode = false,
             showReturnValue = true,
           })
+          table.insert(dap.configurations.python, {
+            name = 'Docker: fuel firebase functions',
+            type = 'python',
+            request = 'attach',
+            connect = {
+              port = 5679,
+              host = 'localhost',
+            },
+            pathMappings = {
+              {
+                localRoot = vim.fn.getcwd(),
+                remoteRoot = '/srv/firebase/functions/python',
+              },
+            },
+            justMyCode = false,
+            showReturnValue = true,
+          })
 
           -- For attaching
           vim.defer_fn(function()
@@ -416,6 +433,16 @@ return {
               local args_str = vim.fn.input 'Arguments: '
               return vim.split(args_str, ' ')
             end,
+          },
+          {
+            type = 'pwa-node',
+            request = 'launch',
+            name = 'Debug Current File (tsx with .env.local)',
+            runtimeExecutable = vim.fn.getcwd() .. '/node_modules/.bin/tsx',
+            runtimeArgs = { '--env-file', '.env.local' },
+            args = { '${file}' },
+            cwd = '${workspaceFolder}',
+            console = 'integratedTerminal',
           },
           {
             type = 'pwa-node',

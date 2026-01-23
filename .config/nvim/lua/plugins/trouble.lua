@@ -6,13 +6,31 @@ return {
   keys = {
     {
       '<leader>xx',
-      '<cmd>Trouble diagnostics toggle<cr>',
-      desc = 'Diagnostics (Trouble)',
+      function()
+        local line = vim.api.nvim_win_get_cursor(0)[1]
+        require('trouble').toggle {
+          mode = 'diagnostics',
+          source = 'diagnostics',
+          filter = {
+            buf = 0,
+            range = {
+              start = { line, 0 },
+              ['end'] = { line, -1 },
+            },
+          },
+        }
+      end,
+      desc = 'Current Line Diagnostics (Trouble)',
     },
     {
       '<leader>xX',
       '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
-      desc = 'Buffer Diagnostics (Trouble)',
+      desc = 'Current Buffer Diagnostics (Trouble)',
+    },
+    {
+      '<leader>XX',
+      '<cmd>Trouble diagnostics toggle<cr>',
+      desc = 'All Buffers Diagnostics (Trouble)',
     },
     {
       '<leader>cs',
