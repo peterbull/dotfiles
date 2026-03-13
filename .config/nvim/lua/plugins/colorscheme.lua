@@ -21,6 +21,26 @@ return {
         ['@lsp.type.namespace.python'] = { fg = '#f0d090', style = 'italic' },
         ['@lsp.type.class.python'] = { fg = '#f0d090', style = 'italic' },
         Type = { fg = '#d19a66' },
+
+        -- reef
+        ['@keyword.reef'] = { link = '@keyword' },
+        ['@keyword.operator.reef'] = { link = '@keyword.operator' },
+        ['@variable.builtin.reef'] = { link = '@variable.builtin' },
+        ['@boolean.reef'] = { link = '@boolean' },
+        ['@constant.builtin.reef'] = { link = '@constant.builtin' },
+        ['@number.reef'] = { link = '@number' },
+        ['@string.reef'] = { link = '@string' },
+        ['@comment.reef'] = { link = '@comment' },
+        ['@variable.reef'] = { link = '@variable' },
+        ['@function.reef'] = { link = '@function' },
+        ['@function.call.reef'] = { link = '@function.call' },
+        ['@type.reef'] = { link = '@type' },
+        ['@parameter.reef'] = { link = '@parameter' },
+        ['@property.reef'] = { link = '@property' },
+        ['@operator.reef'] = { link = '@operator' },
+        ['@punctuation.delimiter.reef'] = { link = '@punctuation.delimiter' },
+
+        ['@error.reef'] = { link = 'Error' },
       },
 
       styles = {

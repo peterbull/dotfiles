@@ -1,32 +1,79 @@
 return {
-  {
-    'tpope/vim-fugitive',
-    cmd = { 'Git', 'G', 'Gdiffsplit', 'Gread', 'Gwrite', 'Ggrep', 'GMove', 'GDelete', 'GBrowse' },
-    keys = {
-      -- Git status (like lazygit's main view)
-      { '<leader>gs', '<cmd>Git<CR>', desc = 'Git Status' },
-
-      -- Git log
-      { '<leader>gl', '<cmd>Git log --oneline<CR>', desc = 'Git Log' },
-
-      -- Git add current file
-      { '<leader>ga', '<cmd>Gwrite<CR>', desc = 'Git Add Current File' },
-
-      -- Git commit
-      { '<leader>gc', '<cmd>Git commit<CR>', desc = 'Git Commit' },
-
-      -- Git push
-      { '<leader>gp', '<cmd>Git push<CR>', desc = 'Git Push' },
-
-      -- Git pull
-      { '<leader>gP', '<cmd>Git pull<CR>', desc = 'Git Pull' },
-    },
-  },
+  -- {
+  --   'tpope/vim-fugitive',
+  --   cmd = { 'Git', 'G', 'Gdiffsplit', 'Gread', 'Gwrite', 'Ggrep', 'GMove', 'GDelete', 'GBrowse' },
+  --   keys = {
+  --     -- Git status (like lazygit's main view)
+  --     { '<leader>gs', '<cmd>Git<CR>', desc = 'Git Status' },
+  --
+  --     -- Git log
+  --     { '<leader>gl', '<cmd>Git log --oneline<CR>', desc = 'Git Log' },
+  --
+  --     -- Git add current file
+  --     { '<leader>ga', '<cmd>Gwrite<CR>', desc = 'Git Add Current File' },
+  --
+  --     -- Git commit
+  --     { '<leader>gc', '<cmd>Git commit<CR>', desc = 'Git Commit' },
+  --
+  --     -- Git push
+  --     { '<leader>gp', '<cmd>Git push<CR>', desc = 'Git Push' },
+  --
+  --     -- Git pull
+  --     { '<leader>gP', '<cmd>Git pull<CR>', desc = 'Git Pull' },
+  --   },
+  -- },
   {
     'sindrets/diffview.nvim',
     dependencies = { 'nvim-lua/plenary.nvim' },
     cmd = { 'DiffviewOpen', 'DiffviewClose', 'DiffviewFileHistory' },
     keys = {
+
+      {
+        '<leader>gM',
+        function()
+          require 'diffview'
+          local lib = require 'diffview.lib'
+
+          if next(lib.views) ~= nil then
+            vim.cmd 'DiffviewClose'
+            return
+          end
+
+          local current_branch = vim.fn.system('git branch --show-current'):gsub('\n', '')
+
+          local function get_default_branch()
+            local default_branch = vim.fn.system('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null'):gsub('refs/remotes/origin/', ''):gsub('\n', '')
+
+            if default_branch == '' then
+              vim.fn.system 'git show-ref --verify --quiet refs/heads/main'
+              if vim.v.shell_error == 0 then
+                default_branch = 'main'
+              else
+                vim.fn.system 'git show-ref --verify --quiet refs/heads/master'
+                default_branch = vim.v.shell_error == 0 and 'master' or 'main'
+              end
+            end
+            return default_branch
+          end
+
+          local default_branch = get_default_branch()
+
+          if current_branch == default_branch then
+            vim.cmd 'DiffviewOpen'
+            return
+          end
+
+          local merge_base = vim.fn.system('git merge-base HEAD ' .. default_branch):gsub('\n', '')
+
+          if merge_base == '' or vim.v.shell_error ~= 0 then
+            vim.notify('Could not find merge base', vim.log.levels.ERROR)
+            return
+          end
+
+          vim.cmd('DiffviewOpen ' .. merge_base)
+        end,
+        desc = 'Diff vs branch point (merge base)',
+      },
       {
         '<leader>gd',
         function()
@@ -57,7 +104,7 @@ return {
       },
 
       {
-        '<leader>gM',
+        '<leader>gA',
         function()
           require 'diffview'
           local lib = require 'diffview.lib'

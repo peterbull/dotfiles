@@ -1,5 +1,4 @@
 return {
-  -- Main LSP Configuration
   'neovim/nvim-lspconfig',
 
   dependencies = {
@@ -299,18 +298,68 @@ return {
       emmet_language_server = {
         filetypes = { 'html', 'css' },
       },
+      gopls = {
+        settings = {
+          gopls = {
+            hints = {
+              assignVariableTypes = true,
+              compositeLiteralFields = true,
+              compositeLiteralTypes = true,
+              constantValues = true,
+              functionTypeParameters = true,
+              parameterNames = true,
+              rangeVariableTypes = true,
+            },
+          },
+        },
+      },
 
       lua_ls = {
-        -- cmd = { ... },
-        -- filetypes = { ... },
-        -- capabilities = {},
+        before_init = function(_, config)
+          if not config.settings then
+            config.settings = {}
+          end
+          if not config.settings.Lua then
+            config.settings.Lua = {}
+          end
+          if not config.settings.Lua.diagnostics then
+            config.settings.Lua.diagnostics = {}
+          end
+          config.settings.Lua.diagnostics.globals = config.settings.Lua.diagnostics.globals or {}
+          table.insert(config.settings.Lua.diagnostics.globals, 'vim')
+        end,
         settings = {
           Lua = {
+            runtime = {
+              version = 'LuaJIT',
+            },
+            diagnostics = {
+              globals = { 'vim' },
+            },
+            workspace = {
+              checkThirdParty = false,
+            },
             completion = {
               callSnippet = 'Replace',
             },
-            -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-            -- diagnostics = { disable = { 'missing-fields' } },
+            telemetry = {
+              enable = false,
+            },
+            codeLens = {
+              enable = true,
+            },
+            hint = {
+              enable = true,
+              semicolon = 'Disable',
+            },
+          },
+        },
+      },
+      zls = {
+        cmd = { vim.fn.expand '~/.zvm/bin/zls' },
+        settings = {
+          zls = {
+            enable_build_on_save = true,
           },
         },
       },

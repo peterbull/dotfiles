@@ -139,7 +139,7 @@ alias dbuild="docker compose build"
 
 ## Editor launches
 alias n="nvim ."
-alias nc="nvim ~/.config/nvim"
+alias nc="cd ~/.config/nvim && nvim ~/.config/nvim"
 alias nz="nvim ~/.zshrc"
 alias nd="nvim --cmd \"lua init_debug=true\""
 alias c="code ."
@@ -464,7 +464,8 @@ source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 
-export PATH="$HOME/.local/zig:$PATH"
+# export PATH="$HOME/.local/zig:$PATH"
+export PATH="$HOME/.zvm/bin:$HOME/.zvm/self:$PATH"
 
 export PATH=$PATH:$HOME/.luarocks/bin
 

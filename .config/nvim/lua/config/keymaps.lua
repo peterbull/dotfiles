@@ -58,9 +58,32 @@ vim.keymap.set('n', '<C-S-k>', '<C-w>K', { desc = 'Move window to the upper' })
 vim.keymap.set('n', '<leader>bd', ':bd<CR>', { desc = '[D]elete Current Buffer' })
 vim.keymap.set('n', '<leader>bo', ':%bd|edit#|bd#<CR>', { desc = '[D]elete All Other Buffers' })
 
+vim.keymap.set('n', ']q', '<cmd>cnext<CR>', { desc = 'Next quickfix' })
+vim.keymap.set('n', '[q', '<cmd>cprev<CR>', { desc = 'Prev quickfix' })
+
 -- Debug function
 local function my_custom_function()
   print 'debug function executed!'
 end
 
 vim.keymap.set('n', '<leader>cf', my_custom_function, { desc = 'Run [C]ustom [F]unction' })
+
+vim.keymap.set('n', '<leader>cd', function()
+  local buf_dir = vim.fn.expand '%:p:h'
+  vim.fn.setreg('+', buf_dir)
+  print('Buffer directory copied to clipboard: ' .. buf_dir)
+end, { desc = '[C]opy buffer [D]irectory to clipboard' })
+
+local cmdheight_state = 1
+
+vim.keymap.set('n', '<leader>tt', function()
+  if cmdheight_state == 1 then
+    vim.o.cmdheight = 15
+    cmdheight_state = 15
+    vim.notify('Command height: 15', vim.log.levels.INFO)
+  else
+    vim.o.cmdheight = 1
+    cmdheight_state = 1
+    vim.notify('Command height: 1', vim.log.levels.INFO)
+  end
+end, { desc = '[T]oggle [T]erminal height (cmdheight)' })

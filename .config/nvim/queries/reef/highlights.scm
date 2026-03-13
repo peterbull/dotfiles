@@ -1,0 +1,1 @@
+/Users/peterbull/peter-projects/tree-sitter-reef/queries/highlights.scm

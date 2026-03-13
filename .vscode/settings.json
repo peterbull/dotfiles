@@ -846,7 +846,7 @@
         "*.war"
     ],
     "python.analysis.typeCheckingMode": "standard",
-    "python.defaultInterpreterPath": "/opt/homebrew/bin/python3",
+    "python.defaultInterpreterPath": "/Users/peterbull/shift-projects/tf-infra-cio-onesource-mcp/terraform/function-source/.venv",
     "rust-analyzer.showSyntaxTree": true,
     "gitlens.views.scm.grouped.views": {
         "commits": true,

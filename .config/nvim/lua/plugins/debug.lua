@@ -12,7 +12,22 @@ return {
           require('dap-python').setup 'python3'
 
           local dap = require 'dap'
-
+          table.insert(dap.configurations.python, {
+            name = 'Launch: Current File (root venv)',
+            type = 'python',
+            request = 'launch',
+            program = '${file}',
+            pythonPath = function()
+              local cwd = vim.fn.getcwd()
+              local venv = cwd .. '/.venv/bin/python'
+              if vim.fn.executable(venv) == 1 then
+                return venv
+              end
+              return 'python3'
+            end,
+            justMyCode = false,
+            showReturnValue = true,
+          })
           table.insert(dap.configurations.python, {
             name = 'Docker: Airflow Worker',
             type = 'python',
@@ -21,9 +36,19 @@ return {
               port = 5679,
               host = 'localhost',
             },
+
             pathMappings = {
               {
-                localRoot = vim.fn.getcwd(),
+                localRoot = (function()
+                  local cwd = vim.fn.getcwd()
+                  -- if airflow is in the path we are in the airflow dir
+                  if string.find(cwd:lower(), 'airflow') then
+                    return cwd
+                  else
+                    -- otherwise we need to fix the path
+                    return cwd .. '/airflow'
+                  end
+                end)(),
                 remoteRoot = '/opt/airflow',
               },
             },
@@ -86,6 +111,7 @@ return {
           ensure_installed = {
             'js-debug-adapter',
             'codelldb',
+            'delve',
           },
         },
       },
@@ -144,6 +170,13 @@ return {
         desc = 'Breakpoint Condition',
       },
       {
+        '<leader>dh',
+        function()
+          require('dap').set_breakpoint(nil, vim.fn.input 'Breakpoint hit number: ')
+        end,
+        desc = 'Breakpoint Hit Condition',
+      },
+      {
         '<leader>db',
         function()
           require('dap').toggle_breakpoint()
@@ -179,14 +212,28 @@ return {
         desc = 'Step Into',
       },
       {
-        '<leader>dj',
+        '<leader>dk',
         function()
           require('dap').down()
         end,
         desc = 'Down',
       },
       {
-        '<leader>dk',
+        '<leader>dj',
+        function()
+          require('dap').up()
+        end,
+        desc = 'Up',
+      },
+      {
+        '<F4>',
+        function()
+          require('dap').down()
+        end,
+        desc = 'Down',
+      },
+      {
+        '<F3>',
         function()
           require('dap').up()
         end,
@@ -220,12 +267,20 @@ return {
         end,
         desc = 'Pause',
       },
+      -- {
+      --   '<leader>dr',
+      --   function()
+      --     require('dap').repl.toggle()
+      --   end,
+      --   desc = 'Toggle REPL',
+      -- },
+
       {
         '<leader>dr',
         function()
-          require('dap').repl.toggle()
+          require('dap').repl.toggle({}, 'botright vsplit')
         end,
-        desc = 'Toggle REPL',
+        desc = 'Toggle REPL (right vertical split)',
       },
       {
         '<leader>ds',
@@ -382,6 +437,67 @@ return {
         command = vim.fn.stdpath 'data' .. '/mason/bin/bash-debug-adapter',
         name = 'sh',
       }
+      -- go
+      dap.adapters.go = {
+        type = 'server',
+        port = '${port}',
+        executable = {
+          command = vim.fn.stdpath 'data' .. '/mason/bin/dlv',
+          args = { 'dap', '-l', '127.0.0.1:${port}' },
+        },
+      }
+
+      dap.configurations.go = {
+        {
+          type = 'go',
+          name = 'Debug Current File',
+          request = 'launch',
+          program = '${file}',
+        },
+        {
+          type = 'go',
+          name = 'Debug Package',
+          request = 'launch',
+          program = '${fileDirname}',
+        },
+        {
+          type = 'go',
+          name = 'Debug Main Package',
+          request = 'launch',
+          program = '${workspaceFolder}',
+        },
+        {
+          type = 'go',
+          name = 'Debug with Args',
+          request = 'launch',
+          program = '${workspaceFolder}',
+          args = function()
+            local args_str = vim.fn.input 'Arguments: '
+            return vim.split(args_str, ' ')
+          end,
+        },
+        {
+          type = 'go',
+          name = 'Debug Test (Current File)',
+          request = 'launch',
+          mode = 'test',
+          program = '${file}',
+        },
+        {
+          type = 'go',
+          name = 'Debug Test (Package)',
+          request = 'launch',
+          mode = 'test',
+          program = '${fileDirname}',
+        },
+        {
+          type = 'go',
+          name = 'Attach to Process',
+          mode = 'local',
+          request = 'attach',
+          processId = require('dap.utils').pick_process,
+        },
+      }
 
       dap.configurations.lua = {
         {
@@ -411,6 +527,8 @@ return {
       vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust', 'zig' }
       vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust', 'zig' }
       vscode.type_to_filetypes['sh'] = { 'sh', 'bash' }
+      vscode.type_to_filetypes['go'] = { 'go' }
+      vscode.type_to_filetypes['delve'] = { 'go' }
       -- Setup JavaScript/TypeScript configurations
       for _, language in ipairs(js_filetypes) do
         dap.configurations[language] = {
@@ -479,27 +597,52 @@ return {
           request = 'launch',
           program = function()
             local extension = vim.fn.expand '%:e'
-            if extension == 'c' then
-              local result = vim.fn.system 'make'
-              if vim.v.shell_error ~= 0 then
-                vim.notify('Build failed: ' .. result, vim.log.levels.ERROR)
-                return nil
-              end
-              local exe_path = vim.fn.getcwd() .. '/build/main'
 
-              vim.fn.system('chmod +x ' .. exe_path)
-              return exe_path
+            local function find_root(marker, start_path)
+              local path = start_path or vim.fn.getcwd()
+              while path ~= '/' do
+                if vim.fn.filereadable(path .. '/' .. marker) == 1 then
+                  return path
+                end
+                path = vim.fn.fnamemodify(path, ':h')
+              end
+              return nil
             end
-            if extension == 'rs' then
-              local result = vim.fn.system 'cargo build'
+
+            if extension == 'c' then
+              -- search from the current file's directory, not cwd
+              local file_dir = vim.fn.expand '%:p:h'
+              local root = find_root('Makefile', file_dir)
+              if not root then
+                vim.notify('No Makefile found', vim.log.levels.ERROR)
+                return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/build/', 'file')
+              end
+              vim.notify('Building in: ' .. root, vim.log.levels.INFO)
+              local result = vim.fn.system('make -C ' .. root)
               if vim.v.shell_error ~= 0 then
                 vim.notify('Build failed: ' .. result, vim.log.levels.ERROR)
-                return nil
+                return vim.fn.input('Path to executable: ', root .. '/build/', 'file')
               end
+              return root .. '/build/main'
             end
-            local package_name = get_rust_package_name() or 'backend'
-            local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
-            return exe_path
+
+            if extension == 'rs' then
+              local file_dir = vim.fn.expand '%:p:h'
+              local root = find_root('Cargo.toml', file_dir)
+              if not root then
+                vim.notify('No Cargo.toml found', vim.log.levels.ERROR)
+                return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/target/debug/', 'file')
+              end
+              local result = vim.fn.system('cargo build --manifest-path ' .. root .. '/Cargo.toml')
+              if vim.v.shell_error ~= 0 then
+                vim.notify('Build failed: ' .. result, vim.log.levels.ERROR)
+                return vim.fn.input('Path to executable: ', root .. '/target/debug/', 'file')
+              end
+              local package_name = get_rust_package_name() or 'backend'
+              return root .. '/target/debug/' .. package_name
+            end
+
+            return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
           end,
           cwd = '${workspaceFolder}',
           stopOnEntry = false,
@@ -652,6 +795,68 @@ return {
             'type format add --format decimal "unsigned char"',
           },
         },
+        {
+          name = 'Launch Zig Current File -r (main.zig)',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            local cwd = vim.fn.getcwd()
+            local target_dir
+
+            -- if we're in the project root (has build.zig)
+            if vim.fn.filereadable(cwd .. '/build.zig') == 1 then
+              target_dir = cwd
+
+            -- if we're in parent dir, find a subdir with build.zig
+            else
+              local build_files = vim.fn.glob(cwd .. '/*/build.zig', false, true)
+
+              if #build_files == 0 then
+                vim.notify('No Zig project found in subdirectories', vim.log.levels.ERROR)
+                return nil
+              elseif #build_files == 1 then
+                -- only one project, use it
+                target_dir = vim.fn.fnamemodify(build_files[1], ':h')
+              else
+                -- multiple projects, prompt to pick
+                local choices = vim.tbl_map(function(p)
+                  return vim.fn.fnamemodify(p, ':h:t')
+                end, build_files)
+
+                local choice = vim.fn.inputlist(vim.list_extend(
+                  { 'Select Zig project:' },
+                  vim.tbl_map(function(i, v)
+                    return i .. '. ' .. v
+                  end, ipairs(choices))
+                ))
+
+                if choice < 1 or choice > #build_files then
+                  vim.notify('Invalid selection', vim.log.levels.ERROR)
+                  return nil
+                end
+                target_dir = vim.fn.fnamemodify(build_files[choice], ':h')
+              end
+            end
+
+            -- build from target_dir
+            local result = vim.fn.system('zig build -Doptimize=Debug --build-file ' .. target_dir .. '/build.zig')
+            if vim.v.shell_error ~= 0 then
+              vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
+              return nil
+            end
+
+            local project_name = vim.fn.fnamemodify(target_dir, ':t')
+            project_name = string.gsub(project_name, '-', '_')
+            return target_dir .. '/zig-out/bin/' .. project_name
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+          initCommands = {
+            'type format add --format decimal uint8_t',
+            'type format add --format decimal "unsigned char"',
+          },
+        },
       }
       dap.configurations.cpp = dap.configurations.c
       dap.configurations.sh = {
@@ -726,6 +931,8 @@ return {
               ['lldb'] = { 'c', 'cpp', 'rust' },
               ['codelldb'] = { 'c', 'cpp', 'rust' },
               ['sh'] = { 'sh', 'bash' },
+              ['go'] = { 'go' },
+              ['delve'] = { 'go' },
             })
             print('Auto-loaded: ' .. launch_json)
           end
@@ -744,6 +951,8 @@ return {
           ['codelldb'] = { 'c', 'cpp', 'rust' },
           ['bashdb'] = { 'sh', 'bash' },
           ['sh'] = { 'sh', 'bash' },
+          ['go'] = { 'go' },
+          ['delve'] = { 'go' },
         })
       end
 

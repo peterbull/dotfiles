@@ -42,10 +42,9 @@ return {
       },
     },
 
-    -- Document existing key chains
     spec = {
       { '<leader>s', group = '[S]earch' },
-      { '<leader>t', group = '[T]oggle' },
+      { '<leader>t', group = '[T]reesitter' },
       { '<leader>d', group = '[D]ebug' },
       { '<leader>b', group = '[B]uffer' },
       { '<leader>h', group = '[H]arpoon' },
