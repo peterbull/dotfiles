@@ -1,39 +1,11 @@
 return {
   {
-    'benlubas/molten-nvim',
-    version = '^1.0.0', -- use version <2.0.0 to avoid breaking changes
-    dependencies = { '3rd/image.nvim' },
-    build = ':UpdateRemotePlugins',
-    init = function()
-      -- these are examples, not defaults. Please see the readme
-      vim.g.molten_image_provider = 'image.nvim'
-      vim.g.molten_output_win_max_height = 20
-    end,
-    config = function()
-      -- Keybindings for Molten
-      vim.keymap.set('n', '<leader>mi', ':MoltenInit python3<CR>', { desc = 'Initialize Molten' })
-      vim.keymap.set('n', '<leader>ml', ':MoltenEvaluateLine<CR>', { desc = 'Evaluate line' })
-      vim.keymap.set('v', '<leader>me', ':<C-u>MoltenEvaluateVisual<CR>gv', { desc = 'Evaluate visual selection' })
-      vim.keymap.set('n', '<leader>mc', ':MoltenReevaluateCell<CR>', { desc = 'Re-evaluate cell' })
-      vim.keymap.set('n', '<leader>mo', ':MoltenShowOutput<CR>', { desc = 'Show output' })
-      vim.keymap.set('n', '<leader>mh', ':MoltenHideOutput<CR>', { desc = 'Hide output' })
-      vim.keymap.set('n', '<leader>md', ':MoltenDelete<CR>', { desc = 'Delete cell output' })
-      vim.keymap.set('n', '<leader>mn', ':MoltenNext<CR>', { desc = 'Next cell' })
-      vim.keymap.set('n', '<leader>mp', ':MoltenPrev<CR>', { desc = 'Previous cell' })
-      vim.keymap.set('n', '<leader>mq', ':MoltenDeinit<CR>', { desc = 'Quit Molten' })
-      vim.keymap.set('n', '<leader>mR', ':MoltenRestart<CR>', { desc = 'Restart Molten' })
-      vim.keymap.set('n', '<leader>ma', ':MoltenEvaluateOperator<CR>gg0VG', { desc = 'Run all cells' })
-      vim.keymap.set('n', '<leader>mx', ':MoltenHideOutput<CR>:MoltenDelete<CR>', { desc = 'Clear all outputs' })
-    end,
-  },
-  {
     'Vigemus/iron.nvim',
     config = function()
       local iron = require 'iron.core'
       local view = require 'iron.view'
       local common = require 'iron.fts.common'
       --
-      -- Test debug function
       local function debug_test()
         print 'DEBUG: Test function called!'
         local test_var = 'Hello from debug test'

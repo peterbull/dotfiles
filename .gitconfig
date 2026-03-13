@@ -32,7 +32,7 @@
   conflictStyle = zdiff3
 [credential "https://github.com"]
 	helper = 
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper = !~/.config/git/gh-credential-helper.sh
 [credential "https://gist.github.com"]
 	helper = 
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper = !~/.config/git/gh-credential-helper.sh
