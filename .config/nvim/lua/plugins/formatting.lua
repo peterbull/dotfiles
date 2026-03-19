@@ -42,6 +42,7 @@ return { -- Autoformat
       zig = { 'zigfmt' },
       sh = { 'shfmt' },
       bash = { 'shfmt' },
+      go = { 'gofmt' },
     },
   },
 }

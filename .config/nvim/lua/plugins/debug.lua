@@ -453,24 +453,28 @@ return {
           name = 'Debug Current File',
           request = 'launch',
           program = '${file}',
+          outputMode = 'remote',
         },
         {
           type = 'go',
           name = 'Debug Package',
           request = 'launch',
           program = '${fileDirname}',
+          outputMode = 'remote',
         },
         {
           type = 'go',
           name = 'Debug Main Package',
           request = 'launch',
           program = '${workspaceFolder}',
+          outputMode = 'remote',
         },
         {
           type = 'go',
           name = 'Debug with Args',
           request = 'launch',
           program = '${workspaceFolder}',
+          outputMode = 'remote',
           args = function()
             local args_str = vim.fn.input 'Arguments: '
             return vim.split(args_str, ' ')
@@ -482,6 +486,7 @@ return {
           request = 'launch',
           mode = 'test',
           program = '${file}',
+          outputMode = 'remote',
         },
         {
           type = 'go',
@@ -489,6 +494,7 @@ return {
           request = 'launch',
           mode = 'test',
           program = '${fileDirname}',
+          outputMode = 'remote',
         },
         {
           type = 'go',
@@ -496,6 +502,7 @@ return {
           mode = 'local',
           request = 'attach',
           processId = require('dap.utils').pick_process,
+          outputMode = 'remote',
         },
       }
 

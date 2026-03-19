@@ -90,3 +90,4 @@ vim.opt.shiftwidth = 2
 vim.opt.expandtab = true
 
 vim.g.python3_host_prog = vim.fn.expand '~/.virtualenvs/nvim/bin/python3'
+vim.opt.tags:append(vim.fn.expand '~/src/apple-libc/tags')
