@@ -295,6 +295,15 @@ return {
         },
       },
 
+      helm_ls = {
+        settings = {
+          ['helm-ls'] = {
+            yamlls = {
+              path = 'yaml-language-server',
+            },
+          },
+        },
+      },
       emmet_language_server = {
         filetypes = { 'html', 'css' },
       },
@@ -394,6 +403,8 @@ return {
     local ensure_installed = vim.tbl_keys(servers or {})
     vim.list_extend(ensure_installed, {
       'stylua', -- Used to format Lua code
+      'helm-ls',
+      'yaml-language-server',
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

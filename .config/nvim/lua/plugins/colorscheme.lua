@@ -45,7 +45,7 @@ return {
 
       styles = {
         functions = 'bold',
-        comments = 'italic',
+        -- comments = 'italic',
         variables = 'NONE',
         types = 'NONE',
       },

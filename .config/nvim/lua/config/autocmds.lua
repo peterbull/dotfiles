@@ -16,6 +16,13 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
     vim.diagnostic.enable(false)
   end,
 })
+
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = { '*/templates/*.yaml', '*/templates/*.tpl', 'Chart.yaml', 'values.yaml' },
+  callback = function()
+    vim.bo.filetype = 'helm'
+  end,
+})
 -- Stop autocomplete from jumping cursor around when you hit tab after
 -- not finishing function params
 -- https://github.com/L3MON4D3/LuaSnip/issues/258
@@ -28,6 +35,28 @@ vim.api.nvim_create_autocmd('ModeChanged', {
       and not require('luasnip').session.jump_active
     then
       require('luasnip').unlink_current()
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd('ColorScheme', {
+  pattern = '*',
+  callback = function()
+    local groups = {
+      '@type',
+      '@type.builtin',
+      '@lsp.type.class.typescript',
+      '@lsp.type.interface.typescript',
+      '@lsp.type.type.typescript',
+      '@lsp.typemod.class.defaultLibrary.typescript',
+      '@lsp.typemod.type.defaultLibrary.typescript',
+    }
+    for _, group in ipairs(groups) do
+      local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
+      if ok then
+        hl.italic = false
+        vim.api.nvim_set_hl(0, group, hl)
+      end
     end
   end,
 })
