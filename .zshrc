@@ -127,7 +127,7 @@ export NVM_DIR="$HOME/.nvm"
   [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" 
 
 
-EDITOR=nvim
+export EDITOR=nvim
 
 # Aliases
 
@@ -142,6 +142,7 @@ alias n="nvim ."
 alias nc="cd ~/.config/nvim && nvim ~/.config/nvim"
 alias nz="nvim ~/.zshrc"
 alias nd="nvim --cmd \"lua init_debug=true\""
+alias np="nvim ~/.plan"
 alias c="code ."
 
 ## python
