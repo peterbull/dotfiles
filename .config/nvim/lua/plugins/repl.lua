@@ -10,7 +10,6 @@ return {
         print 'DEBUG: Test function called!'
         local test_var = 'Hello from debug test'
         print('DEBUG: test_var =', test_var)
-        -- This is where you'll set your breakpoint
         local another_var = 42
         print('DEBUG: another_var =', another_var)
         return test_var, another_var

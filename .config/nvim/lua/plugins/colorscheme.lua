@@ -5,13 +5,9 @@ return {
     require('onedarkpro').setup {
       highlights = {
         ['@lsp.typemod.variable.readonly.typescript'] = { fg = '#f0d090' },
-        -- ['@type'] = { fg = '#f5e6b8' },
         ['@type.builtin'] = { fg = '#e0a070' },
-        -- ['@type'] = { fg = '#fde68a', style = 'italic' }, -- Light gold
-        ['@type'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
-        -- ['@type'] = { fg = '#7dd3fc' },
-        -- ['@lsp.type.class'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
-        ['@lsp.typemod.variable.readonly.typescriptreact'] = { fg = '#e0de84' }, -- 25% lighter
+        ['@type'] = { fg = '#d8b4fe', style = 'italic' },
+        ['@lsp.typemod.variable.readonly.typescriptreact'] = { fg = '#e0de84' },
 
         -- light blue arrow func
         ['@lsp.typemod.function.declaration.typescript'] = { fg = '#7dd3fc' },

@@ -103,24 +103,6 @@ return {
             require('telescope.builtin').man_pages()
           end
         end, '[G]oto [M]anual Page')
-        -- map('grs', function()
-        --   -- go to source def in ts tools
-        --   local clients = vim.lsp.get_clients { bufnr = event.buf }
-        --   local has_tsserver = false
-        --
-        --   for _, client in ipairs(clients) do
-        --     if client.name == 'typescript-tools' or client.name == 'tsserver' or client.name == 'vtsls' then
-        --       has_tsserver = true
-        --       break
-        --     end
-        --   end
-        --
-        --   if has_tsserver then
-        --     vim.cmd 'TSToolsGoToSourceDefinition'
-        --   else
-        --     require('telescope.builtin').lsp_definitions()
-        --   end
-        -- end, '[G]oto [S]ource Definition')
 
         map('grs', function()
           local clients = vim.lsp.get_clients { bufnr = vim.api.nvim_get_current_buf() }
