@@ -7,6 +7,7 @@ local zig_init_commands = {
   'type category enable zig.std',
   'type format add --format decimal uint8_t',
   'type format add --format decimal "unsigned char"',
+  'settings set target.inline-breakpoint-strategy always',
 }
 
 local function get_target_zig_dir(cwd)

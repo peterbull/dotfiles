@@ -14,8 +14,11 @@ return {
         ['@lsp.typemod.function.readonly.typescript'] = { fg = '#7dd3fc' },
 
         -- python type hints
-        ['@lsp.type.namespace.python'] = { fg = '#f0d090', style = 'italic' },
-        ['@lsp.type.class.python'] = { fg = '#f0d090', style = 'italic' },
+        -- ['@lsp.type.namespace.python'] = { fg = '#f0d090', style = 'italic' },
+        -- ['@lsp.type.class.python'] = { fg = '#f0d090', style = 'italic' },
+        -- variables that are functions
+        ['@lsp.type.variable.python'] = {},
+
         Type = { fg = '#d19a66' },
 
         -- reef
@@ -37,11 +40,24 @@ return {
         ['@punctuation.delimiter.reef'] = { link = '@punctuation.delimiter' },
 
         ['@error.reef'] = { link = 'Error' },
+
+        -- go
+        -- ['@lsp.type.type.go'] = { fg = '#d19a66', style = 'italic' },
+        -- ['@lsp.type.struct.go'] = { fg = '#e0a070' },
+        -- ['@lsp.type.interface.go'] = { fg = '#e0a070', style = 'italic' },
+        -- ['@lsp.type.function.go'] = { fg = '#7dd3fc', style = 'bold' },
+        -- ['@lsp.type.method.go'] = { fg = '#7dd3fc' },
+        -- ['@lsp.typemod.function.definition.go'] = { fg = '#7dd3fc', style = 'bold' },
+        -- ['@lsp.typemod.method.definition.go'] = { fg = '#7dd3fc' },
+        -- ['@lsp.type.namespace.go'] = { fg = '#a8c7fa' },
+        -- ['@lsp.type.variable.go'] = {},
+        -- ['@lsp.typemod.variable.readonly.go'] = { fg = '#f0d090' },
       },
 
       styles = {
         functions = 'bold',
         -- comments = 'italic',
+
         variables = 'NONE',
         types = 'NONE',
       },

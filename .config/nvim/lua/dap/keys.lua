@@ -241,6 +241,13 @@ M.keys = {
     end,
     desc = 'Remove All Breakpoints Permanently',
   },
+  {
+    '<leader>dv',
+    function()
+      require('nvim-dap-virtual-text').toggle()
+    end,
+    desc = 'Toggle DAP Virtual Text',
+  },
 }
 
 return M

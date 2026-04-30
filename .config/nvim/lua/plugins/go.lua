@@ -6,7 +6,9 @@ return {
     'nvim-treesitter/nvim-treesitter',
   },
   opts = function()
-    require('go').setup {}
+    require('go').setup {
+      lsp_codelens = false,
+    }
     return {}
   end,
   event = { 'CmdlineEnter' },

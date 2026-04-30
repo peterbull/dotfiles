@@ -18,6 +18,28 @@ M.configurations = {
       showReturnValue = true,
     },
     {
+      name = 'FastAPI: Uvicorn (port 8081)',
+      type = 'python',
+      request = 'launch',
+      module = 'uvicorn',
+      args = {
+        'app.main:app',
+        '--host',
+        'localhost',
+        '--port',
+        '8081',
+      },
+      pythonPath = function()
+        local venv = vim.fn.getcwd() .. '/.venv/bin/python'
+        if vim.fn.executable(venv) == 1 then
+          return venv
+        end
+        return 'python3'
+      end,
+      justMyCode = false,
+      showReturnValue = true,
+    },
+    {
       name = 'Docker: Airflow Worker',
       type = 'python',
       request = 'attach',

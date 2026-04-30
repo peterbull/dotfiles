@@ -254,7 +254,6 @@ return {
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     local servers = {
       clangd = {},
-      -- gopls = {},
       pyright = {},
       -- rust_analyzer = false,
       -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -289,21 +288,36 @@ return {
       emmet_language_server = {
         filetypes = { 'html', 'css' },
       },
-      gopls = {
-        settings = {
-          gopls = {
-            hints = {
-              assignVariableTypes = true,
-              compositeLiteralFields = true,
-              compositeLiteralTypes = true,
-              constantValues = true,
-              functionTypeParameters = true,
-              parameterNames = true,
-              rangeVariableTypes = true,
-            },
-          },
-        },
-      },
+      -- gopls = {
+      --   on_attach = function(client, _)
+      --     -- workaround: gopls doesn't advertise semanticTokensProvider
+      --     if not client.server_capabilities.semanticTokensProvider then
+      --       local semantic = client.config.capabilities.textDocument.semanticTokens
+      --       client.server_capabilities.semanticTokensProvider = {
+      --         full = true,
+      --         legend = {
+      --           tokenTypes = semantic.tokenTypes,
+      --           tokenModifiers = semantic.tokenModifiers,
+      --         },
+      --         range = true,
+      --       }
+      --     end
+      --   end,
+      --   settings = {
+      --     gopls = {
+      --       semanticTokens = true,
+      --       hints = {
+      --         assignVariableTypes = true,
+      --         compositeLiteralFields = true,
+      --         compositeLiteralTypes = true,
+      --         constantValues = true,
+      --         functionTypeParameters = true,
+      --         parameterNames = true,
+      --         rangeVariableTypes = true,
+      --       },
+      --     },
+      --   },
+      -- },
 
       lua_ls = {
         before_init = function(_, config)
@@ -389,7 +403,38 @@ return {
       'yaml-language-server',
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+    -- gopls setup directly to ensure semantic tokens work
 
+    vim.lsp.config('gopls', {
+      capabilities = vim.tbl_deep_extend('force', {}, capabilities),
+      on_attach = function(client, _)
+        if not client.server_capabilities.semanticTokensProvider then
+          local semantic = client.config.capabilities.textDocument.semanticTokens
+          client.server_capabilities.semanticTokensProvider = {
+            full = true,
+            legend = {
+              tokenTypes = semantic.tokenTypes,
+              tokenModifiers = semantic.tokenModifiers,
+            },
+            range = true,
+          }
+        end
+      end,
+      settings = {
+        gopls = {
+          semanticTokens = true,
+          hints = {
+            assignVariableTypes = true,
+            compositeLiteralFields = true,
+            compositeLiteralTypes = true,
+            constantValues = true,
+            functionTypeParameters = true,
+            parameterNames = true,
+            rangeVariableTypes = true,
+          },
+        },
+      },
+    })
     require('mason-lspconfig').setup {
       ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
       automatic_installation = false,

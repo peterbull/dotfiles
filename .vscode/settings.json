@@ -878,7 +878,6 @@
     },
     "totalTypeScript.hideAllTips": false,
     "totalTypeScript.hideBasicTips": false,
-    "git.openRepositoryInParentFolders": "never",
     "editor.inlayHints.enabled": "offUnlessPressed",
     "prettier.trailingComma": "all",
     "todo-tree.general.periodicRefreshInterval": 10,
@@ -1027,7 +1026,6 @@
     "editor.minimap.enabled": false,
     "zig.zls.enabled": "on",
     "zig.path": "/Users/peterbull/.local/zig/zig",
-    "zig.zls.zigLibPath": "/Users/peterbull/.local/zig/lib",
     "C_Cpp.intelliSenseEngine": "default",
     "workbench.editor.showTabs": "none",
     "azureFunctions.showProjectWarning": false,
@@ -1039,5 +1037,7 @@
         "editor.defaultFormatter": "redhat.vscode-yaml"
     },
     "python.analysis.cacheLSPData": true,
-    "python-envs.terminal.showActivateButton": true
+    "python-envs.terminal.showActivateButton": true,
+    "lldb.suppressUpdateNotifications": true,
+    "zig.libPath": "/Users/peterbull/.local/zig/lib"
 }

@@ -473,4 +473,12 @@ export PATH=$PATH:$HOME/.luarocks/bin
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /opt/homebrew/bin/terraform terraform
 source <(kubectl completion zsh)
+
+
 alias lzd='lazydocker'
+
+alias kfwd="sudo -E kubefwd svc -n default --tui"
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
