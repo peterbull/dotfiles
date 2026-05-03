@@ -57,7 +57,6 @@ return {
       -- lldb
       local lldb_config = require 'dap.lldb'
       dap.adapters.lldb = lldb_config.adapters.lldb
-
       dap.adapters.codelldb = dap.adapters.lldb
 
       -- go
@@ -68,17 +67,12 @@ return {
       -- lua
       local lua_config = require 'dap.lua'
       dap.configurations.lua = lua_config.configurations
-
-      -- nvim
       dap.adapters.nlua = lua_config.adapters.nlua
 
       -- ts
       local ts_configs = require 'dap.ts'
-      -- node
       dap.adapters['pwa-node'] = ts_configs.adapters['pwa-node']
-      -- node (compat w/ vscode naming)
       dap.adapters['node'] = ts_configs.adapters['node']
-      -- chrome
       dap.adapters['pwa-chrome'] = ts_configs.adapters['pwa-chrome']
 
       -- Setup vscode compatibility
@@ -148,7 +142,6 @@ return {
       require('dap-info').setup {}
     end,
   },
-  -- fancy UI for the debugger
   {
     'rcarriga/nvim-dap-ui',
     dependencies = { 'nvim-neotest/nvim-nio' },

@@ -10,6 +10,7 @@ M.adapters = {
     },
   },
 }
+-- https://go.googlesource.com/vscode-go/+/c3516da303907ca11ee51e64f961cf2a4ac5339a/docs/dlv-dap.md
 M.configurations = {
 
   {
@@ -18,6 +19,8 @@ M.configurations = {
     request = 'launch',
     program = '${file}',
     outputMode = 'remote',
+    showGlobalVariables = true,
+    mode = 'debug',
   },
   {
     type = 'go',
@@ -25,6 +28,14 @@ M.configurations = {
     request = 'launch',
     program = '${fileDirname}',
     outputMode = 'remote',
+  },
+  {
+    type = 'go',
+    name = 'Debug Package for vessel',
+    request = 'launch',
+    program = '${fileDirname}',
+    outputMode = 'remote',
+    args = { 'run', 'ubuntu', '/bin/sh', '--', '-c', '"echo hello"' },
   },
   {
     type = 'go',

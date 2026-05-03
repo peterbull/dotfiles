@@ -254,7 +254,16 @@ return {
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     local servers = {
       clangd = {},
-      pyright = {},
+      ty = {
+        on_new_config = function(config, root_dir)
+          local venv = require('venv-selector').venv()
+          if venv then
+            config.settings = config.settings or {}
+            config.settings.python = config.settings.python or {}
+            config.settings.python.pythonPath = venv .. '/bin/python'
+          end
+        end,
+      },
       -- rust_analyzer = false,
       -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
       --
