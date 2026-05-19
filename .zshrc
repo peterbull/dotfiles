@@ -162,6 +162,18 @@ alias zb="zig build"
 ## Git
 alias gpc='gh pr create'
 alias gs-apply='git stash apply $(git stash list | fzf | awk "{print \$1}" | tr -d ":")'; 
+# force push to current branch
+unalias gpf 2>/dev/null
+gpf() {
+  local branch
+  branch=$(git branch --show-current)
+  if [[ "$branch" == "main" || "$branch" == "master" ]]; then
+    echo "ERROR: tried to push to a no-no branch, checkout a dev branch"
+    return 1
+  fi
+  git push -u origin "$branch" --force-with-lease
+}
+
 
 ## immediate stash and apply for a quick local save point
 gsarchive() {
@@ -482,3 +494,10 @@ alias kfwd="sudo -E kubefwd svc -n default --tui"
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
+
+bindkey -v
+bindkey -M viins 'jk' vi-cmd-mode
+
+
+alias pib='PROJECT_DIR=$(pwd) mise -C ~/peter-projects/pi-config/sandbox exec -- docker compose run --rm sandbox'
+alias pibr='PROJECT_DIR=$(pwd) mise -C ~/peter-projects/pi-config/sandbox exec -- docker compose run --build --rm sandbox'

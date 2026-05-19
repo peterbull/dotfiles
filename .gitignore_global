@@ -17,4 +17,6 @@ Thumbs.db
 .plan
 .scratch
 *.scratch.*
-
+tasks
+.pi
+.pi-lens

@@ -81,6 +81,30 @@ return {
         end,
         desc = '[G]it [H]istory',
       },
+
+      {
+        '<leader>gT',
+        function()
+          local lib = require 'diffview.lib'
+          if next(lib.views) ~= nil then
+            vim.cmd 'DiffviewClose'
+            return
+          end
+
+          vim.ui.input({ prompt = 'Base tag: ' }, function(tag1)
+            if not tag1 or tag1 == '' then
+              return
+            end
+            vim.ui.input({ prompt = 'Compare tag: ' }, function(tag2)
+              if not tag2 or tag2 == '' then
+                return
+              end
+              vim.cmd('DiffviewOpen ' .. tag1 .. '..' .. tag2)
+            end)
+          end)
+        end,
+        desc = '[G]it diff between two [T]ags',
+      },
       {
         '<leader>gA',
         function()

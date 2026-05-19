@@ -389,6 +389,7 @@
             ]
         }
     ],
+    //
     "whichkey.bindingOverrides": [
         {
             "keys": " ",
@@ -398,6 +399,14 @@
         }
     ],
     "whichkey.bindings": [
+        // ── <leader><leader> → buffers (mirrors <leader><leader> → telescope buffers) ──
+        {
+            "key": "<leader>",
+            "name": "Find existing buffers",
+            "type": "command",
+            "command": "workbench.action.quickOpenPreviousRecentlyUsedEditorInGroup"
+        },
+        // ── / → Search ────────────────────────────────────────────────────────────────
         {
             "key": "/",
             "name": "Search...",
@@ -415,16 +424,133 @@
                 }
             ]
         },
+        // ── e → Explorer (mirrors <leader>e → mini.files) ────────────────────────────
         {
             "key": "e",
-            "name": "Explorer",
+            "name": "Open File Explorer",
+            "type": "command",
             "command": "workbench.view.explorer"
         },
+        // ── f → Format buffer (mirrors <leader>f → conform.format) ──────────────────
         {
             "key": "f",
-            "name": "Format Document",
+            "name": "Format buffer",
+            "type": "command",
             "command": "editor.action.formatDocument"
         },
+        // ── s → Search (mirrors telescope <leader>s* bindings) ───────────────────────
+        {
+            "key": "s",
+            "name": "Search...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "h",
+                    "name": "[S]earch [H]elp",
+                    "command": "workbench.action.showCommands"
+                },
+                {
+                    "key": "k",
+                    "name": "[S]earch [K]eymaps",
+                    "command": "workbench.action.openGlobalKeybindings"
+                },
+                {
+                    "key": "f",
+                    "name": "[S]earch [F]iles",
+                    "command": "workbench.action.quickOpen"
+                },
+                {
+                    "key": "F",
+                    "name": "[S]earch all [F]iles (incl. hidden)",
+                    "command": "workbench.action.quickOpen"
+                },
+                {
+                    "key": "g",
+                    "name": "[S]earch by [G]rep",
+                    "command": "workbench.action.findInFiles"
+                },
+                {
+                    "key": "G",
+                    "name": "[S]earch by [G]rep (incl. tests)",
+                    "command": "workbench.action.findInFiles"
+                },
+                {
+                    "key": "w",
+                    "name": "[S]earch current [W]ord",
+                    "command": "editor.action.addSelectionToNextFindMatch"
+                },
+                {
+                    "key": "d",
+                    "name": "[S]earch [D]iagnostics / Document Symbols",
+                    "command": "workbench.action.gotoSymbol"
+                },
+                {
+                    "key": "r",
+                    "name": "[S]earch [R]esume",
+                    "command": "workbench.action.findInFiles"
+                },
+                {
+                    "key": ".",
+                    "name": "[S]earch Recent Files",
+                    "command": "workbench.action.openRecent"
+                },
+                {
+                    "key": "n",
+                    "name": "[S]earch [N]eovim / config files",
+                    "command": "workbench.action.quickOpen"
+                },
+                {
+                    "key": "j",
+                    "name": "[S]earch [J]umplist",
+                    "command": "workbench.action.quickOpen"
+                },
+                {
+                    "key": "m",
+                    "name": "[S]earch [M]arks",
+                    "command": "bookmarks.listFromAllFiles"
+                },
+                {
+                    "key": "s",
+                    "name": "[S]earch [S]ymbols (workspace)",
+                    "type": "bindings",
+                    "bindings": [
+                        {
+                            "key": "s",
+                            "name": "Select Telescope picker",
+                            "command": "workbench.action.showCommands"
+                        },
+                        {
+                            "key": "w",
+                            "name": "[S]ymbols [W]orkspace",
+                            "command": "workbench.action.showAllSymbols"
+                        },
+                        {
+                            "key": "d",
+                            "name": "[S]ymbols [D]ocument",
+                            "command": "workbench.action.gotoSymbol"
+                        }
+                    ]
+                },
+                {
+                    "key": "a",
+                    "name": "[S]earch [A]ll...",
+                    "type": "bindings",
+                    "bindings": [
+                        {
+                            "key": "f",
+                            "name": "[S]earch [A]ll [F]iles (hidden)",
+                            "command": "workbench.action.quickOpen"
+                        },
+                        {
+                            "key": "g",
+                            "name": "[S]earch in [A]ll files by [G]rep",
+                            "command": "workbench.action.findInFiles"
+                        }
+                    ]
+                }
+            ]
+        },
+        // ── g → Git (mirrors <leader>g* diffview/gitsigns bindings) ─────────────────
         {
             "key": "g",
             "name": "Git...",
@@ -441,138 +567,93 @@
                     "command": "workbench.view.scm"
                 },
                 {
-                    "key": "b",
-                    "name": "Blame/Toggle Blame",
-                    "command": "gitlens.toggleFileBlame"
+                    "key": "d",
+                    "name": "[G]it [D]iff current file (toggle)",
+                    "command": "git.openChange"
                 },
                 {
-                    "key": "l",
-                    "name": "Git Log",
+                    "key": "M",
+                    "name": "[G]it diff vs [M]erge base",
+                    "command": "git.openChange"
+                },
+                {
+                    "key": "f",
+                    "name": "[G]it [F]ile history",
                     "command": "git.viewHistory"
                 },
                 {
+                    "key": "h",
+                    "name": "[G]it [H]istory (all)",
+                    "command": "git.viewHistory"
+                },
+                {
+                    "key": "A",
+                    "name": "[G]it [A]ll changes vs default branch",
+                    "command": "git.openChange"
+                },
+                {
+                    "key": "T",
+                    "name": "[G]it diff between two [T]ags",
+                    "command": "git.openChange"
+                },
+                {
+                    "key": "b",
+                    "name": "[G]it [B]lame (toggle)",
+                    "command": "gitlens.toggleFileBlame"
+                },
+                {
                     "key": "a",
-                    "name": "Git Add Current File",
+                    "name": "Git [A]dd current file",
                     "command": "git.stage"
                 },
                 {
                     "key": "c",
-                    "name": "Git Commit",
+                    "name": "Git [C]ommit",
                     "command": "git.commit"
                 },
                 {
                     "key": "p",
-                    "name": "Git Push",
+                    "name": "Git [P]ush",
                     "command": "git.push"
                 },
                 {
                     "key": "P",
-                    "name": "Git Pull",
+                    "name": "Git [P]ull",
                     "command": "git.pull"
                 },
                 {
-                    "key": "d",
-                    "name": "Diff View",
-                    "command": "git.openChange"
-                },
-                {
-                    "key": "m",
-                    "name": "Diff vs previous commit",
-                    "command": "git.openChange"
-                },
-                {
                     "key": "r",
-                    "name": "Git...",
+                    "name": "Git [R]eset...",
                     "type": "bindings",
                     "bindings": [
                         {
                             "key": "h",
-                            "name": "Reset Hunk",
+                            "name": "Reset [H]unk",
                             "command": "git.revertSelectedRanges"
                         }
                     ]
                 }
             ]
         },
+        // ── b → Buffer (mirrors <leader>bd / <leader>bo) ─────────────────────────────
         {
             "key": "b",
             "name": "Buffer...",
             "type": "bindings",
             "bindings": [
                 {
-                    "key": "o",
-                    "name": "Close other buffers",
-                    "command": "workbench.action.closeOtherEditors"
-                },
-                {
                     "key": "d",
-                    "name": "Close buffer",
+                    "name": "[D]elete current buffer",
                     "command": "workbench.action.closeActiveEditor"
+                },
+                {
+                    "key": "o",
+                    "name": "Close [O]ther buffers",
+                    "command": "workbench.action.closeOtherEditors"
                 }
             ]
         },
-        {
-            "key": "s",
-            "name": "Search/Symbol...",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "h",
-                    "name": "Search Help",
-                    "command": "workbench.action.showCommands"
-                },
-                {
-                    "key": "k",
-                    "name": "Search Keymaps",
-                    "command": "workbench.action.openGlobalKeybindings"
-                },
-                {
-                    "key": "f",
-                    "name": "Search Files",
-                    "command": "workbench.action.quickOpen"
-                },
-                {
-                    "key": "s",
-                    "name": "Search Symbols",
-                    "command": "workbench.action.showAllSymbols"
-                },
-                {
-                    "key": "w",
-                    "name": "Search current Word",
-                    "command": "editor.action.addSelectionToNextFindMatch"
-                },
-                {
-                    "key": "g",
-                    "name": "Search by Grep",
-                    "command": "workbench.action.findInFiles"
-                },
-                {
-                    "key": "d",
-                    "name": "Document Symbols",
-                    "command": "workbench.action.gotoSymbol"
-                },
-                {
-                    "key": "p",
-                    "name": "Project Symbols",
-                    "command": "workbench.action.showAllSymbols"
-                },
-                {
-                    "key": "r",
-                    "name": "Search Resume",
-                    "command": "workbench.action.findInFiles"
-                },
-                {
-                    "key": ".",
-                    "name": "Search Recent Files",
-                    "command": "workbench.action.openRecent"
-                },
-                {
-                    "key": "n",
-                    "name": "Search Neovim files",
-                    "command": "workbench.action.quickOpen"
-                }
-            ]
-        },
+        // ── d → Debug (mirrors <leader>d* DAP bindings) ──────────────────────────────
         {
             "key": "d",
             "name": "Debug...",
@@ -580,106 +661,90 @@
             "bindings": [
                 {
                     "key": "a",
-                    "name": "Start Debugging",
+                    "name": "St[a]rt Debugging",
                     "command": "workbench.action.debug.start"
                 },
                 {
                     "key": "c",
-                    "name": "Continue",
+                    "name": "[C]ontinue",
                     "command": "workbench.action.debug.continue"
                 },
                 {
                     "key": "b",
-                    "name": "Toggle Breakpoint",
+                    "name": "Toggle [B]reakpoint",
                     "command": "editor.debug.action.toggleBreakpoint"
                 },
                 {
                     "key": "B",
-                    "name": "Conditional Breakpoint",
+                    "name": "Conditional [B]reakpoint",
                     "command": "editor.debug.action.conditionalBreakpoint"
                 },
                 {
                     "key": "t",
-                    "name": "Stop Debugging",
+                    "name": "S[t]op Debugging",
                     "command": "workbench.action.debug.stop"
                 },
                 {
-                    "key": "d",
-                    "name": "Open Debug View",
-                    "command": "workbench.view.debug"
-                },
-                {
                     "key": "r",
-                    "name": "Restart Debugging",
+                    "name": "[R]estart Debugging",
                     "command": "workbench.action.debug.restart"
                 },
                 {
+                    "key": "d",
+                    "name": "Open [D]ebug View",
+                    "command": "workbench.view.debug"
+                },
+                {
                     "key": "i",
-                    "name": "Step Into",
+                    "name": "Step [I]nto",
                     "command": "workbench.action.debug.stepInto"
                 },
                 {
                     "key": "o",
-                    "name": "Step Out",
+                    "name": "Step [O]ut",
                     "command": "workbench.action.debug.stepOut"
                 },
                 {
                     "key": "O",
-                    "name": "Step Over",
+                    "name": "Step [O]ver",
                     "command": "workbench.action.debug.stepOver"
                 },
                 {
                     "key": "u",
-                    "name": "Toggle Debug UI",
+                    "name": "Toggle Debug [U]I",
+                    "command": "workbench.debug.action.toggleRepl"
+                },
+                {
+                    "key": "U",
+                    "name": "Reset Debug [U]I",
                     "command": "workbench.debug.action.toggleRepl"
                 },
                 {
                     "key": "e",
-                    "name": "Evaluate Expression",
+                    "name": "[E]val / Evaluate Expression",
                     "command": "editor.debug.action.showDebugHover"
                 }
             ]
         },
-        {
-            "key": "c",
-            "name": "Copilot/Chat/Code...",
-            "type": "bindings",
-            "bindings": [
-                {
-                    "key": "c",
-                    "name": "Focus Copilot Chat",
-                    "command": "workbench.panel.chat.view.copilot.focus"
-                },
-                {
-                    "key": "d",
-                    "name": "Close Chat",
-                    "command": "workbench.action.closeAuxiliaryBar"
-                },
-                {
-                    "key": "s",
-                    "name": "Show Symbols (Trouble)",
-                    "command": "workbench.action.gotoSymbol"
-                },
-                {
-                    "key": "l",
-                    "name": "LSP References",
-                    "command": "references-view.findReferences"
-                }
-            ]
-        },
+        // ── x → Trouble / Diagnostics (mirrors <leader>x* trouble.nvim) ─────────────
         {
             "key": "x",
-            "name": "Problems/Diagnostics...",
+            "name": "Diagnostics/Trouble...",
             "type": "bindings",
             "bindings": [
                 {
                     "key": "x",
-                    "name": "Show All Problems",
+                    "name": "Current Line Diagnostics",
                     "command": "workbench.actions.view.problems"
                 },
                 {
                     "key": "X",
                     "name": "Buffer Diagnostics",
+                    "command": "workbench.actions.view.problems"
+                },
+                {
+                    "key": "X",
+                    "name": "All Buffers Diagnostics",
                     "command": "workbench.actions.view.problems"
                 },
                 {
@@ -694,44 +759,192 @@
                 }
             ]
         },
+        // ── c → Code / Custom / Copilot (mirrors <leader>c* + trouble cs/cl) ─────────
+        {
+            "key": "c",
+            "name": "Code/Custom/Copilot...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "c",
+                    "name": "Focus Copilot Chat",
+                    "command": "workbench.panel.chat.view.copilot.focus"
+                },
+                {
+                    "key": "d",
+                    "name": "Close Chat / Aux Bar",
+                    "command": "workbench.action.closeAuxiliaryBar"
+                },
+                {
+                    "key": "s",
+                    "name": "[C]ode [S]ymbols (Trouble)",
+                    "command": "workbench.action.gotoSymbol"
+                },
+                {
+                    "key": "l",
+                    "name": "LSP References (Trouble)",
+                    "command": "references-view.findReferences"
+                },
+                {
+                    "key": "f",
+                    "name": "Run [C]ustom [F]unction",
+                    "command": "workbench.action.showCommands"
+                },
+                {
+                    "key": "d",
+                    "name": "[C]opy buffer [D]irectory",
+                    "command": "copyRelativeFilePath"
+                }
+            ]
+        },
+        // ── r → REPL (mirrors <leader>r* iron.nvim keymaps) ─────────────────────────
+        {
+            "key": "r",
+            "name": "REPL...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "r",
+                    "name": "Toggle REPL",
+                    "command": "workbench.action.terminal.toggleTerminal"
+                },
+                {
+                    "key": "R",
+                    "name": "Restart REPL / Kernel",
+                    "command": "jupyter.restartkernel"
+                },
+                {
+                    "key": "l",
+                    "name": "Send current [L]ine",
+                    "command": "jupyter.execSelectionInteractive"
+                },
+                {
+                    "key": "c",
+                    "name": "Send selection / motion",
+                    "command": "jupyter.execSelectionInteractive"
+                },
+                {
+                    "key": "F",
+                    "name": "Send entire [F]ile",
+                    "command": "jupyter.runAllCells"
+                },
+                {
+                    "key": "b",
+                    "name": "Send code [B]lock",
+                    "command": "jupyter.runCurrentCell"
+                },
+                {
+                    "key": "n",
+                    "name": "Send block and move [N]ext",
+                    "command": "jupyter.runCurrentCellAndAdvance"
+                },
+                {
+                    "key": "i",
+                    "name": "[I]nterrupt REPL",
+                    "command": "jupyter.interruptkernel"
+                },
+                {
+                    "key": "f",
+                    "name": "[F]ocus REPL",
+                    "command": "workbench.action.terminal.focus"
+                },
+                {
+                    "key": "h",
+                    "name": "[H]ide REPL",
+                    "command": "workbench.action.terminal.toggleTerminal"
+                }
+            ]
+        },
+        // ── h → Harpoon (mirrors <leader>h* harpoon2 bindings) ───────────────────────
+        {
+            "key": "h",
+            "name": "Harpoon...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "a",
+                    "name": "[A]dd to harpoon",
+                    "command": "workbench.action.pinEditor"
+                },
+                {
+                    "key": "c",
+                    "name": "[C]lear harpoon",
+                    "command": "workbench.action.unpinEditor"
+                },
+                {
+                    "key": "h",
+                    "name": "Open [H]arpoon list",
+                    "command": "workbench.action.showAllEditors"
+                }
+            ]
+        },
+        // ── t → Treesitter / Toggles (mirrors <leader>t* + <leader>th / <leader>tt) ──
+        {
+            "key": "t",
+            "name": "Treesitter/Toggles...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "i",
+                    "name": "Toggle Treesitter [I]nspect",
+                    "command": "editor.action.inspectTMScopes"
+                },
+                {
+                    "key": "h",
+                    "name": "Toggle Inlay [H]ints",
+                    "command": "editor.action.inlayHints.toggle"
+                },
+                {
+                    "key": "t",
+                    "name": "Toggle [T]erminal / cmdheight",
+                    "command": "workbench.action.terminal.toggleTerminal"
+                },
+                {
+                    "key": "H",
+                    "name": "Toggle Terminal (Bottom)",
+                    "command": "workbench.action.terminal.toggleTerminal"
+                }
+            ]
+        },
+        // ── m → Marks / Bookmarks (mirrors <leader>m* bookmarks) ────────────────────
         {
             "key": "m",
-            "name": "Bookmarks/Marks...",
+            "name": "Marks/Bookmarks...",
             "type": "bindings",
             "bindings": [
                 {
                     "key": "t",
-                    "name": "Toggle bookmark",
+                    "name": "[T]oggle bookmark",
                     "command": "bookmarks.toggle"
                 },
                 {
                     "key": "l",
-                    "name": "Toggle labeled bookmark",
+                    "name": "Toggle [L]abeled bookmark",
                     "command": "bookmarks.toggleLabeled"
                 },
                 {
                     "key": "n",
-                    "name": "Jump to next bookmark",
+                    "name": "Jump to [N]ext bookmark",
                     "command": "bookmarks.jumpToNext"
                 },
                 {
                     "key": "p",
-                    "name": "Jump to previous bookmark",
+                    "name": "Jump to [P]revious bookmark",
                     "command": "bookmarks.jumpToPrevious"
                 },
                 {
                     "key": "b",
-                    "name": "List bookmarks (current file)",
+                    "name": "List [B]ookmarks (current file)",
                     "command": "bookmarks.list"
                 },
                 {
                     "key": "a",
-                    "name": "List bookmarks (all files)",
+                    "name": "List bookmarks ([A]ll files)",
                     "command": "bookmarks.listFromAllFiles"
                 },
                 {
                     "key": "c",
-                    "name": "Clear bookmarks (current file)",
+                    "name": "[C]lear bookmarks (current file)",
                     "command": "bookmarks.clear"
                 },
                 {
@@ -741,32 +954,73 @@
                 },
                 {
                     "key": "r",
-                    "name": "Run worksheet",
+                    "name": "[R]un worksheet",
                     "command": "ts-worksheet.run"
                 }
             ]
         },
+        // ── o → Octo / GitHub (mirrors <leader>o* octo.nvim) ────────────────────────
         {
-            "key": "q",
-            "name": "Session/Quit...",
+            "key": "o",
+            "name": "Octo/GitHub...",
             "type": "bindings",
             "bindings": [
                 {
+                    "key": "i",
+                    "name": "List GitHub [I]ssues",
+                    "command": "workbench.action.showCommands"
+                },
+                {
+                    "key": "p",
+                    "name": "List GitHub [P]ull Requests",
+                    "command": "workbench.action.showCommands"
+                },
+                {
+                    "key": "d",
+                    "name": "List GitHub [D]iscussions",
+                    "command": "workbench.action.showCommands"
+                },
+                {
+                    "key": "n",
+                    "name": "List GitHub [N]otifications",
+                    "command": "workbench.action.showCommands"
+                },
+                {
                     "key": "s",
-                    "name": "Save session",
+                    "name": "[S]earch GitHub",
+                    "command": "workbench.action.showCommands"
+                }
+            ]
+        },
+        // ── q → Session/Quickfix (mirrors <leader>q → diagnostic quickfix) ──────────
+        {
+            "key": "q",
+            "name": "Session/Quickfix...",
+            "type": "bindings",
+            "bindings": [
+                {
+                    "key": "q",
+                    "name": "Open diagnostic [Q]uickfix list",
+                    "command": "workbench.actions.view.problems"
+                },
+                {
+                    "key": "s",
+                    "name": "[S]ave all files",
                     "command": "workbench.action.files.saveAll"
                 },
                 {
                     "key": "l",
-                    "name": "Load last session",
+                    "name": "[L]oad last session",
                     "command": "workbench.action.reopenClosedEditor"
-                },
-                {
-                    "key": "q",
-                    "name": "Open diagnostic quickfix list",
-                    "command": "workbench.actions.view.problems"
                 }
             ]
+        },
+        // ── u → Undo tree (mirrors <leader>u → UndotreeToggle) ──────────────────────
+        {
+            "key": "u",
+            "name": "Toggle [U]ndo Tree",
+            "type": "command",
+            "command": "workbench.action.showCommands"
         }
     ],
     "git.confirmSync": false,
@@ -790,7 +1044,6 @@
     },
     "redhat.telemetry.enabled": true,
     "database-client.autoSync": true,
-    "vsicons.dontShowNewVersionMessage": true,
     "[c]": {
         "editor.wordBasedSuggestions": "off",
         "editor.semanticHighlighting.enabled": true,
@@ -798,7 +1051,6 @@
         "editor.suggest.insertMode": "replace",
     },
     "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0}",
-    "workbench.iconTheme": "vscode-icons",
     "workbench.colorTheme": "One Dark Pro Flat",
     "cmake.pinnedCommands": [
         "workbench.action.tasks.configureTaskRunner",
@@ -845,8 +1097,8 @@
         "*.jar",
         "*.war"
     ],
-    "python.analysis.typeCheckingMode": "standard",
-    "python.defaultInterpreterPath": "/Users/peterbull/shift-projects/tf-infra-cio-onesource-mcp/terraform/function-source/.venv",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.defaultInterpreterPath": "/Users/peterbull/.pyenv/shims/python3",
     "rust-analyzer.showSyntaxTree": true,
     "gitlens.views.scm.grouped.views": {
         "commits": true,
@@ -1039,5 +1291,6 @@
     "python.analysis.cacheLSPData": true,
     "python-envs.terminal.showActivateButton": true,
     "lldb.suppressUpdateNotifications": true,
-    "zig.libPath": "/Users/peterbull/.local/zig/lib"
+    "zig.libPath": "/Users/peterbull/.local/zig/lib",
+    "git.openRepositoryInParentFolders": "always"
 }
