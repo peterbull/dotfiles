@@ -499,5 +499,9 @@ bindkey -v
 bindkey -M viins 'jk' vi-cmd-mode
 
 
-alias pib='PROJECT_DIR=$(pwd) mise -C ~/peter-projects/pi-config/sandbox exec -- docker compose run --rm sandbox'
-alias pibr='PROJECT_DIR=$(pwd) mise -C ~/peter-projects/pi-config/sandbox exec -- docker compose run --build --rm sandbox'
+alias pib='bash ~/peter-projects/pi-config/sandbox/run-msb.sh'
+#
+# >>> microsandbox >>>
+export PATH="$HOME/.microsandbox/bin:$PATH"
+export DYLD_LIBRARY_PATH="$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+# <<< microsandbox <<<
