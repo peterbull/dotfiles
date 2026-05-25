@@ -253,6 +253,7 @@ return {
     --  - settings (table): Override the default settings passed when initializing the server.
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     local servers = {
+      vtsls = false, -- managed separately in typescript-tools.lua (monorepo root_dir)
       clangd = {},
       ty = {
         on_new_config = function(config, root_dir)
@@ -447,9 +448,14 @@ return {
     require('mason-lspconfig').setup {
       ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
       automatic_installation = false,
+      automatic_enable = { exclude = { 'vtsls' } }, -- prevent double vtsls from vim.lsp.enable()
       handlers = {
         function(server_name)
-          local server = servers[server_name] or {}
+          local server = servers[server_name]
+          if server == false then
+            return -- explicitly disabled (managed elsewhere)
+          end
+          server = server or {}
           -- This handles overriding only values explicitly passed
           -- by the server configuration above. Useful when disabling
           -- certain features of an LSP (for example, turning off formatting for ts_ls)

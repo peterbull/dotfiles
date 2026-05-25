@@ -1292,5 +1292,6 @@
     "python-envs.terminal.showActivateButton": true,
     "lldb.suppressUpdateNotifications": true,
     "zig.libPath": "/Users/peterbull/.local/zig/lib",
-    "git.openRepositoryInParentFolders": "always"
+    "git.openRepositoryInParentFolders": "always",
+    "typescript.experimental.useTsgo": true
 }
