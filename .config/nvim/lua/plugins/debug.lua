@@ -37,6 +37,12 @@ return {
         },
       },
       {
+        'suketa/nvim-dap-ruby',
+        config = function()
+          require('dap-ruby').setup()
+        end,
+      },
+      {
         'mason-org/mason.nvim',
         opts = function(_, opts)
           opts.ensure_installed = opts.ensure_installed or {}
@@ -86,6 +92,7 @@ return {
       vscode.type_to_filetypes['sh'] = { 'sh', 'bash' }
       vscode.type_to_filetypes['go'] = { 'go' }
       vscode.type_to_filetypes['delve'] = { 'go' }
+      vscode.type_to_filetypes['ruby'] = { 'ruby' }
 
       -- Setup JavaScript/TypeScript configurations
       for _, language in ipairs(js_filetypes) do
@@ -105,6 +112,8 @@ return {
       local zig_config = require 'dap.zig'
       dap.configurations.zig = zig_config.configurations
 
+      -- ruby
+      -- loads with plugin above, configs in ruby.lua are wonky attaching for some reason
       -- sh
       local sh_config = require 'dap.sh'
       dap.adapters.sh = sh_config.adapters.sh

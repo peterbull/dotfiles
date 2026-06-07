@@ -1,5 +1,6 @@
 return {
   'milanglacier/minuet-ai.nvim',
+  enabled = false,
   event = 'InsertEnter',
   config = function()
     -- Load API keys from ~/.env
@@ -25,7 +26,8 @@ return {
       context_ratio = 0.75,
       notify = 'warn',
       virtualtext = {
-        auto_trigger_ft = { '*' },
+        -- auto_trigger_ft = { '*' },
+        auto_trigger_ft = {},
         keymap = {
           accept = '<C-y>',
           next = '<A-]>',

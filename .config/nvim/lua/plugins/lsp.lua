@@ -45,6 +45,16 @@ return {
     --    That is to say, every time a new file is opened that is associated with
     --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
     --    function will be executed to configure the current buffer
+
+    local file_ignore_patterns = {
+      '_test%.go$',
+      '%.test%.[jt]sx?$',
+      '%.spec%.[jt]sx?$',
+      '__tests__/',
+      'test_.*%.py$',
+      '.*_test%.py$',
+    }
+
     vim.api.nvim_create_autocmd('LspAttach', {
       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
       callback = function(event)
@@ -67,11 +77,19 @@ return {
         map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
 
         -- Find references for the word under your cursor.
-        map('grr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+        map('grr', function()
+          require('telescope.builtin').lsp_references {
+            file_ignore_patterns = file_ignore_patterns,
+          }
+        end, '[G]oto [R]eferences')
 
         -- Jump to the implementation of the word under your cursor.
         --  Useful when your language has ways of declaring types without an actual implementation.
-        map('gri', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+        map('gri', function()
+          require('telescope.builtin').lsp_implementations {
+            file_ignore_patterns = file_ignore_patterns,
+          }
+        end, '[G]oto [I]mplementation')
 
         -- Jump to the definition of the word under your cursor.
         --  This is where a variable was first declared, or where a function is defined, etc.
