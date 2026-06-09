@@ -513,3 +513,8 @@ alias pib='bash ~/peter-projects/pi-config/sandbox/run-msb.sh'
 export PATH="$HOME/.microsandbox/bin:$PATH"
 export DYLD_LIBRARY_PATH="$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
 # <<< microsandbox <<<
+# The following lines have been added by Docker Desktop to enable Docker CLI completions.
+fpath=(/Users/peterbull/.docker/completions $fpath)
+autoload -Uz compinit
+compinit
+# End of Docker CLI completions

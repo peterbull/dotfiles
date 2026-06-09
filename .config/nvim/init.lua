@@ -33,6 +33,9 @@ end
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
+-- always reset lsp log level in case i forget
+vim.lsp.set_log_level 'warn'
+
 require('lazy').setup({
   { import = 'plugins' },
 }, {
