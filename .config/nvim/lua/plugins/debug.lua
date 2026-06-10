@@ -72,7 +72,7 @@ return {
 
       -- lua
       local lua_config = require 'dap.lua'
-      dap.configurations.lua = lua_config.configurations
+      dap.configurations.lua = lua_config.configurations.lua
       dap.adapters.nlua = lua_config.adapters.nlua
 
       -- ts

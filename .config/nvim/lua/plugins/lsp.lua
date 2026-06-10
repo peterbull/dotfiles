@@ -100,6 +100,7 @@ return {
         --  For example, in C this would take you to the header.
         map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+        map('<leader>cl', vim.lsp.codelens.run, '[C]ode [L]ens Run')
         -- Fuzzy find all the symbols in your current document.
         --  Symbols are things like variables, functions, types, etc.
         map('gO', require('telescope.builtin').lsp_document_symbols, 'Open Document Symbols')
@@ -223,6 +224,13 @@ return {
             vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
           end, '[T]oggle Inlay [H]ints')
         end
+        if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_codeLens, event.buf) then
+          vim.api.nvim_create_autocmd({ 'BufEnter', 'CursorHold', 'InsertLeave' }, {
+            buffer = event.buf,
+            callback = vim.lsp.codelens.refresh,
+          })
+          vim.lsp.codelens.refresh()
+        end
       end,
     })
 
@@ -273,6 +281,14 @@ return {
     local servers = {
       vtsls = false, -- managed separately in typescript-tools.lua (monorepo root_dir)
       clangd = {},
+
+      -- ruby_lsp = {
+      --   init_options = {
+      --     enabledFeatures = {
+      --       codeLens = true,
+      --     },
+      --   },
+      -- },
       ty = {
         on_new_config = function(config, root_dir)
           local venv = require('venv-selector').venv()
@@ -346,21 +362,7 @@ return {
       --     },
       --   },
       -- },
-
       lua_ls = {
-        before_init = function(_, config)
-          if not config.settings then
-            config.settings = {}
-          end
-          if not config.settings.Lua then
-            config.settings.Lua = {}
-          end
-          if not config.settings.Lua.diagnostics then
-            config.settings.Lua.diagnostics = {}
-          end
-          config.settings.Lua.diagnostics.globals = config.settings.Lua.diagnostics.globals or {}
-          table.insert(config.settings.Lua.diagnostics.globals, 'vim')
-        end,
         settings = {
           Lua = {
             runtime = {
@@ -371,6 +373,10 @@ return {
             },
             workspace = {
               checkThirdParty = false,
+              library = {
+                vim.env.VIMRUNTIME,
+                '${3rd}/luv/library',
+              },
             },
             completion = {
               callSnippet = 'Replace',
@@ -397,7 +403,7 @@ return {
         },
       },
       terraformls = {
-        filetypes = { 'terraform', 'tf', 'terraform-vars' },
+        filetypes = { 'terraform', 'tf', 'terraform-vars', 'hcl' },
         settings = {
           terraform = {
             validate = {
@@ -466,7 +472,7 @@ return {
     require('mason-lspconfig').setup {
       ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
       automatic_installation = false,
-      automatic_enable = { exclude = { 'vtsls' } }, -- prevent double vtsls from vim.lsp.enable()
+      automatic_enable = { exclude = { 'vtsls', 'ruby_lsp' } }, -- prevent double vtsls from vim.lsp.enable()
       handlers = {
         function(server_name)
           local server = servers[server_name]
