@@ -1293,5 +1293,6 @@
     "lldb.suppressUpdateNotifications": true,
     "zig.libPath": "/Users/peterbull/.local/zig/lib",
     "git.openRepositoryInParentFolders": "always",
-    "typescript.experimental.useTsgo": true
+    "typescript.experimental.useTsgo": true,
+    "makefile.configureOnOpen": true
 }
