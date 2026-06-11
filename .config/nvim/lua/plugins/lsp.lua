@@ -224,13 +224,13 @@ return {
             vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
           end, '[T]oggle Inlay [H]ints')
         end
-        if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_codeLens, event.buf) then
-          vim.api.nvim_create_autocmd({ 'BufEnter', 'CursorHold', 'InsertLeave' }, {
-            buffer = event.buf,
-            callback = vim.lsp.codelens.refresh,
-          })
-          vim.lsp.codelens.refresh()
-        end
+        -- if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_codeLens, event.buf) then
+        --   vim.api.nvim_create_autocmd({ 'BufEnter', 'CursorHold', 'InsertLeave' }, {
+        --     buffer = event.buf,
+        --     callback = vim.lsp.codelens.refresh,
+        --   })
+        --   vim.lsp.codelens.refresh()
+        -- end
       end,
     })
 
