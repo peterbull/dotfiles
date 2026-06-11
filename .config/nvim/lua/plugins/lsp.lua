@@ -45,6 +45,16 @@ return {
     --    That is to say, every time a new file is opened that is associated with
     --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
     --    function will be executed to configure the current buffer
+
+    local file_ignore_patterns = {
+      '_test%.go$',
+      '%.test%.[jt]sx?$',
+      '%.spec%.[jt]sx?$',
+      '__tests__/',
+      'test_.*%.py$',
+      '.*_test%.py$',
+    }
+
     vim.api.nvim_create_autocmd('LspAttach', {
       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
       callback = function(event)
@@ -67,11 +77,19 @@ return {
         map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
 
         -- Find references for the word under your cursor.
-        map('grr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+        map('grr', function()
+          require('telescope.builtin').lsp_references {
+            file_ignore_patterns = file_ignore_patterns,
+          }
+        end, '[G]oto [R]eferences')
 
         -- Jump to the implementation of the word under your cursor.
         --  Useful when your language has ways of declaring types without an actual implementation.
-        map('gri', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+        map('gri', function()
+          require('telescope.builtin').lsp_implementations {
+            file_ignore_patterns = file_ignore_patterns,
+          }
+        end, '[G]oto [I]mplementation')
 
         -- Jump to the definition of the word under your cursor.
         --  This is where a variable was first declared, or where a function is defined, etc.
@@ -82,6 +100,7 @@ return {
         --  For example, in C this would take you to the header.
         map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+        map('<leader>cl', vim.lsp.codelens.run, '[C]ode [L]ens Run')
         -- Fuzzy find all the symbols in your current document.
         --  Symbols are things like variables, functions, types, etc.
         map('gO', require('telescope.builtin').lsp_document_symbols, 'Open Document Symbols')
@@ -103,24 +122,6 @@ return {
             require('telescope.builtin').man_pages()
           end
         end, '[G]oto [M]anual Page')
-        -- map('grs', function()
-        --   -- go to source def in ts tools
-        --   local clients = vim.lsp.get_clients { bufnr = event.buf }
-        --   local has_tsserver = false
-        --
-        --   for _, client in ipairs(clients) do
-        --     if client.name == 'typescript-tools' or client.name == 'tsserver' or client.name == 'vtsls' then
-        --       has_tsserver = true
-        --       break
-        --     end
-        --   end
-        --
-        --   if has_tsserver then
-        --     vim.cmd 'TSToolsGoToSourceDefinition'
-        --   else
-        --     require('telescope.builtin').lsp_definitions()
-        --   end
-        -- end, '[G]oto [S]ource Definition')
 
         map('grs', function()
           local clients = vim.lsp.get_clients { bufnr = vim.api.nvim_get_current_buf() }
@@ -223,6 +224,13 @@ return {
             vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
           end, '[T]oggle Inlay [H]ints')
         end
+        -- if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_codeLens, event.buf) then
+        --   vim.api.nvim_create_autocmd({ 'BufEnter', 'CursorHold', 'InsertLeave' }, {
+        --     buffer = event.buf,
+        --     callback = vim.lsp.codelens.refresh,
+        --   })
+        --   vim.lsp.codelens.refresh()
+        -- end
       end,
     })
 
@@ -271,9 +279,26 @@ return {
     --  - settings (table): Override the default settings passed when initializing the server.
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     local servers = {
+      vtsls = false, -- managed separately in typescript-tools.lua (monorepo root_dir)
       clangd = {},
-      -- gopls = {},
-      pyright = {},
+
+      -- ruby_lsp = {
+      --   init_options = {
+      --     enabledFeatures = {
+      --       codeLens = true,
+      --     },
+      --   },
+      -- },
+      ty = {
+        on_new_config = function(config, root_dir)
+          local venv = require('venv-selector').venv()
+          if venv then
+            config.settings = config.settings or {}
+            config.settings.python = config.settings.python or {}
+            config.settings.python.pythonPath = venv .. '/bin/python'
+          end
+        end,
+      },
       -- rust_analyzer = false,
       -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
       --
@@ -307,36 +332,37 @@ return {
       emmet_language_server = {
         filetypes = { 'html', 'css' },
       },
-      gopls = {
-        settings = {
-          gopls = {
-            hints = {
-              assignVariableTypes = true,
-              compositeLiteralFields = true,
-              compositeLiteralTypes = true,
-              constantValues = true,
-              functionTypeParameters = true,
-              parameterNames = true,
-              rangeVariableTypes = true,
-            },
-          },
-        },
-      },
-
+      -- gopls = {
+      --   on_attach = function(client, _)
+      --     -- workaround: gopls doesn't advertise semanticTokensProvider
+      --     if not client.server_capabilities.semanticTokensProvider then
+      --       local semantic = client.config.capabilities.textDocument.semanticTokens
+      --       client.server_capabilities.semanticTokensProvider = {
+      --         full = true,
+      --         legend = {
+      --           tokenTypes = semantic.tokenTypes,
+      --           tokenModifiers = semantic.tokenModifiers,
+      --         },
+      --         range = true,
+      --       }
+      --     end
+      --   end,
+      --   settings = {
+      --     gopls = {
+      --       semanticTokens = true,
+      --       hints = {
+      --         assignVariableTypes = true,
+      --         compositeLiteralFields = true,
+      --         compositeLiteralTypes = true,
+      --         constantValues = true,
+      --         functionTypeParameters = true,
+      --         parameterNames = true,
+      --         rangeVariableTypes = true,
+      --       },
+      --     },
+      --   },
+      -- },
       lua_ls = {
-        before_init = function(_, config)
-          if not config.settings then
-            config.settings = {}
-          end
-          if not config.settings.Lua then
-            config.settings.Lua = {}
-          end
-          if not config.settings.Lua.diagnostics then
-            config.settings.Lua.diagnostics = {}
-          end
-          config.settings.Lua.diagnostics.globals = config.settings.Lua.diagnostics.globals or {}
-          table.insert(config.settings.Lua.diagnostics.globals, 'vim')
-        end,
         settings = {
           Lua = {
             runtime = {
@@ -347,6 +373,10 @@ return {
             },
             workspace = {
               checkThirdParty = false,
+              library = {
+                vim.env.VIMRUNTIME,
+                '${3rd}/luv/library',
+              },
             },
             completion = {
               callSnippet = 'Replace',
@@ -373,7 +403,7 @@ return {
         },
       },
       terraformls = {
-        filetypes = { 'terraform', 'tf', 'terraform-vars' },
+        filetypes = { 'terraform', 'tf', 'terraform-vars', 'hcl' },
         settings = {
           terraform = {
             validate = {
@@ -407,13 +437,49 @@ return {
       'yaml-language-server',
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+    -- gopls setup directly to ensure semantic tokens work
 
+    vim.lsp.config('gopls', {
+      capabilities = vim.tbl_deep_extend('force', {}, capabilities),
+      on_attach = function(client, _)
+        if not client.server_capabilities.semanticTokensProvider then
+          local semantic = client.config.capabilities.textDocument.semanticTokens
+          client.server_capabilities.semanticTokensProvider = {
+            full = true,
+            legend = {
+              tokenTypes = semantic.tokenTypes,
+              tokenModifiers = semantic.tokenModifiers,
+            },
+            range = true,
+          }
+        end
+      end,
+      settings = {
+        gopls = {
+          semanticTokens = true,
+          hints = {
+            assignVariableTypes = true,
+            compositeLiteralFields = true,
+            compositeLiteralTypes = true,
+            constantValues = true,
+            functionTypeParameters = true,
+            parameterNames = true,
+            rangeVariableTypes = true,
+          },
+        },
+      },
+    })
     require('mason-lspconfig').setup {
       ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
       automatic_installation = false,
+      automatic_enable = { exclude = { 'vtsls', 'ruby_lsp' } }, -- prevent double vtsls from vim.lsp.enable()
       handlers = {
         function(server_name)
-          local server = servers[server_name] or {}
+          local server = servers[server_name]
+          if server == false then
+            return -- explicitly disabled (managed elsewhere)
+          end
+          server = server or {}
           -- This handles overriding only values explicitly passed
           -- by the server configuration above. Useful when disabling
           -- certain features of an LSP (for example, turning off formatting for ts_ls)

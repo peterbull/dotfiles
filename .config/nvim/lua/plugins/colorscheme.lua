@@ -5,21 +5,20 @@ return {
     require('onedarkpro').setup {
       highlights = {
         ['@lsp.typemod.variable.readonly.typescript'] = { fg = '#f0d090' },
-        -- ['@type'] = { fg = '#f5e6b8' },
         ['@type.builtin'] = { fg = '#e0a070' },
-        -- ['@type'] = { fg = '#fde68a', style = 'italic' }, -- Light gold
-        ['@type'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
-        -- ['@type'] = { fg = '#7dd3fc' },
-        -- ['@lsp.type.class'] = { fg = '#d8b4fe', style = 'italic' }, -- Light purple
-        ['@lsp.typemod.variable.readonly.typescriptreact'] = { fg = '#e0de84' }, -- 25% lighter
+        ['@type'] = { fg = '#d8b4fe', style = 'italic' },
+        ['@lsp.typemod.variable.readonly.typescriptreact'] = { fg = '#e0de84' },
 
         -- light blue arrow func
         ['@lsp.typemod.function.declaration.typescript'] = { fg = '#7dd3fc' },
         ['@lsp.typemod.function.readonly.typescript'] = { fg = '#7dd3fc' },
 
         -- python type hints
-        ['@lsp.type.namespace.python'] = { fg = '#f0d090', style = 'italic' },
-        ['@lsp.type.class.python'] = { fg = '#f0d090', style = 'italic' },
+        -- ['@lsp.type.namespace.python'] = { fg = '#f0d090', style = 'italic' },
+        -- ['@lsp.type.class.python'] = { fg = '#f0d090', style = 'italic' },
+        -- variables that are functions
+        ['@lsp.type.variable.python'] = {},
+
         Type = { fg = '#d19a66' },
 
         -- reef
@@ -41,11 +40,24 @@ return {
         ['@punctuation.delimiter.reef'] = { link = '@punctuation.delimiter' },
 
         ['@error.reef'] = { link = 'Error' },
+
+        -- go
+        -- ['@lsp.type.type.go'] = { fg = '#d19a66', style = 'italic' },
+        -- ['@lsp.type.struct.go'] = { fg = '#e0a070' },
+        -- ['@lsp.type.interface.go'] = { fg = '#e0a070', style = 'italic' },
+        -- ['@lsp.type.function.go'] = { fg = '#7dd3fc', style = 'bold' },
+        -- ['@lsp.type.method.go'] = { fg = '#7dd3fc' },
+        -- ['@lsp.typemod.function.definition.go'] = { fg = '#7dd3fc', style = 'bold' },
+        -- ['@lsp.typemod.method.definition.go'] = { fg = '#7dd3fc' },
+        -- ['@lsp.type.namespace.go'] = { fg = '#a8c7fa' },
+        -- ['@lsp.type.variable.go'] = {},
+        -- ['@lsp.typemod.variable.readonly.go'] = { fg = '#f0d090' },
       },
 
       styles = {
         functions = 'bold',
         -- comments = 'italic',
+
         variables = 'NONE',
         types = 'NONE',
       },

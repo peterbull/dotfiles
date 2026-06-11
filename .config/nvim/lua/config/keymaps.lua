@@ -61,6 +61,9 @@ vim.keymap.set('n', '<leader>bo', ':%bd|edit#|bd#<CR>', { desc = '[D]elete All O
 vim.keymap.set('n', ']q', '<cmd>cnext<CR>', { desc = 'Next quickfix' })
 vim.keymap.set('n', '[q', '<cmd>cprev<CR>', { desc = 'Prev quickfix' })
 
+vim.keymap.set('n', '<leader>md', ':delmarks a-z<CR>', { desc = '[m]arks [d]elete local' })
+vim.keymap.set('n', '<leader>mD', ':delmarks A-Z0-9<CR>', { desc = '[m]arks [D]elete global' })
+
 -- Debug function
 local function my_custom_function()
   print 'debug function executed!'

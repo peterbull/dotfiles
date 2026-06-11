@@ -126,6 +126,7 @@ export NVM_DIR="$HOME/.nvm"
   [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
   [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" 
 
+nvm alias default 24 &> /dev/null
 
 export EDITOR=nvim
 
@@ -160,8 +161,23 @@ alias caf="cargo build && RUST_BACKTRACE=full cargo run"
 alias zb="zig build"
 
 ## Git
-alias gpc='gh pr create'
+alias gpc='gh pr create --fill'
+alias gpm='gh pr merge --squash --delete-branch'
+alias gpc-telus='gh pr create --fill && sleep 25 && gh pr merge --squash --delete-branch'
 alias gs-apply='git stash apply $(git stash list | fzf | awk "{print \$1}" | tr -d ":")'; 
+
+# force push to current branch
+unalias gpf 2>/dev/null
+gpf() {
+  local branch
+  branch=$(git branch --show-current)
+  if [[ "$branch" == "main" || "$branch" == "master" ]]; then
+    echo "ERROR: tried to push to a no-no branch, checkout a dev branch"
+    return 1
+  fi
+  git push -u origin "$branch" --force-with-lease
+}
+
 
 ## immediate stash and apply for a quick local save point
 gsarchive() {
@@ -411,6 +427,10 @@ alias peter="~/peter-projects"
 
 
 
+
+# Homebrew Ruby (brew install ruby)
+export PATH="/opt/homebrew/opt/ruby@3.4/bin:$PATH"
+export PATH="/opt/homebrew/lib/ruby/gems/3.4.0/bin:$PATH"
 # Python Path
 export PATH="/opt/homebrew/opt/python@3.12/bin:$PATH"
 export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
@@ -473,4 +493,28 @@ export PATH=$PATH:$HOME/.luarocks/bin
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /opt/homebrew/bin/terraform terraform
 source <(kubectl completion zsh)
+
+
 alias lzd='lazydocker'
+
+alias kfwd="sudo -E kubefwd svc -n default --tui"
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+bindkey -v
+bindkey -M viins 'jk' vi-cmd-mode
+
+
+alias pib='bash ~/peter-projects/pi-config/sandbox/run-msb.sh'
+#
+# >>> microsandbox >>>
+export PATH="$HOME/.microsandbox/bin:$PATH"
+export DYLD_LIBRARY_PATH="$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+# <<< microsandbox <<<
+# The following lines have been added by Docker Desktop to enable Docker CLI completions.
+fpath=(/Users/peterbull/.docker/completions $fpath)
+autoload -Uz compinit
+compinit
+# End of Docker CLI completions

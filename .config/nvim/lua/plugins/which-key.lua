@@ -43,14 +43,15 @@ return {
     },
 
     spec = {
-      { '<leader>s', group = '[S]earch' },
-      { '<leader>t', group = '[T]reesitter' },
+      { '<leader>s', group = '[s]earch' },
+      { '<leader>t', group = '[t]reesitter' },
       { '<leader>x', group = 'Trouble' },
-      { '<leader>d', group = '[D]ebug' },
-      { '<leader>b', group = '[B]uffer' },
-      { '<leader>h', group = '[H]arpoon' },
-      { '<leader>r', group = '[R]EPL' },
-      { '<leader>c', group = '[C]ustom' },
+      { '<leader>d', group = '[d]ebug' },
+      { '<leader>b', group = '[b]uffer' },
+      { '<leader>h', group = '[h]arpoon' },
+      { '<leader>r', group = '[r]EPL' },
+      { '<leader>c', group = '[c]ustom' },
+      { '<leader>m', group = '[m]arks' },
     },
   },
 }
