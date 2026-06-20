@@ -129,6 +129,8 @@ export NVM_DIR="$HOME/.nvm"
 nvm alias default 24 &> /dev/null
 
 export EDITOR=nvim
+export PATH="$HOME/.local/share/bob/nvim-bin:$PATH"
+
 
 # Aliases
 
