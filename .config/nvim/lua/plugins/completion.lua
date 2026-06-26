@@ -28,9 +28,7 @@ return {
         },
       },
       opts = {
-
         menu = {
-
           draw = {
             columns = {
               { 'kind_icon', 'label', gap = 1 },
@@ -62,10 +60,18 @@ return {
       },
     },
     'folke/lazydev.nvim',
+    -- DAP completion dependencies
+    { 'saghen/blink.compat', version = '*', lazy = true, opts = {} },
+    'rcarriga/cmp-dap',
   },
   --- @module 'blink.cmp'
   --- @type blink.cmp.Config
   opts = {
+    -- Allow blink to activate inside the DAP prompt buffer
+    enabled = function()
+      return vim.bo.buftype ~= 'prompt' or require('cmp_dap').is_dap_buffer()
+    end,
+
     keymap = {
       -- 'default' (recommended) for mappings similar to built-in completions
       --   <c-y> to accept ([y]es) the completion.
@@ -116,9 +122,17 @@ return {
         },
       },
     },
+
     sources = {
       default = { 'lsp', 'path', 'snippets', 'lazydev' },
       -- default = { "lsp", "path", "snippets", "lazydev", "minuet" },
+
+      -- Use only the dap source in REPL/watch/hover buffers
+      ['dap-repl'] = { 'dap', 'lsp' },
+      -- ['dap-repl'] = { 'dap', 'lsp', 'buffer'},
+      ['dapui_watches'] = { 'dap', 'lsp' },
+      ['dapui_hover'] = { 'dap' },
+
       providers = {
         lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
         minuet = {
@@ -128,8 +142,18 @@ return {
           timeout_ms = 5000,
           score_offset = 50,
         },
+        -- cmp-dap bridged through blink.compat
+        dap = {
+          name = 'dap',
+          module = 'blink.compat.source',
+          async = true,
+          enabled = function()
+            return require('cmp_dap').is_dap_buffer()
+          end,
+        },
       },
     },
+
     snippets = { preset = 'luasnip' },
 
     -- Blink.cmp includes an optional, recommended rust fuzzy matcher,

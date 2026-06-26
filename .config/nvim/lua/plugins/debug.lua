@@ -5,6 +5,8 @@ return {
       'rcarriga/nvim-dap-ui',
       'jbyuki/one-small-step-for-vimkind',
       'nvim-neotest/nvim-nio',
+      { 'saghen/blink.compat', version = '*', lazy = true, opts = {} },
+      'rcarriga/cmp-dap',
       { 'theHamsta/nvim-dap-virtual-text', opts = {} },
       {
         'mfussenegger/nvim-dap-python',
@@ -36,12 +38,7 @@ return {
           },
         },
       },
-      {
-        'suketa/nvim-dap-ruby',
-        config = function()
-          require('dap-ruby').setup()
-        end,
-      },
+
       {
         'mason-org/mason.nvim',
         opts = function(_, opts)
@@ -113,7 +110,8 @@ return {
       dap.configurations.zig = zig_config.configurations
 
       -- ruby
-      -- loads with plugin above, configs in ruby.lua are wonky attaching for some reason
+      local ruby_config = require 'dap.ruby'
+      ruby_config.setup()
       -- sh
       local sh_config = require 'dap.sh'
       dap.adapters.sh = sh_config.adapters.sh

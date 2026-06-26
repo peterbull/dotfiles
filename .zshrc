@@ -520,3 +520,5 @@ fpath=(/Users/peterbull/.docker/completions $fpath)
 autoload -Uz compinit
 compinit
 # End of Docker CLI completions
+#
+eval "$(mise activate zsh)"

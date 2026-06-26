@@ -1,1 +1,85 @@
-font-family = VictorMono Nerd Font Mono
+# 1. FiraCode + VictorMono Italic (Current)
+# ------------------------------------------------
+# font-family = FiraCode Nerd Font Mono
+# font-family-italic = VictorMono Nerd Font Mono
+# font-family-bold-italic = VictorMono Nerd Font Mono
+# font-size = 14
+
+
+# 2. JetBrains Mono (All-in-one)
+# ------------------------------------------------
+font-family = JetBrainsMono Nerd Font Mono
+font-size = 14
+
+
+# 3. Cascadia Code + VictorMono Italic
+# ------------------------------------------------
+# font-family = CaskaydiaCove Nerd Font Mono
+# font-family-italic = VictorMono Nerd Font Mono
+# font-family-bold-italic = VictorMono Nerd Font Mono
+# font-size = 14
+
+
+# 4. SourceCodePro + VictorMono Italic (Operator Mono feel)
+# ------------------------------------------------
+# font-family = SauceCodePro Nerd Font Mono
+# font-family-italic = VictorMono Nerd Font Mono
+# font-family-bold-italic = VictorMono Nerd Font Mono
+# font-size = 14
+
+
+# 5. Monaspace (Mix variants)
+# ------------------------------------------------
+# font-family = MonaspiceNe Nerd Font Mono
+# font-family-italic = MonaspiceRn Nerd Font Mono
+# font-size = 14
+
+
+# 6. Commit Mono (Minimal & Clean)
+# ------------------------------------------------
+# font-family = CommitMono Nerd Font Mono
+# font-size = 14
+
+
+# 7. Maple Mono (Cursive built-in)
+# ------------------------------------------------
+# font-family = MapleMono Nerd Font Mono
+# font-size = 14
+
+
+# 8. VictorMono Only (Full cursive experience)
+# ------------------------------------------------
+# font-family = VictorMono Nerd Font Mono
+# font-size = 14
+
+
+# 9. JetBrains Mono + VictorMono Italic
+# ------------------------------------------------
+# font-family = JetBrainsMono Nerd Font Mono
+# font-family-italic = VictorMono Nerd Font Mono
+# font-family-bold-italic = VictorMono Nerd Font Mono
+# font-size = 14
+
+
+# 10. Maple Mono + VictorMono Italic
+# ------------------------------------------------
+# font-family = MapleMono Nerd Font Mono
+# font-family-italic = VictorMono Nerd Font Mono
+# font-family-bold-italic = VictorMono Nerd Font Mono
+# font-size = 14
+
+
+# 11. OxProto + VictorMono Italic
+# ------------------------------------------------
+# font-family = OxProto Nerd Font Mono
+# font-family-italic = VictorMono Nerd Font Mono
+# font-family-bold-italic = VictorMono Nerd Font Mono
+# font-size = 14
+
+
+# 12. Monaspace Argon + Radon Italic (Sci-fi vibes)
+# ------------------------------------------------
+# font-family = MonaspiceAr Nerd Font Mono
+# font-family-italic = MonaspiceRn Nerd Font Mono
+# font-family-bold-italic = MonaspiceRn Nerd Font Mono
+# font-size = 14

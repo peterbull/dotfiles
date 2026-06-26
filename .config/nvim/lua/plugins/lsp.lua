@@ -100,6 +100,7 @@ return {
         --  For example, in C this would take you to the header.
         map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+        map('<leader>cr', vim.lsp.codelens.refresh, '[C]ode Lens [R]efresh')
         map('<leader>cl', vim.lsp.codelens.run, '[C]ode [L]ens Run')
         -- Fuzzy find all the symbols in your current document.
         --  Symbols are things like variables, functions, types, etc.
@@ -224,13 +225,20 @@ return {
             vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
           end, '[T]oggle Inlay [H]ints')
         end
-        -- if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_codeLens, event.buf) then
-        --   vim.api.nvim_create_autocmd({ 'BufEnter', 'CursorHold', 'InsertLeave' }, {
-        --     buffer = event.buf,
-        --     callback = vim.lsp.codelens.refresh,
-        --   })
-        --   vim.lsp.codelens.refresh()
-        -- end
+
+        local excluded_filetypes = { 'lua', 'python' }
+
+        if
+          not vim.tbl_contains(excluded_filetypes, vim.bo[event.buf].filetype)
+          and client
+          and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_codeLens, event.buf)
+        then
+          vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+            buffer = event.buf,
+            callback = vim.lsp.codelens.refresh,
+          })
+          vim.lsp.codelens.refresh()
+        end
       end,
     })
 
@@ -282,13 +290,6 @@ return {
       vtsls = false, -- managed separately in typescript-tools.lua (monorepo root_dir)
       clangd = {},
 
-      -- ruby_lsp = {
-      --   init_options = {
-      --     enabledFeatures = {
-      --       codeLens = true,
-      --     },
-      --   },
-      -- },
       ty = {
         on_new_config = function(config, root_dir)
           local venv = require('venv-selector').venv()
@@ -415,6 +416,7 @@ return {
           },
         },
       },
+      ruby_lsp = false,
     }
 
     -- Ensure the servers and tools above are installed
@@ -469,6 +471,52 @@ return {
         },
       },
     })
+    vim.lsp.config('ruby_lsp', {
+      cmd = { 'mise', 'exec', '--', 'ruby-lsp' },
+      filetypes = { 'ruby', 'eruby', 'erb' },
+      root_markers = { 'Gemfile', '.ruby-version' },
+      capabilities = capabilities,
+      on_attach = function(client, bufnr)
+        vim.lsp.commands['rubyLsp.openFile'] = function(cmd, _)
+          local uri_frag = cmd.arguments[1][1]
+          local uri, line = uri_frag:match '^(.+)#L(%d+)$'
+          if not uri then
+            uri = uri_frag
+          end
+          local buf = vim.uri_to_bufnr(uri)
+          vim.fn.bufload(buf)
+          vim.api.nvim_set_option_value('buflisted', true, { buf = buf })
+          vim.api.nvim_set_current_buf(buf)
+          vim.api.nvim_win_set_cursor(0, { tonumber(line) or 1, 0 })
+        end
+      end,
+      init_options = {
+        formatter = 'auto',
+        enabledFeatures = {
+          codeActions = true,
+          codeLens = true,
+          completion = true,
+          definition = true,
+          diagnostics = true,
+          documentHighlights = true,
+          documentLink = true,
+          documentSymbols = true,
+          foldingRanges = true,
+          formatting = true,
+          hover = true,
+          inlayHint = true,
+          onTypeFormatting = true,
+          selectionRanges = true,
+          semanticHighlighting = true,
+          signatureHelp = true,
+          typeHierarchy = true,
+          workspaceSymbol = true,
+        },
+        experimentalFeaturesEnabled = true,
+      },
+    })
+
+    vim.lsp.enable 'ruby_lsp'
     require('mason-lspconfig').setup {
       ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
       automatic_installation = false,
