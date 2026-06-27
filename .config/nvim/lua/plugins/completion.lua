@@ -69,9 +69,8 @@ return {
   opts = {
     -- Allow blink to activate inside the DAP prompt buffer
     enabled = function()
-      return vim.bo.buftype ~= 'prompt' or require('cmp_dap').is_dap_buffer()
+      return (vim.bo.buftype ~= 'prompt' and vim.b.completion ~= false) or require('cmp_dap').is_dap_buffer()
     end,
-
     keymap = {
       -- 'default' (recommended) for mappings similar to built-in completions
       --   <c-y> to accept ([y]es) the completion.
@@ -127,10 +126,11 @@ return {
       default = { 'lsp', 'path', 'snippets', 'lazydev' },
       -- default = { "lsp", "path", "snippets", "lazydev", "minuet" },
 
-      -- Use only the dap source in REPL/watch/hover buffers
-      ['dap-repl'] = { 'dap', 'lsp' },
-      -- ['dap-repl'] = { 'dap', 'lsp', 'buffer'},
-      ['dapui_watches'] = { 'dap', 'lsp' },
+      per_filetype = {
+        ['dap-repl'] = { 'dap', 'lsp' },
+        ['dapui_watches'] = { 'dap', 'lsp' },
+        ['dapui_hover'] = { 'dap' },
+      },
       ['dapui_hover'] = { 'dap' },
 
       providers = {

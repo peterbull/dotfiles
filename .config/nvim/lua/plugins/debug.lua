@@ -112,12 +112,19 @@ return {
       -- ruby
       local ruby_config = require 'dap.ruby'
       ruby_config.setup()
+      dap.configurations.eruby = dap.configurations.ruby
       -- sh
       local sh_config = require 'dap.sh'
       dap.adapters.sh = sh_config.adapters.sh
       dap.configurations.sh = sh_config.configurations
       dap.configurations.bash = dap.configurations.sh
 
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = { 'dap-repl', 'dapui_watches', 'dapui_hover' },
+        callback = function()
+          vim.b.completion = true
+        end,
+      })
       -- Set up highlights
       vim.api.nvim_set_hl(0, 'DapStoppedLine', { default = true, link = 'Visual' })
 

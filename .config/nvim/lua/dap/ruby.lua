@@ -113,7 +113,7 @@ function M.setup()
     run { name = 'run rspec current_file:current_line', command = 'bundle', args = { 'exec', 'rspec' }, current_line = true },
     run { name = 'run rspec', command = 'bundle', args = { 'exec', 'rspec' } },
     run { name = 'run minitest current file', command = 'bundle', args = { 'exec', 'ruby', '-Itest' }, current_file = true },
-    run { name = 'bin/dev', command = 'bin/dev' },
+
     attach { name = 'attach existing (port 38698)', port = 38698, waiting = 0 },
     attach { name = 'attach existing (pick port)', waiting = 0 },
   }
