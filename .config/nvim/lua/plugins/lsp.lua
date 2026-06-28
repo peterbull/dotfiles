@@ -54,6 +54,33 @@ return {
       'test_.*%.py$',
       '.*_test%.py$',
     }
+    -- @param word string
+    -- @param filetype string
+    local function man_page_actions(word, filetype)
+      if word and word ~= '' then
+        if filetype == 'ruby' then
+          local output = vim.fn.system('ri --no-pager ' .. vim.fn.shellescape(word) .. ' | col -b')
+
+          if vim.v.shell_error == 0 and output ~= '' then
+            vim.cmd 'split'
+
+            local buf = vim.api.nvim_create_buf(false, true)
+            vim.api.nvim_win_set_buf(0, buf)
+
+            vim.bo[buf].filetype = 'man'
+
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(output, '\n'))
+          else
+            print('ri: Nothing known about ' .. word)
+          end
+        else
+          -- For everything else, use Neovim's built-in :Man command
+          vim.cmd('Man ' .. word)
+        end
+      else
+        require('telescope.builtin').man_pages()
+      end
+    end
 
     vim.api.nvim_create_autocmd('LspAttach', {
       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
@@ -116,12 +143,18 @@ return {
         map('grt', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
 
         map('grm', function()
+          local filetype = vim.bo.filetype
           local word = vim.fn.expand '<cword>'
-          if word and word ~= '' then
-            vim.cmd('Man ' .. word)
-          else
-            require('telescope.builtin').man_pages()
-          end
+
+          man_page_actions(word, filetype)
+        end, '[G]oto [M]anual Page')
+
+        map('grM', function()
+          local filetype = vim.bo.filetype
+          local word = vim.fn.expand '<cWORD>'
+          word = word:gsub('[%.,;%(%)%[%]"\']+$', ''):gsub('^[%.,;%(%)%[%]"\']+', '')
+
+          man_page_actions(word, filetype)
         end, '[G]oto [M]anual Page')
 
         map('grs', function()
