@@ -522,3 +522,4 @@ compinit
 # End of Docker CLI completions
 #
 eval "$(mise activate zsh)"
+. "/Users/peterbull/.deno/env"
