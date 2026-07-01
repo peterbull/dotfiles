@@ -65,6 +65,7 @@ return {
       -- go
       local go_config = require 'dap.go'
       dap.adapters.go = go_config.adapters.go
+      dap.adapters.go_headless = go_config.adapters.go_headless
       dap.configurations.go = go_config.configurations
 
       -- lua

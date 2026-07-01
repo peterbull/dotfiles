@@ -9,6 +9,11 @@ M.adapters = {
       args = { 'dap', '-l', '127.0.0.1:${port}' },
     },
   },
+  go_headless = { -- connect to already running delve server
+    type = 'server',
+    host = '127.0.0.1',
+    port = 2345,
+  },
 }
 -- https://go.googlesource.com/vscode-go/+/c3516da303907ca11ee51e64f961cf2a4ac5339a/docs/dlv-dap.md
 M.configurations = {
@@ -78,6 +83,14 @@ M.configurations = {
     request = 'attach',
     processId = require('dap.utils').pick_process,
     outputMode = 'remote',
+  },
+  {
+    type = 'go_headless',
+    name = 'Attach to air',
+    request = 'attach',
+    mode = 'remote',
+    host = '127.0.0.1',
+    port = 2345,
   },
 }
 
