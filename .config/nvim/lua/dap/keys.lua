@@ -193,43 +193,9 @@ M.keys = {
   {
     '<leader>dE',
     function()
-      local dap = require 'dap'
-      local breakpoints = require 'dap.breakpoints'
-
-      if vim.g.dap_breakpoints_saved then
-        -- Restore breakpoints
-        for bufnr, buf_bps in pairs(vim.g.dap_breakpoints_saved) do
-          for _, bp in pairs(buf_bps) do
-            breakpoints.set({
-              condition = bp.condition,
-              hit_condition = bp.hitCondition,
-              log_message = bp.logMessage,
-            }, bufnr, bp.line)
-          end
-        end
-        vim.g.dap_breakpoints_saved = nil
-        vim.notify('Breakpoints restored', vim.log.levels.INFO)
-      else
-        -- Save and clear breakpoints
-        local bps = breakpoints.get()
-        local has_breakpoints = false
-        for _, buf_bps in pairs(bps) do
-          if next(buf_bps) then
-            has_breakpoints = true
-            break
-          end
-        end
-
-        if has_breakpoints then
-          vim.g.dap_breakpoints_saved = vim.deepcopy(bps)
-          dap.clear_breakpoints()
-          vim.notify('Breakpoints cleared (saved)', vim.log.levels.INFO)
-        else
-          vim.notify('No breakpoints to clear', vim.log.levels.INFO)
-        end
-      end
+      vim.cmd 'DapEval'
     end,
-    desc = 'Toggle Clear/Restore All Breakpoints',
+    desc = 'Launch [E]val Session',
   },
   {
     '<leader>dR',
