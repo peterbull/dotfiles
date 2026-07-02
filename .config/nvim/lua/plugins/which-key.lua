@@ -52,6 +52,7 @@ return {
       { '<leader>r', group = '[r]EPL' },
       { '<leader>c', group = '[c]ustom' },
       { '<leader>m', group = '[m]arks' },
+      { '<leader>g', group = '[g]it' },
     },
   },
 }

@@ -185,4 +185,71 @@ return {
       }
     end,
   },
+  {
+    'NeogitOrg/neogit',
+    dependencies = {
+      'sindrets/diffview.nvim',
+      'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope.nvim',
+      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+    },
+    cmd = 'Neogit',
+    keys = {
+      {
+        '<leader>gg',
+        function()
+          require('neogit').open()
+        end,
+        desc = '[G]it [G]it (Neogit status)',
+      },
+      {
+        '<leader>gc',
+        function()
+          require('neogit').open { 'commit' }
+        end,
+        desc = '[G]it [C]ommit',
+      },
+      {
+        '<leader>gp',
+        function()
+          require('neogit').open { 'push' }
+        end,
+        desc = '[G]it [P]ush',
+      },
+      {
+        '<leader>gP',
+        function()
+          require('neogit').open { 'pull' }
+        end,
+        desc = '[G]it [P]ull',
+      },
+      {
+        '<leader>gl',
+        function()
+          require('neogit').open { 'log' }
+        end,
+        desc = '[G]it [L]og',
+      },
+      {
+        '<leader>gb',
+        function()
+          require('neogit').open { 'branch' }
+        end,
+        desc = '[G]it [B]ranch',
+      },
+      {
+        '<leader>gs',
+        function()
+          require('neogit').open { 'stash' }
+        end,
+        desc = '[G]it [S]tash',
+      },
+    },
+    opts = {
+      integrations = {
+        diffview = true,
+        telescope = true,
+      },
+    },
+  },
 }
