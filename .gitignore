@@ -42,3 +42,4 @@ foo.*
 *.log
 data
 .secrets
+.vscode/extensions/extensions.json
