@@ -64,13 +64,6 @@ vim.keymap.set('n', '[q', '<cmd>cprev<CR>', { desc = 'Prev quickfix' })
 vim.keymap.set('n', '<leader>md', ':delmarks a-z<CR>', { desc = '[m]arks [d]elete local' })
 vim.keymap.set('n', '<leader>mD', ':delmarks A-Z0-9<CR>', { desc = '[m]arks [D]elete global' })
 
--- Debug function
-local function my_custom_function()
-  print 'debug function executed!'
-end
-
-vim.keymap.set('n', '<leader>cf', my_custom_function, { desc = 'Run [C]ustom [F]unction' })
-
 vim.keymap.set('n', '<leader>cd', function()
   local buf_dir = vim.fn.expand '%:p:h'
   vim.fn.setreg('+', buf_dir)
@@ -90,3 +83,7 @@ vim.keymap.set('n', '<leader>tt', function()
     vim.notify('Command height: 1', vim.log.levels.INFO)
   end
 end, { desc = '[T]oggle [T]erminal height (cmdheight)' })
+
+vim.keymap.set('n', '<leader>hm', function()
+  require('config.helpme').show()
+end, {})
