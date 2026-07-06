@@ -1,10 +1,50 @@
+-- plugins/treesitter.lua
+-- Migrated to nvim-treesitter `main` branch API (required for Neovim 0.12 compat).
+-- The `main` branch is a rewrite: it is now a parser/query installer only.
+-- Highlighting, indentation, and per-buffer activation are handled manually
+-- via Neovim's native `vim.treesitter` APIs instead of a `setup({...})` config table.
+
 return {
 	"nvim-treesitter/nvim-treesitter",
+	branch = "main",
 	lazy = false,
 	build = ":TSUpdate",
-	main = "nvim-treesitter.configs",
-	opts = {
-		ensure_installed = {
+
+	keys = {
+		{
+			"<leader>ti",
+			function()
+				for _, win in ipairs(vim.api.nvim_list_wins()) do
+					local buf = vim.api.nvim_win_get_buf(win)
+					local ft = vim.bo[buf].filetype
+					if ft == "query" then
+						vim.api.nvim_win_close(win, true)
+						return
+					end
+				end
+				vim.cmd("InspectTree")
+			end,
+			desc = "Toggle Treesitter [I]nspect",
+		},
+	},
+
+	config = function()
+		-- Register the custom `reef` parser (out-of-tree grammar).
+		-- NOTE: registration shape on `main` differs from `master`'s
+		-- `nvim-treesitter.parsers.get_parser_configs()` API. Verify this against
+		-- the current README (`:help nvim-treesitter-main`) if TSInstall reef fails,
+		-- as this API has iterated since initial `main` release.
+		require("nvim-treesitter.parsers").reef = {
+			install_info = {
+				url = vim.fn.expand("~/peter-projects/tree-sitter-reef"),
+				files = { "src/parser.c" },
+				branch = "main",
+			},
+		}
+		vim.filetype.add({ extension = { reef = "reef" } })
+
+		-- Parsers to install (replaces old `ensure_installed`).
+		local parsers = {
 			"bash",
 			"c",
 			"cpp",
@@ -24,54 +64,33 @@ return {
 			"rust",
 			"python",
 			"ruby",
-		},
-		auto_install = true,
-		highlight = {
-			enable = true,
-			additional_vim_regex_highlighting = { "ruby" },
-		},
-		indent = { enable = true, disable = { "ruby" } },
-	},
-	keys = {
-		{
-			"<leader>ti",
-			function()
-				-- Check if InspectTree window is open
-				for _, win in ipairs(vim.api.nvim_list_wins()) do
-					local buf = vim.api.nvim_win_get_buf(win)
-					local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-					if ft == "query" then
-						-- Close the InspectTree window
-						vim.api.nvim_win_close(win, true)
-						return
-					end
-				end
-				-- If not open, open it
-				vim.cmd("InspectTree")
-			end,
-			desc = "Toggle Treesitter [I]nspect",
-		},
-	},
-	config = function(_, opts)
-		vim.opt.runtimepath:append(vim.fn.expand("~/peter-projects/tree-sitter-reef"))
-
-		local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-		parser_config.reef = {
-			install_info = {
-				url = vim.fn.expand("~/peter-projects/tree-sitter-reef"),
-				files = { "src/parser.c" },
-				branch = "main",
-			},
-			filetype = "reef",
+			"reef",
 		}
 
-		require("nvim-treesitter.configs").setup(opts)
+		require("nvim-treesitter").install(parsers)
 
-		-- Auto-start treesitter for reef files
+		-- Filetypes to exclude from treesitter indentexpr (ported from old
+		-- `indent = { disable = { "ruby" } }`).
+		local indent_disabled = {
+			ruby = true,
+		}
+
+		-- Activate highlighting (+ indent where not excluded) per-buffer.
+		-- Replaces old `highlight = { enable = true }` / `indent = { enable = true }`.
 		vim.api.nvim_create_autocmd("FileType", {
-			pattern = "reef",
+			pattern = "*",
 			callback = function(args)
-				vim.treesitter.start(args.buf)
+				local buf = args.buf
+				local ft = vim.bo[buf].filetype
+
+				local ok = pcall(vim.treesitter.start, buf)
+				if not ok then
+					return
+				end
+
+				if not indent_disabled[ft] then
+					vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+				end
 			end,
 		})
 	end,

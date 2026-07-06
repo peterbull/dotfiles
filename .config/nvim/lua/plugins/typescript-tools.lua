@@ -65,10 +65,6 @@ return {
 			},
 		})
 
-		-- Setup the LSP
-		local lspconfig = require("lspconfig")
-		local lspconfig_configs = require("lspconfig.configs")
-
 		-- Get capabilities from blink.cmp
 		local capabilities = vim.tbl_deep_extend(
 			"force",
@@ -76,63 +72,62 @@ return {
 			require("blink.cmp").get_lsp_capabilities()
 		)
 
-		-- Configure vtsls using the plugin's setup
-		if not lspconfig_configs.vtsls then
-			lspconfig_configs.vtsls = require("vtsls").lspconfig
-		end
-
-		lspconfig.vtsls.setup({
-			-- Prefer nearest tsconfig.json as root to avoid duplicate vtsls instances
-			-- in monorepos (where both a package dir and the repo root have markers).
-			-- Only fall back to package.json/.git if no tsconfig.json exists anywhere.
-			root_dir = function(fname)
-				local util = require("lspconfig.util")
-				local tsconfig_root = util.root_pattern("tsconfig.json")(fname)
-				if tsconfig_root then
-					return tsconfig_root
-				end
-				return util.root_pattern("package.json", ".git")(fname)
-			end,
-			capabilities = capabilities,
-			settings = {
-				vtsls = {
-					autoUseWorkspaceTsdk = true,
-					enableMoveToFileCodeAction = true,
-					experimental = {
-						completion = {
-							enableServerSideFuzzyMatch = true,
+		vim.lsp.config(
+			"vtsls",
+			vim.tbl_deep_extend("force", require("vtsls").lspconfig, {
+				-- Prefer nearest tsconfig.json as root to avoid duplicate vtsls instances
+				-- in monorepos (where both a package dir and the repo root have markers).
+				-- Only fall back to package.json/.git if no tsconfig.json exists anywhere.
+				root_dir = function(fname)
+					local util = require("lspconfig.util")
+					local tsconfig_root = util.root_pattern("tsconfig.json")(fname)
+					if tsconfig_root then
+						return tsconfig_root
+					end
+					return util.root_pattern("package.json", ".git")(fname)
+				end,
+				capabilities = capabilities,
+				settings = {
+					vtsls = {
+						autoUseWorkspaceTsdk = true,
+						enableMoveToFileCodeAction = true,
+						experimental = {
+							completion = {
+								enableServerSideFuzzyMatch = true,
+							},
+						},
+					},
+					typescript = {
+						inlayHints = {
+							parameterNames = { enabled = "literals" },
+							parameterTypes = { enabled = true },
+							variableTypes = { enabled = true },
+							propertyDeclarationTypes = { enabled = true },
+							functionLikeReturnTypes = { enabled = true },
+							enumMemberValues = { enabled = true },
+						},
+						updateImportsOnFileMove = {
+							enabled = "always",
+						},
+						suggest = {
+							completeFunctionCalls = true,
+						},
+						preferences = {
+							includePackageJsonAutoImports = "on",
+							importModuleSpecifier = "shortest",
+						},
+					},
+					javascript = {
+						inlayHints = {
+							parameterNames = { enabled = "literals" },
+						},
+						updateImportsOnFileMove = {
+							enabled = "always",
 						},
 					},
 				},
-				typescript = {
-					inlayHints = {
-						parameterNames = { enabled = "literals" },
-						parameterTypes = { enabled = true },
-						variableTypes = { enabled = true },
-						propertyDeclarationTypes = { enabled = true },
-						functionLikeReturnTypes = { enabled = true },
-						enumMemberValues = { enabled = true },
-					},
-					updateImportsOnFileMove = {
-						enabled = "always",
-					},
-					suggest = {
-						completeFunctionCalls = true,
-					},
-					preferences = {
-						includePackageJsonAutoImports = "on",
-						importModuleSpecifier = "shortest",
-					},
-				},
-				javascript = {
-					inlayHints = {
-						parameterNames = { enabled = "literals" },
-					},
-					updateImportsOnFileMove = {
-						enabled = "always",
-					},
-				},
-			},
-		})
+			})
+		)
+		vim.lsp.enable("vtsls")
 	end,
 }
