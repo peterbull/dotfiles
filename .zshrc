@@ -523,3 +523,4 @@ compinit
 #
 eval "$(mise activate zsh)"
 . "/Users/peterbull/.deno/env"
+eval "$(mise activate zsh)"
