@@ -1,19 +1,14 @@
 [user]
 	name = peter bull
 	email = 17122363+peterbull@users.noreply.github.com
-  signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5RAmO/e4SFjin6iAD7c3jd+Dhwpt6UsGVeCkBIkGAr
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIguCwgh1mjL6nGHTcXIkXXrYeepypWbT4kzgxHZx9j
 
 [includeIf "gitdir:~/telus/"]
   path = ~/.gitconfig-telus        
 
 [gpg]
-  format = ssh
+	format = ssh
 
-; [gpg "ssh"]
-;   program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
-
-; [commit]
-;   gpgsign = true
 
 [filter "lfs"]
 	required = true
@@ -50,3 +45,7 @@
 [credential "https://gist.github.com"]
 	helper = 
 	helper = !~/.config/git/gh-credential-helper.sh
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+[commit]
+	gpgsign = true

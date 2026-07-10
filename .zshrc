@@ -449,8 +449,8 @@ export NVM_DIR="$HOME/.nvm"
 # pnpm
 export PNPM_HOME="/Users/peterbull/Library/pnpm"
 case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
+  *":$PNPM_HOME/bin:"*) ;;
+  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
 esac
 # pnpm end
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
@@ -524,3 +524,13 @@ compinit
 eval "$(mise activate zsh)"
 . "/Users/peterbull/.deno/env"
 eval "$(mise activate zsh)"
+[ -f "$HOME/work/ctm-dev/ctm.shell" ] && . "$HOME/work/ctm-dev/ctm.shell"
+
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="$PATH:$HOME/.rvm/bin"
+
+alias ctmstart="~/dotfiles/scripts/ctmstart.sh"
+alias ctmstop="~/dotfiles/scripts/ctmstop.sh"
+
+alias tr="tmux source-file ~/.tmux.conf"
+

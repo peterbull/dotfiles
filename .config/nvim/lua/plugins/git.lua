@@ -200,49 +200,49 @@ return {
         function()
           require('neogit').open()
         end,
-        desc = '[G]it [G]it (Neogit status)',
+        desc = '[g]it [g]it (Neogit status)',
       },
       {
         '<leader>gc',
         function()
           require('neogit').open { 'commit' }
         end,
-        desc = '[G]it [C]ommit',
+        desc = '[g]it [c]ommit',
       },
       {
         '<leader>gp',
         function()
           require('neogit').open { 'push' }
         end,
-        desc = '[G]it [P]ush',
+        desc = '[g]it [p]ush',
       },
       {
         '<leader>gP',
         function()
           require('neogit').open { 'pull' }
         end,
-        desc = '[G]it [P]ull',
+        desc = '[g]it [p]ull',
       },
       {
         '<leader>gl',
         function()
           require('neogit').open { 'log' }
         end,
-        desc = '[G]it [L]og',
+        desc = '[g]it [l]og',
       },
       {
-        '<leader>gb',
+        '<leader>gB',
         function()
           require('neogit').open { 'branch' }
         end,
-        desc = '[G]it [B]ranch',
+        desc = '[g]it [B]ranch',
       },
       {
         '<leader>gs',
         function()
           require('neogit').open { 'stash' }
         end,
-        desc = '[G]it [S]tash',
+        desc = '[g]it [s]tash',
       },
     },
     opts = {
