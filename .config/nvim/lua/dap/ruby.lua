@@ -78,6 +78,8 @@ function M.setup()
     port = port or config.random_port and math.random(49152, 65535)
     port = port or pick_port()
 
+    vim.env.RUBY_DEBUG_SHOW_FULL_VALUE = '1'
+
     if config.command then
       vim.env.RUBY_DEBUG_OPEN = true
       vim.env.RUBY_DEBUG_HOST = server
@@ -113,6 +115,8 @@ function M.setup()
     run { name = 'run rspec current_file:current_line', command = 'bundle', args = { 'exec', 'rspec' }, current_line = true },
     run { name = 'run rspec', command = 'bundle', args = { 'exec', 'rspec' } },
     run { name = 'run minitest current file', command = 'bundle', args = { 'exec', 'ruby', '-Itest' }, current_file = true },
+    run { name = 'run rails test current file', command = 'bundle', args = { 'exec', 'rails', 'test' }, current_file = true },
+    run { name = 'run rails test current line', command = 'bundle', args = { 'exec', 'rails', 'test' }, current_line = true },
 
     attach { name = 'attach existing (port 38698)', port = 38698, waiting = 0 },
     attach { name = 'attach existing (pick port)', waiting = 0 },

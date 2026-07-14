@@ -534,3 +534,4 @@ alias ctmstop="~/dotfiles/scripts/ctmstop.sh"
 
 alias tr="tmux source-file ~/.tmux.conf"
 
+export SSH_AUTH_SOCK="/Users/peterbull/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"

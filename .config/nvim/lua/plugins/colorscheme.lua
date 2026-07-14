@@ -4,6 +4,11 @@ return {
   config = function()
     require('onedarkpro').setup {
       highlights = {
+        -- underline instead of solid background
+        LspReferenceText = { underline = true, sp = '#6c8ebf' },
+        LspReferenceRead = { underline = true, sp = '#6c8ebf' },
+        LspReferenceWrite = { underline = true, sp = '#6c8ebf' },
+
         ['@lsp.typemod.variable.readonly.typescript'] = { fg = '#f0d090' },
         ['@type.builtin'] = { fg = '#e0a070' },
         ['@type'] = { fg = '#d8b4fe', style = 'italic' },

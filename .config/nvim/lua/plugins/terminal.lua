@@ -27,6 +27,6 @@ return {
     -- vim.keymap.set('t', '<leader>tt', '<cmd>ToggleTerm<CR>', { desc = 'Toggle Terminal (Right)' })
     --
     -- Optional: Add a horizontal terminal toggle too
-    vim.keymap.set('n', '<leader>th', '<cmd>ToggleTerm direction=horizontal<CR>', { desc = 'Toggle Terminal (Bottom)' })
+    vim.keymap.set('n', '<leader>tH', '<cmd>ToggleTerm direction=horizontal<CR>', { desc = 'Toggle Terminal (Bottom)' })
   end,
 }

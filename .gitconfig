@@ -6,6 +6,10 @@
 [includeIf "gitdir:~/telus/"]
   path = ~/.gitconfig-telus        
 
+[includeIf "gitdir:~/work/"]
+  path = ~/.gitconfig-ctm
+
+
 [gpg]
 	format = ssh
 
@@ -47,5 +51,6 @@
 	helper = !~/.config/git/gh-credential-helper.sh
 [gpg "ssh"]
 	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+	allowedSignersFile = /Users/peterbull/.ssh/allowed_signers
 [commit]
 	gpgsign = true
