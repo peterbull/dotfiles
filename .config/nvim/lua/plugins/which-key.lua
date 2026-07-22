@@ -1,58 +1,68 @@
 return {
-  'folke/which-key.nvim',
-  event = 'VimEnter', -- Sets the loading event to 'VimEnter'
-  opts = {
-    -- delay between pressing a key and opening which-key (milliseconds)
-    -- this setting is independent of vim.o.timeoutlen
-    delay = 0,
-    icons = {
-      -- set icon mappings to true if you have a Nerd Font
-      mappings = vim.g.have_nerd_font,
-      -- If you are using a Nerd Font: set icons.keys to an empty table which will use the
-      -- default which-key.nvim defined Nerd Font icons, otherwise define a string table
-      keys = vim.g.have_nerd_font and {} or {
-        Up = '<Up> ',
-        Down = '<Down> ',
-        Left = '<Left> ',
-        Right = '<Right> ',
-        C = '<C-…> ',
-        M = '<M-…> ',
-        D = '<D-…> ',
-        S = '<S-…> ',
-        CR = '<CR> ',
-        Esc = '<Esc> ',
-        ScrollWheelDown = '<ScrollWheelDown> ',
-        ScrollWheelUp = '<ScrollWheelUp> ',
-        NL = '<NL> ',
-        BS = '<BS> ',
-        Space = '<Space> ',
-        Tab = '<Tab> ',
-        F1 = '<F1>',
-        F2 = '<F2>',
-        F3 = '<F3>',
-        F4 = '<F4>',
-        F5 = '<F5>',
-        F6 = '<F6>',
-        F7 = '<F7>',
-        F8 = '<F8>',
-        F9 = '<F9>',
-        F10 = '<F10>',
-        F11 = '<F11>',
-        F12 = '<F12>',
-      },
-    },
+	"folke/which-key.nvim",
+	event = "VimEnter", -- Sets the loading event to 'VimEnter'
+	opts = {
+		-- delay between pressing a key and opening which-key (milliseconds)
+		-- this setting is independent of vim.o.timeoutlen
+		delay = 0,
+		icons = {
+			-- set icon mappings to true if you have a Nerd Font
+			mappings = vim.g.have_nerd_font,
+			-- If you are using a Nerd Font: set icons.keys to an empty table which will use the
+			-- default which-key.nvim defined Nerd Font icons, otherwise define a string table
+			keys = vim.g.have_nerd_font and {} or {
+				Up = "<Up> ",
+				Down = "<Down> ",
+				Left = "<Left> ",
+				Right = "<Right> ",
+				C = "<C-…> ",
+				M = "<M-…> ",
+				D = "<D-…> ",
+				S = "<S-…> ",
+				CR = "<CR> ",
+				Esc = "<Esc> ",
+				ScrollWheelDown = "<ScrollWheelDown> ",
+				ScrollWheelUp = "<ScrollWheelUp> ",
+				NL = "<NL> ",
+				BS = "<BS> ",
+				Space = "<Space> ",
+				Tab = "<Tab> ",
+				F1 = "<F1>",
+				F2 = "<F2>",
+				F3 = "<F3>",
+				F4 = "<F4>",
+				F5 = "<F5>",
+				F6 = "<F6>",
+				F7 = "<F7>",
+				F8 = "<F8>",
+				F9 = "<F9>",
+				F10 = "<F10>",
+				F11 = "<F11>",
+				F12 = "<F12>",
+			},
+		},
 
-    spec = {
-      { '<leader>s', group = '[s]earch' },
-      { '<leader>t', group = '[t]reesitter' },
-      { '<leader>x', group = 'Trouble' },
-      { '<leader>d', group = '[d]ebug' },
-      { '<leader>b', group = '[b]uffer' },
-      { '<leader>h', group = '[h]arpoon' },
-      { '<leader>r', group = '[r]EPL' },
-      { '<leader>c', group = '[c]ustom' },
-      { '<leader>m', group = '[m]arks' },
-      { '<leader>g', group = '[g]it' },
-    },
-  },
+		spec = {
+			{ "<leader>s", group = "[s]earch" },
+			{ "<leader>t", group = "[t]reesitter" },
+			{ "<leader>x", group = "Trouble" },
+			{ "<leader>d", group = "[d]ebug" },
+			{ "<leader>b", group = "[b]uffer" },
+			{ "<leader>h", group = "[h]arpoon" },
+			{ "<leader>r", group = "[r]EPL" },
+			{ "<leader>c", group = "[c]ustom" },
+			{ "<leader>m", group = "[m]arks" },
+			{ "<leader>mm", desc = "Bookmark toggle" },
+			{ "<leader>mo", desc = "Bookmark goto" },
+			{ "<leader>ma", desc = "Bookmark actions" },
+			{ "<leader>me", desc = "Bookmark description" },
+			{ "<leader>mt", desc = "Bookmark tree" },
+			{ "<leader>ml", desc = "Bookmark lists" },
+			{ "<leader>mn", desc = "Bookmark next" },
+			{ "<leader>mp", desc = "Bookmark previous" },
+			{ "<leader>mg", desc = "Bookmark grep" },
+			{ "<leader>mi", desc = "Bookmark info" },
+			{ "<leader>g", group = "[g]it" },
+		},
+	},
 }

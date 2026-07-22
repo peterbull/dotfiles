@@ -55,6 +55,7 @@ return {
   },
   config = function(_, opts)
     vim.opt.runtimepath:append(vim.fn.expand '~/peter-projects/tree-sitter-reef')
+    vim.opt.runtimepath:append(vim.fn.expand '~/peter-projects/tree-sitter-mustache')
 
     local parser_config = require('nvim-treesitter.parsers').get_parser_configs()
     parser_config.reef = {
@@ -66,11 +67,19 @@ return {
       filetype = 'reef',
     }
 
+    parser_config.mustache = {
+      install_info = {
+        url = vim.fn.expand '~/peter-projects/tree-sitter-mustache',
+        files = { 'src/parser.c', 'src/scanner.c' },
+      },
+      filetype = 'mustache',
+    }
+
     require('nvim-treesitter.configs').setup(opts)
 
-    -- Auto-start treesitter for reef files
+    -- Auto-start treesitter for reef and mustache files
     vim.api.nvim_create_autocmd('FileType', {
-      pattern = 'reef',
+      pattern = { 'reef', 'mustache' },
       callback = function(args)
         vim.treesitter.start(args.buf)
       end,

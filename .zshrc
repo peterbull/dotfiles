@@ -510,11 +510,8 @@ bindkey -M viins 'jk' vi-cmd-mode
 
 
 alias pib='bash ~/peter-projects/pi-config/sandbox/run-msb.sh'
-#
-# >>> microsandbox >>>
-export PATH="$HOME/.microsandbox/bin:$PATH"
-export DYLD_LIBRARY_PATH="$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
-# <<< microsandbox <<<
+
+
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.
 fpath=(/Users/peterbull/.docker/completions $fpath)
 autoload -Uz compinit
@@ -535,3 +532,27 @@ alias ctmstop="~/dotfiles/scripts/ctmstop.sh"
 alias tr="tmux source-file ~/.tmux.conf"
 
 export SSH_AUTH_SOCK="/Users/peterbull/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+
+tmux-log() {
+  local dir="/tmp/shellpipes"
+  mkdir -p "$dir"
+
+  local ts
+  if date +%s%3N >/dev/null 2>&1; then
+    ts=$(date +%s%3N)  # GNU date (Linux)
+  else
+    ts=$(( $(date +%s) * 1000 ))  # macOS/BSD date fallback (seconds only)
+  fi
+
+  local name="$1"
+  local file
+  if [[ -n "$name" ]]; then
+    file="${dir}/${ts}-${name}.log"
+  else
+    file="${dir}/${ts}.log"
+  fi
+
+  tmux pipe-pane -o "ansifilter >> ${file}"
+  echo "Logging pane to: ${file}"
+}
+alias tmux-log-stop="tmux pipe-pane"
