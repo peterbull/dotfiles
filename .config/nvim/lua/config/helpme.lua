@@ -335,11 +335,18 @@ function M.show()
 
   vim.fn.prompt_setprompt(prompt_buf, '> ')
 
+  -- Helper to force-close the prompt window without save prompts
+  local function close_prompt()
+    if vim.api.nvim_win_is_valid(prompt_win) then
+      vim.api.nvim_win_close(prompt_win, true)
+    end
+  end
+
   vim.fn.prompt_setcallback(prompt_buf, function(question)
     vim.schedule(function()
       question = vim.trim(question)
       if question == '' then
-        vim.cmd 'close'
+        close_prompt()
         return
       end
 
@@ -364,8 +371,8 @@ function M.show()
             local error_text = 'Error: ' .. err
             vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, false, wrap_text(error_text, prompt_width - 4))
             vim.bo[prompt_buf].modifiable = false
-            vim.keymap.set('n', 'q', '<cmd>close<CR>', { buffer = prompt_buf, nowait = true })
-            vim.keymap.set('n', '<Esc>', '<cmd>close<CR>', { buffer = prompt_buf, nowait = true })
+            vim.keymap.set('n', 'q', close_prompt, { buffer = prompt_buf, nowait = true })
+            vim.keymap.set('n', '<Esc>', close_prompt, { buffer = prompt_buf, nowait = true })
             return
           end
 
@@ -380,19 +387,18 @@ function M.show()
           }
 
           -- Close the prompt popup and open the response popup
-          if vim.api.nvim_win_is_valid(prompt_win) then
-            vim.api.nvim_win_close(prompt_win, true)
-          end
+          close_prompt()
           show_response_popup(answer)
         end)
       end)
     end)
   end)
 
-  -- Close keymaps for the prompt buffer
-  vim.keymap.set('n', 'q', '<cmd>close<CR>', { buffer = prompt_buf, nowait = true })
-  vim.keymap.set('n', '<Esc>', '<cmd>close<CR>', { buffer = prompt_buf, nowait = true })
-  vim.keymap.set('i', '<C-c>', '<cmd>close<CR>', { buffer = prompt_buf, nowait = true })
+  -- Close keymaps for the prompt buffer (normal + insert modes)
+  vim.keymap.set('n', 'q', close_prompt, { buffer = prompt_buf, nowait = true })
+  vim.keymap.set('n', '<Esc>', close_prompt, { buffer = prompt_buf, nowait = true })
+  vim.keymap.set('i', '<Esc>', close_prompt, { buffer = prompt_buf, nowait = true })
+  vim.keymap.set('i', '<C-c>', close_prompt, { buffer = prompt_buf, nowait = true })
 
   -- Start in insert mode so user can type immediately
   vim.cmd 'startinsert'

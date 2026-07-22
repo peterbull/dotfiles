@@ -43,6 +43,17 @@ vim.keymap.set('n', '<C-j>', '<C-w>j', { remap = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { remap = true })
 vim.keymap.set('n', '<C-l>', '<C-w>l', { remap = true })
 
+-- Close all floating windows
+vim.keymap.set('n', '<C-w>f', function()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local config = vim.api.nvim_win_get_config(win)
+    -- floating windows have a non-empty 'relative' field
+    if config.relative ~= '' then
+      vim.api.nvim_win_close(win, false)
+    end
+  end
+end, { desc = 'Close all floating windows' })
+
 -- Window Resizing
 vim.keymap.set('n', '<C-A-k>', ':res +5<CR>', { desc = 'Increase Window Height' })
 vim.keymap.set('n', '<C-A-j>', ':res -5<CR>', { desc = 'Decrease Window Height' })
@@ -86,4 +97,8 @@ end, { desc = '[T]oggle [T]erminal height (cmdheight)' })
 
 vim.keymap.set('n', '<leader>hm', function()
   require('config.helpme').show()
+end, {})
+
+vim.keymap.set('n', '<leader>hh', function()
+  require('config.helpme').show_history()
 end, {})
