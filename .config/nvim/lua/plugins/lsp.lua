@@ -360,6 +360,9 @@ return {
       emmet_language_server = {
         filetypes = { 'html', 'css' },
       },
+      graphql = {
+        filetypes = { 'graphql', 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+      },
       -- gopls = {
       --   on_attach = function(client, _)
       --     -- workaround: gopls doesn't advertise semanticTokensProvider
