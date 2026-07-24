@@ -25,6 +25,7 @@ return {
       'rust',
       'python',
       'ruby',
+      'glsl',
       'graphql',
     },
     auto_install = true,

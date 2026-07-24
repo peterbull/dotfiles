@@ -77,6 +77,81 @@ M.configurations = {
     processId = require('dap.utils').pick_process,
     cwd = '${workspaceFolder}',
   },
+  {
+    type = 'pwa-chrome',
+    request = 'launch',
+    name = 'Launch Chrome (remote debugging port)',
+    url = function()
+      return 'http://localhost:' .. (_G.__dap_chrome_last_port or 9222)
+    end,
+    webRoot = '${workspaceFolder}',
+    runtimeArgs = function()
+      return { '--remote-debugging-port=' .. (_G.__dap_chrome_last_port or 9222) }
+    end,
+    cwd = '${workspaceFolder}',
+  },
+  {
+    type = 'pwa-chrome',
+    request = 'launch',
+    name = 'Launch Chrome against current file (remote debugging port)',
+    url = function()
+      return 'http://localhost:' .. (_G.__dap_chrome_last_port or 9222)
+    end,
+    webRoot = '${workspaceFolder}',
+    runtimeArgs = function()
+      return { '--remote-debugging-port=' .. (_G.__dap_chrome_last_port or 9222) }
+    end,
+    cwd = '${workspaceFolder}',
+  },
+  {
+    type = 'pwa-chrome',
+    request = 'attach',
+    name = 'Attach to Chrome (pick remote-debugging port)',
+    url = function()
+      return 'http://localhost:' .. (_G.__dap_chrome_last_port or 9222)
+    end,
+    webRoot = '${workspaceFolder}',
+    port = function()
+      return _G.__dap_chrome_last_port or 9222
+    end,
+    cwd = '${workspaceFolder}',
+  },
 }
+
+-- Async, fuzzy-finder-friendly port prompt. Call this from a keymap/command
+-- BEFORE starting the DAP session for any of the Chrome configs above.
+-- Uses vim.ui.select, so it'll route through Telescope/fzf-lua/snacks if
+-- you've registered one of those as your vim.ui.select handler.
+function M.pick_port_and_launch(config_name)
+  local dap = require 'dap'
+
+  local common_ports = { '9222', '9229', '9230', 'Custom…' }
+
+  vim.ui.select(common_ports, { prompt = 'Remote debugging port:' }, function(choice)
+    if not choice then
+      return
+    end
+
+    local function start_with_port(port)
+      _G.__dap_chrome_last_port = tonumber(port) or 9222
+      -- Find the matching config by name and launch it directly.
+      for _, cfg in ipairs(M.configurations) do
+        if cfg.name == config_name then
+          dap.run(cfg)
+          return
+        end
+      end
+    end
+
+    if choice == 'Custom…' then
+      -- vim.fn.input here is fine: it's synchronous but we're no longer
+      -- inside a DAP config resolver, we're in a UI callback.
+      local custom = vim.fn.input('Port: ', '9222')
+      start_with_port(custom ~= '' and custom or '9222')
+    else
+      start_with_port(choice)
+    end
+  end)
+end
 
 return M
