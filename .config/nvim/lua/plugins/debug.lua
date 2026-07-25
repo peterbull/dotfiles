@@ -88,6 +88,7 @@ return {
       vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust', 'zig' }
       vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust', 'zig' }
       vscode.type_to_filetypes['sh'] = { 'sh', 'bash' }
+      vscode.type_to_filetypes['asm'] = { 'asm', 'nasm' }
       vscode.type_to_filetypes['go'] = { 'go' }
       vscode.type_to_filetypes['delve'] = { 'go' }
       vscode.type_to_filetypes['ruby'] = { 'ruby' }
@@ -119,6 +120,11 @@ return {
       dap.adapters.sh = sh_config.adapters.sh
       dap.configurations.sh = sh_config.configurations
       dap.configurations.bash = dap.configurations.sh
+
+      -- asm
+      local asm_config = require 'dap.asm'
+      dap.configurations.asm = asm_config.configurations
+      dap.configurations.nasm = asm_config.configurations
 
       vim.api.nvim_create_autocmd('FileType', {
         pattern = { 'dap-repl', 'dapui_watches', 'dapui_hover' },
