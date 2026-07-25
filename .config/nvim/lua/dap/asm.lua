@@ -15,48 +15,7 @@ local function find_root(marker, start_path)
   return nil
 end
 
----Build an ASM file locally for macOS (macho64) via nasm + ld
----Uses -no_pie to allow absolute text relocations (mov rsi, msg etc.)
----@return string|nil executable path
-local function build_local_macho()
-  local src = vim.fn.expand '%:p'
-  local out_dir = vim.fn.expand '%:p:h' .. '/out'
-  local name = vim.fn.expand '%:t:r'
-  local obj = out_dir .. '/' .. name .. '.o'
-  local exe = out_dir .. '/' .. name
-
-  vim.fn.mkdir(out_dir, 'p')
-
-  local nasm_cmd = string.format('nasm -f macho64 -g %s -o %s', vim.fn.shellescape(src), vim.fn.shellescape(obj))
-  local result = vim.fn.system(nasm_cmd)
-  if vim.v.shell_error ~= 0 then
-    vim.notify('NASM failed:\n' .. result, vim.log.levels.ERROR)
-    return nil
-  end
-
-  local sdk_path = vim.fn.system 'xcrun --show-sdk-path 2>/dev/null'
-  sdk_path = vim.trim(sdk_path)
-  if sdk_path == '' then
-    sdk_path = '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk'
-  end
-
-  local ld_cmd = string.format(
-    'ld -lSystem -L%s/usr/lib -macos_version_min 11.0 -no_pie -e _start %s -o %s',
-    vim.fn.shellescape(sdk_path),
-    vim.fn.shellescape(obj),
-    vim.fn.shellescape(exe)
-  )
-  result = vim.fn.system(ld_cmd)
-  if vim.v.shell_error ~= 0 then
-    vim.notify('LD failed:\n' .. result, vim.log.levels.ERROR)
-    return nil
-  end
-
-  vim.notify('Built: ' .. exe, vim.log.levels.INFO)
-  return exe
-end
-
----Build via Makefile + Docker (Linux ELF64).  Falls back to asking for path.
+---Build via Makefile + Docker (Linux ELF64).
 ---@return string|nil executable path
 local function build_via_makefile()
   local file_dir = vim.fn.expand '%:p:h'
@@ -72,7 +31,6 @@ local function build_via_makefile()
     return vim.fn.input('Path to executable: ', root .. '/out/', 'file')
   end
   vim.notify(result, vim.log.levels.INFO)
-  -- Heuristic: find the binary in out/
   local exe = root .. '/out/base'
   if vim.fn.executable(exe) == 0 then
     return vim.fn.input('Path to executable: ', root .. '/out/', 'file')
@@ -80,80 +38,109 @@ local function build_via_makefile()
   return exe
 end
 
+-- =====================================================================
+-- GDB adapter  (cpptools → Docker GDB, for Linux ELF debugging)
+-- =====================================================================
+-- Requires: mason package cpptools  (run :DapInstall cpptools)
+M.adapters = {
+  asm_gdb = {
+    type = 'executable',
+    command = vim.fn.stdpath 'data' .. '/mason/packages/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
+    name = 'asm_gdb',
+  },
+}
+
 M.configurations = {
   -- ---------------------------------------------------------------
-  -- codelldb (local macOS / macho64) — nasm -f macho64 + ld
+  -- Linux ELF debugging via GDB inside Docker  (the real thing)
+  -- ---------------------------------------------------------------
+  {
+    name = 'ASM: Launch (Makefile, GDB)',
+    type = 'asm_gdb',
+    request = 'launch',
+    program = build_via_makefile,
+    cwd = '${workspaceFolder}',
+    stopAtEntry = true,
+    MIMode = 'gdb',
+    miDebuggerPath = vim.fn.expand '~/peter-projects/triode/asm/x86-64-linux/gdb-docker.sh',
+    setupCommands = {
+      {
+        text = 'set disassembly-flavor intel',
+        description = 'Use Intel syntax for disassembly',
+      },
+    },
+  },
+  {
+    name = 'ASM: Launch (manual path, GDB)',
+    type = 'asm_gdb',
+    request = 'launch',
+    program = function()
+      return vim.fn.input('Path to ELF executable: ', vim.fn.getcwd() .. '/out/', 'file')
+    end,
+    cwd = '${workspaceFolder}',
+    stopAtEntry = true,
+    MIMode = 'gdb',
+    miDebuggerPath = vim.fn.expand '~/peter-projects/triode/asm/x86-64-linux/gdb-docker.sh',
+    setupCommands = {
+      { text = 'set disassembly-flavor intel' },
+    },
+  },
+  -- ---------------------------------------------------------------
+  -- codelldb (local macOS macho64) — quick-iteration convenience.
+  -- NOTE: Linux syscalls will NOT work correctly on macOS
+  -- (different syscall numbers & ABI).  Use the GDB config above
+  -- for real Linux debugging.  This is useful for algorithmic /
+  -- computation-heavy assembly that doesn't do raw syscalls.
   -- ---------------------------------------------------------------
   {
     name = 'ASM: Launch (local macho64, lldb)',
     type = 'lldb',
     request = 'launch',
-    program = build_local_macho,
+    program = function()
+      local src = vim.fn.expand '%:p'
+      local out_dir = vim.fn.expand '%:p:h' .. '/out-local'
+      local name = vim.fn.expand '%:t:r'
+      local obj = out_dir .. '/' .. name .. '.o'
+      local exe = out_dir .. '/' .. name
+
+      vim.fn.mkdir(out_dir, 'p')
+
+      local nasm_cmd = string.format('nasm -f macho64 -g %s -o %s', vim.fn.shellescape(src), vim.fn.shellescape(obj))
+      local result = vim.fn.system(nasm_cmd)
+      if vim.v.shell_error ~= 0 then
+        vim.notify('NASM failed:\n' .. result, vim.log.levels.ERROR)
+        return nil
+      end
+
+      local sdk_path = vim.fn.system 'xcrun --show-sdk-path 2>/dev/null'
+      sdk_path = vim.trim(sdk_path)
+      if sdk_path == '' then
+        sdk_path = '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk'
+      end
+
+      local ld_cmd = string.format(
+        'ld -lSystem -L%s/usr/lib -macos_version_min 11.0 -no_pie -e _start %s -o %s',
+        vim.fn.shellescape(sdk_path),
+        vim.fn.shellescape(obj),
+        vim.fn.shellescape(exe)
+      )
+      result = vim.fn.system(ld_cmd)
+      if vim.v.shell_error ~= 0 then
+        vim.notify('LD failed:\n' .. result, vim.log.levels.ERROR)
+        return nil
+      end
+
+      vim.notify('Built: ' .. exe .. '  (macOS macho64 — Linux syscalls will NOT work)', vim.log.levels.WARN)
+      return exe
+    end,
     cwd = '${fileDirname}',
     stopOnEntry = true,
     args = {},
-  },
-  -- ---------------------------------------------------------------
-  -- codelldb — attach to existing binary (e.g. Docker-built ELF
-  -- debugged remotely, or a binary you built separately)
-  -- ---------------------------------------------------------------
-  {
-    name = 'ASM: Launch (manual path, lldb)',
-    type = 'lldb',
-    request = 'launch',
-    program = function()
-      return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/out/', 'file')
-    end,
-    cwd = '${workspaceFolder}',
-    stopOnEntry = true,
-    args = {},
-  },
-  -- ---------------------------------------------------------------
-  -- Makefile-driven build (e.g. Docker Linux ELF64) — debugs the
-  -- output via lldb.  NOTE: lldb on macOS cannot debug Linux ELF
-  -- binaries directly.  This config is useful when the Makefile
-  -- produces a Mach-O binary (or when you are running on Linux).
-  -- For ELF debugging on macOS use the "GDB (cpptools)" config below.
-  -- ---------------------------------------------------------------
-  {
-    name = 'ASM: Launch (Makefile, lldb)',
-    type = 'lldb',
-    request = 'launch',
-    program = build_via_makefile,
-    cwd = '${workspaceFolder}',
-    stopOnEntry = true,
-    args = {},
+    -- Suppress EXC_SYSCALL on macOS — raw Linux syscalls are invalid here.
+    initCommands = {
+      'process handle --stop false --pass true --notify false SIGSYS',
+    },
   },
 }
-
--- ---------------------------------------------------------------
--- GDB adapter (for Linux ELF debugging, including via Docker)
--- Requires: mason package "cpptools" (Microsoft C++ tools)
--- Install:  :DapInstall cpptools
--- Then point miDebuggerPath at your gdb (or a Docker wrapper).
--- ---------------------------------------------------------------
--- Uncomment and adjust miDebuggerPath when you need GDB debugging:
---
--- M.adapters = {
---   gdb = {
---     type = 'executable',
---     command = vim.fn.stdpath 'data' .. '/mason/packages/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
---     name = 'gdb',
---   },
--- }
---
--- table.insert(M.configurations, {
---   name = 'ASM: Launch (Makefile, GDB)',
---   type = 'gdb',
---   request = 'launch',
---   program = build_via_makefile,
---   cwd = '${workspaceFolder}',
---   stopAtEntry = true,
---   MIMode = 'gdb',
---   miDebuggerPath = '/opt/homebrew/bin/gdb',   -- or a Docker wrapper script
---   setupCommands = {
---     { text = 'set disassembly-flavor intel' },
---   },
--- })
 
 return M

@@ -34,6 +34,7 @@ return {
           ensure_installed = {
             'js-debug-adapter',
             'codelldb',
+            'cpptools',
             'delve',
           },
         },
@@ -88,6 +89,7 @@ return {
       vscode.type_to_filetypes['lldb'] = { 'c', 'cpp', 'rust', 'zig' }
       vscode.type_to_filetypes['codelldb'] = { 'c', 'cpp', 'rust', 'zig' }
       vscode.type_to_filetypes['sh'] = { 'sh', 'bash' }
+      vscode.type_to_filetypes['asm_gdb'] = { 'asm', 'nasm' }
       vscode.type_to_filetypes['asm'] = { 'asm', 'nasm' }
       vscode.type_to_filetypes['go'] = { 'go' }
       vscode.type_to_filetypes['delve'] = { 'go' }
@@ -123,6 +125,11 @@ return {
 
       -- asm
       local asm_config = require 'dap.asm'
+      if asm_config.adapters then
+        for name, adapter in pairs(asm_config.adapters) do
+          dap.adapters[name] = adapter
+        end
+      end
       dap.configurations.asm = asm_config.configurations
       dap.configurations.nasm = asm_config.configurations
 
