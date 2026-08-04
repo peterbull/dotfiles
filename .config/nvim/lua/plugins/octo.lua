@@ -6,6 +6,8 @@ return {
     picker = 'telescope',
     -- bare Octo command opens picker of commands
     enable_builtin = true,
+    -- use local files on the right side of reviews
+    use_local_fs = true,
   },
   keys = {
     {
