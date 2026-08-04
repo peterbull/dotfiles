@@ -88,6 +88,7 @@ end
 return {
 	{
 		"sindrets/diffview.nvim",
+		enabled = require("util.diff_backend") == "diffview",
 		dependencies = { "nvim-lua/plenary.nvim" },
 		cmd = { "DiffviewOpen", "DiffviewClose", "DiffviewFileHistory" },
 		keys = {
@@ -355,7 +356,7 @@ return {
 		},
 		opts = {
 			integrations = {
-				diffview = true,
+				diffview = require("util.diff_backend") == "diffview",
 				telescope = true,
 			},
 		},
