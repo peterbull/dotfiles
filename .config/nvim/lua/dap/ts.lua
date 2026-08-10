@@ -80,27 +80,11 @@ M.configurations = {
   {
     type = 'pwa-chrome',
     request = 'launch',
-    name = 'Launch Chrome (remote debugging port)',
-    url = function()
-      return 'http://localhost:' .. (_G.__dap_chrome_last_port or 9222)
-    end,
+    name = 'Launch Chrome (debug profile)',
+    url = 'http://app.ctmdev.us',
+    runtimeExecutable = vim.fn.stdpath 'config' .. '/bin/chrome-debug.sh',
     webRoot = '${workspaceFolder}',
-    runtimeArgs = function()
-      return { '--remote-debugging-port=' .. (_G.__dap_chrome_last_port or 9222) }
-    end,
-    cwd = '${workspaceFolder}',
-  },
-  {
-    type = 'pwa-chrome',
-    request = 'launch',
-    name = 'Launch Chrome against current file (remote debugging port)',
-    url = function()
-      return 'http://localhost:' .. (_G.__dap_chrome_last_port or 9222)
-    end,
-    webRoot = '${workspaceFolder}',
-    runtimeArgs = function()
-      return { '--remote-debugging-port=' .. (_G.__dap_chrome_last_port or 9222) }
-    end,
+    userDataDir = vim.fn.expand '~/.config/chrome-debug',
     cwd = '${workspaceFolder}',
   },
   {
