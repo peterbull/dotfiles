@@ -556,3 +556,30 @@ tmux-log() {
   echo "Logging pane to: ${file}"
 }
 alias tmux-log-stop="tmux pipe-pane"
+
+git() {
+  if [[ "$1" == "commit" ]]; then
+    local branch
+    branch=$(command git symbolic-ref --short HEAD 2>/dev/null)
+    if [[ "$branch" == "master" ]]; then
+      echo "❌ You're on 'master'. Commit blocked."
+      return 1
+    fi
+  fi
+
+  if [[ "$1" == "push" ]]; then
+    if [[ "$*" == *"master"* ]]; then
+      echo "❌ Pushing to 'master' is blocked."
+      return 1
+    fi
+    local branch
+    branch=$(command git symbolic-ref --short HEAD 2>/dev/null)
+    if [[ "$branch" == "master" ]]; then
+      echo "❌ You're on 'master'. Push blocked."
+      return 1
+    fi
+  fi
+
+  command git "$@"
+}
+alias tmux-worktreeizer="/opt/homebrew/bin/bash ~/dotfiles/scripts/tmux-worktreeizer.sh"

@@ -210,7 +210,33 @@ return {
     config = function(_, opts)
       local dap = require 'dap'
       local dapui = require 'dapui'
+      local api = vim.api
       dapui.setup(opts)
+      -- prevent crash on -1 buffer, feed in current buffer
+      local layouts = require('dapui.windows').layouts
+      for _, win in ipairs(layouts) do
+        win.open = function(self)
+          if self:is_open() then
+            return
+          end
+          local cur_win = api.nvim_get_current_win()
+          for i, _ in pairs(self.win_states) do
+            local get_buffer = self.open_index(i)
+            local win_id = api.nvim_get_current_win()
+            local bufnr = get_buffer()
+            if not api.nvim_buf_is_valid(bufnr) then
+              bufnr = api.nvim_get_current_buf() -- fall back: keep focused buffer
+            end
+            api.nvim_set_current_buf(bufnr)
+            self.opened_wins[i] = win_id
+            self:_init_win_settings(win_id)
+            self.win_bufs[win_id] = get_buffer
+          end
+          self:resize()
+          -- Fails if cur win was floating that closed
+          pcall(api.nvim_set_current_win, cur_win)
+        end
+      end
       dap.listeners.after.event_initialized['dapui_config'] = function()
         -- dapui.open {}
       end

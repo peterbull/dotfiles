@@ -22,10 +22,11 @@ tasks
 .pi-lens
 
 symref
-skills
 wip-tickets
 worktrees
 
 staging.md
 .pi-subagents
 wip-bruno
+biome.json
+zzz_peterparams.rb
