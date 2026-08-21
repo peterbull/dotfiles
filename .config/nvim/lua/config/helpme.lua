@@ -137,6 +137,14 @@ local function add_history_entry(entry)
   save_history(history)
 end
 
+---@param bufnr number
+local function no_completion(bufnr)
+  vim.b[bufnr].completion = false -- blink.cmp
+  vim.bo[bufnr].completefunc = ''
+  vim.bo[bufnr].omnifunc = ''
+  vim.bo[bufnr].complete = ''
+end
+
 ---Truncate a string for display, adding ellipsis if cut.
 ---@param s string
 ---@param max_len number
@@ -206,6 +214,7 @@ local function show_response_popup(answer)
   vim.bo[buf].bufhidden = 'wipe'
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, wrapped)
   vim.bo[buf].modifiable = false
+  no_completion(buf)
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
@@ -218,6 +227,8 @@ local function show_response_popup(answer)
     title = ' Answer ',
     title_pos = 'center',
   })
+
+  vim.cmd 'stopinsert' -- land in the answer popup in normal mode (came from typing)
 
   vim.wo[win].wrap = false -- we already hard-wrapped
   vim.wo[win].cursorline = false
@@ -263,6 +274,7 @@ function M.show_history()
   vim.bo[buf].bufhidden = 'wipe'
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.bo[buf].modifiable = false
+  no_completion(buf)
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
@@ -320,6 +332,8 @@ function M.show()
   local prompt_buf = vim.api.nvim_create_buf(false, true)
   vim.bo[prompt_buf].buftype = 'prompt'
   vim.bo[prompt_buf].bufhidden = 'wipe'
+  -- No LSP here — disable all autocomplete in the prompt window
+  no_completion(prompt_buf)
 
   local prompt_win = vim.api.nvim_open_win(prompt_buf, true, {
     relative = 'editor',
