@@ -50,6 +50,10 @@ tmux send-keys -t ctm-server:logs "cd ~/work/ctm && tail -f log/development.log 
 tmux new-window -t ctm-server -n "ctm-ui"
 tmux send-keys -t ctm-server:ctm-ui "cd ~/work/ctm/packages/ctm-ui && pnpm dev" C-m
 
+# new window for ctm-ui storybook
+tmux new-window -t ctm-server -n "ctm-ui-storybook"
+tmux send-keys -t ctm-server:ctm-ui-storybook "cd ~/work/ctm/packages/ctm-ui && pnpm dev:storybook" C-m
+
 tmux new-window -t ctm-server -n "askctm"
 tmux send-keys -t ctm-server:askctm "cd ~/work/askctm && pnpm dev" C-m
 

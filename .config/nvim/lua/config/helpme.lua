@@ -3,8 +3,8 @@ local llm = require 'config.llm_service'
 local M = {}
 
 M.config = {
-  context_lines = 100,
-  max_tokens = 200,
+  context_lines = 2000,
+  max_tokens = 10000,
   history_file = vim.fn.stdpath 'data' .. '/helpme_history.json',
   history_limit = 50,
 }

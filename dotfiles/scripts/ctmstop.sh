@@ -16,6 +16,7 @@ tmux send-keys -t ctm-server:nginx C-c
 tmux send-keys -t ctm-server:pool C-c
 tmux send-keys -t ctm-server:logs C-c
 tmux send-keys -t ctm-server:ctm-ui C-c
+tmux send-keys -t ctm-server:ctm-ui-storybook C-c
 tmux send-keys -t ctm-server:askctm C-c
 
 # Wait a moment for graceful shutdown
