@@ -583,3 +583,6 @@ git() {
   command git "$@"
 }
 alias tmux-worktreeizer="/opt/homebrew/bin/bash ~/dotfiles/scripts/tmux-worktreeizer.sh"
+
+# prepend ~/bin so the rvm->mise shim intercepts `rvm ... do ...`
+export PATH="$HOME/bin:$PATH"

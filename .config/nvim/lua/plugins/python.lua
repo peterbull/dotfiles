@@ -5,7 +5,6 @@ return {
       'neovim/nvim-lspconfig',
       { 'nvim-telescope/telescope.nvim', branch = '0.1.x', dependencies = { 'nvim-lua/plenary.nvim' } },
     },
-    branch = 'regexp', -- v2
     ft = 'python',
     keys = {
       { ',v', '<cmd>VenvSelect<cr>', desc = 'Select Venv' },

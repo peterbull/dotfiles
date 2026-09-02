@@ -15,13 +15,23 @@ return {
   opts = {
     notify_on_error = false,
     format_on_save = function(bufnr)
-      -- Skip format-on-save for JS under the ctm repo (~/work/ctm) but not the
-      local ctm_root = vim.fs.normalize(vim.fn.expand '~/work/ctm')
-      local path = vim.fs.normalize(vim.api.nvim_buf_get_name(bufnr))
-      local in_ctm = vim.startswith(path, ctm_root .. '/') or path == ctm_root
-      local is_js = vim.bo[bufnr].filetype == 'javascript' or vim.bo[bufnr].filetype == 'javascriptreact'
-      if in_ctm and is_js and not vim.startswith(path, ctm_root .. '/packages/ctm-ui/') then
+      -- Notebooks are a projection of .ipynb cell text; a formatter would merge
+      -- imports across cell boundaries and rewrite cells you never touched.
+      if vim.b[bufnr].nb_buffer then
         return nil
+      end
+      -- Skip format-on-save for JS under the ctm repos (~/work/ctm, ~/work/ctm-chat):
+      -- neither is prettier-formatted. ctm-ui is, so it keeps formatting.
+      local path = vim.fs.normalize(vim.api.nvim_buf_get_name(bufnr))
+      local is_js = vim.bo[bufnr].filetype == 'javascript' or vim.bo[bufnr].filetype == 'javascriptreact'
+      if is_js then
+        for _, dir in ipairs { '~/work/ctm', '~/work/ctm-chat' } do
+          local root = vim.fs.normalize(vim.fn.expand(dir))
+          local in_root = vim.startswith(path, root .. '/') or path == root
+          if in_root and not vim.startswith(path, root .. '/packages/ctm-ui/') then
+            return nil
+          end
+        end
       end
       -- Disable "format_on_save lsp_fallback" for languages that don't
       -- have a well standardized coding style. You can add additional

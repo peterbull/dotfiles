@@ -9,10 +9,8 @@ local M = {}
 ---@type LlmServiceConfig
 M.config = {
   base_url = 'https://rig.ctmdev.us/v1',
-  -- base_url = 'https://rig.ctmdev.us/v1',
   api_key = nil,
-  -- model = 'GLM-5.2',
-  model = 'deepseek-v4-flash',
+  model = 'qwen3.8-flash-next',
   timeout = 20000,
 }
 
