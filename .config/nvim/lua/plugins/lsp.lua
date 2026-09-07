@@ -551,11 +551,43 @@ return {
       },
     })
 
+    -- Sorbet alongside ruby_lsp, per ~/work/ctm/sorbet/README.md (opt-in pilot for VoiceBot /
+    -- ChatBot). Attaches only where a sorbet/ dir exists, so it stays silent in other Ruby
+    -- projects. nvim spawns servers in its own cwd (not root_dir) -- open nvim at repo root.
+    -- Watchman is required: without it `srb tc --lsp` answers initialize, then exits 100.
+    --
+    -- Keep Sorbet's real type errors, drop the missing-RBI noise: with no gem RBIs generated,
+    -- every ActiveSupport core extension and Rails macro reads as 7003 "method does not exist"
+    -- (284 of them in voice_bot.rb alone). Filtering just that code leaves 7004 "argument does
+    -- not have expected type", 7017, 5002 etc. visible. Empty the table to see everything.
+    local sorbet_noise_codes = { ['7003'] = true, [7003] = true }
+    local publish_diagnostics = vim.lsp.handlers['textDocument/publishDiagnostics']
+
+    vim.lsp.config('sorbet', {
+      cmd = vim.list_extend(
+        { 'mise', 'exec', '--', 'bundle', 'exec', 'srb', 'tc', '--lsp' },
+        vim.fn.executable 'watchman' == 1 and {} or { '--disable-watchman' }
+      ),
+      filetypes = { 'ruby' },
+      root_markers = { 'sorbet/' },
+      handlers = {
+        ['textDocument/publishDiagnostics'] = function(err, result, ctx, config)
+          if result and result.diagnostics then
+            result.diagnostics = vim.tbl_filter(function(d)
+              return not sorbet_noise_codes[d.code]
+            end, result.diagnostics)
+          end
+          publish_diagnostics(err, result, ctx, config)
+        end,
+      },
+    })
+
     vim.lsp.enable 'ruby_lsp'
+    vim.lsp.enable 'sorbet'
     require('mason-lspconfig').setup {
       ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
       automatic_installation = false,
-      automatic_enable = { exclude = { 'vtsls', 'ruby_lsp' } }, -- prevent double vtsls from vim.lsp.enable()
+      automatic_enable = { exclude = { 'vtsls', 'ruby_lsp', 'sorbet' } }, -- prevent double enable from vim.lsp.enable()
       handlers = {
         function(server_name)
           local server = servers[server_name]
