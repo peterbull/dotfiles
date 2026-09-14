@@ -78,6 +78,13 @@ M.configurations = {
     cwd = '${workspaceFolder}',
   },
   {
+    type = 'pwa-node',
+    request = 'attach',
+    name = 'Attach to ctm-chat (port 38700)',
+    port = 38700,
+    cwd = '${workspaceFolder}',
+  },
+  {
     type = 'pwa-chrome',
     request = 'launch',
     name = 'Launch Chrome (debug profile)',

@@ -28,7 +28,7 @@ tmux send-keys -t ctm-server:ctmcalls "cd ~/work/ctm && ctmcalls" C-m
 
 # Create new window for voiceai/chataiv1
 tmux new-window -t ctm-server -n "ctm-chat"
-tmux send-keys -t ctm-server:ctm-chat "cd ~/work/ctm-chat && npm ci && ./bin/run.sh" C-m
+tmux send-keys -t ctm-server:ctm-chat "cd ~/work/ctm-chat && npm ci && ./bin/debug.sh" C-m
 
 # Create new window for live transcriptions
 tmux new-window -t ctm-server -n "ctm-ai"

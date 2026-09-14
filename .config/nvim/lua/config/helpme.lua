@@ -1,10 +1,8 @@
-local llm = require 'config.llm_service'
-
 local M = {}
 
 M.config = {
-  context_lines = 2000,
-  max_tokens = 10000,
+  context_lines = 200,
+  pi_timeout = 120000,
   history_file = vim.fn.stdpath 'data' .. '/helpme_history.json',
   history_limit = 50,
 }
@@ -19,38 +17,61 @@ The user is editing the code shown in context and needs a quick answer.
 -- Helpers
 ----------------------------------------------------------------------
 
----Parse ~/.env into a key-value table (simple parser, no quoting).
----@return table<string, string>
-local function load_dotenv()
-  local env = {}
-  local path = os.getenv 'HOME' .. '/.env'
-  local f = io.open(path, 'r')
-  if not f then
-    return env
+---Project root of the current buffer, so pi can grep the whole codebase.
+---@return string
+local function project_root()
+  local path = vim.api.nvim_buf_get_name(0)
+  if path == '' then
+    return vim.uv.cwd()
   end
-  for line in f:lines() do
-    local key, value = line:match '^([%w_]+)%s*=%s*(.*)$'
-    if key and value and value ~= '' then
-      value = value:gsub('^"', ''):gsub('"$', ''):gsub("^'", ''):gsub("'$", '')
-      env[key] = value
-    end
-  end
-  f:close()
-  return env
+  return vim.fs.root(path, { '.git' }) or vim.fs.dirname(path)
 end
 
-local function ensure_llm_configured()
-  if not llm.config.api_key then
-    local env = load_dotenv()
-    local key = env['DEEPSEEK_API_KEY']
-    if key then
-      llm.setup { api_key = key }
-    else
-      vim.notify('DEEPSEEK_API_KEY not found in ~/.env', vim.log.levels.ERROR)
-      return false
+---Run pi as a brief one-off session in the project root and return the answer.
+---pi greps/reads the codebase itself; context here is just the cursor neighborhood.
+---@param question string
+---@param context { text: string }
+---@param callback fun(answer: string|nil, err: string|nil)
+local function ask_pi(question, context, callback)
+  local prompt = SYSTEM_PROMPT
+    .. 'You may use your tools (bash, read) to search the codebase for the answer. '
+    .. 'Never edit or write files.\n\n'
+    .. context.text
+    .. '\n\nQuestion: '
+    .. question
+
+  local args = {
+    'pi',
+    '-p',
+    '--no-session',
+    '--no-extensions',
+    '--no-skills',
+    '--no-prompt-templates',
+    '--no-themes',
+    '--exclude-tools',
+    'edit,write',
+    prompt,
+  }
+
+  local timer = vim.uv.new_timer()
+  local proc = vim.system(args, { cwd = project_root(), text = true }, function(obj)
+    if timer then
+      timer:stop()
+      if not timer:is_closing() then
+        timer:close()
+      end
     end
-  end
-  return true
+    if obj.code ~= 0 then
+      callback(nil, vim.trim(obj.stderr ~= '' and obj.stderr or ('pi exited ' .. tostring(obj.code))))
+      return
+    end
+    callback(vim.trim(obj.stdout))
+  end)
+
+  -- pi runs tools, so it can take a while — but never hang the popup forever
+  timer:start(M.config.pi_timeout, 0, function()
+    proc:kill 'sigterm'
+  end)
 end
 
 ---Wrap text to fit within max_width characters per line.
@@ -145,6 +166,21 @@ local function no_completion(bufnr)
   vim.bo[bufnr].complete = ''
 end
 
+---Map q / <Esc> to close this popup by window handle, so it quits even if focus
+---lands elsewhere. Normal + insert mode.
+---@param bufnr number
+---@param winnr number
+local function map_quit(bufnr, winnr)
+  local function close()
+    if vim.api.nvim_win_is_valid(winnr) then
+      vim.api.nvim_win_close(winnr, true)
+    end
+  end
+  vim.keymap.set('n', 'q', close, { buffer = bufnr, nowait = true })
+  vim.keymap.set('n', '<Esc>', close, { buffer = bufnr, nowait = true })
+  vim.keymap.set('i', '<Esc>', close, { buffer = bufnr, nowait = true })
+end
+
 ---Truncate a string for display, adding ellipsis if cut.
 ---@param s string
 ---@param max_len number
@@ -168,7 +204,7 @@ function M.capture_context()
   local cursor = vim.api.nvim_win_get_cursor(0)
   local row = cursor[1]
   local ft = vim.bo[bufnr].filetype
-  local filename = vim.fn.expand '%:t'
+  local filename = vim.fn.expand '%:p'
 
   local buf_line_count = vim.api.nvim_buf_line_count(bufnr)
   local start_row = math.max(1, row - M.config.context_lines)
@@ -233,9 +269,7 @@ local function show_response_popup(answer)
   vim.wo[win].wrap = false -- we already hard-wrapped
   vim.wo[win].cursorline = false
 
-  local opts = { buffer = buf, nowait = true }
-  vim.keymap.set('n', 'q', '<cmd>close<CR>', opts)
-  vim.keymap.set('n', '<Esc>', '<cmd>close<CR>', opts)
+  map_quit(buf, win)
   vim.keymap.set('n', 'y', function()
     vim.fn.setreg('+', answer)
     vim.notify('Answer yanked to clipboard', vim.log.levels.INFO)
@@ -300,8 +334,7 @@ function M.show_history()
     end
   end, { buffer = buf, nowait = true, desc = 'View full answer' })
 
-  vim.keymap.set('n', 'q', '<cmd>close<CR>', { buffer = buf, nowait = true })
-  vim.keymap.set('n', '<Esc>', '<cmd>close<CR>', { buffer = buf, nowait = true })
+  map_quit(buf, win)
   vim.keymap.set('n', 'd', function()
     local idx = vim.api.nvim_win_get_cursor(win)[1]
     if idx >= 1 and idx <= #history then
@@ -320,10 +353,6 @@ end
 ---Open the quick-question popup. When the user submits, capture context,
 ---call the LLM, and display the answer.
 function M.show()
-  if not ensure_llm_configured() then
-    return
-  end
-
   -- snapshot context before we open the popup (so cursor is correct)
   local context = M.capture_context()
 
@@ -369,15 +398,7 @@ function M.show()
       vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, false, { '  Thinking…' })
       vim.bo[prompt_buf].modifiable = false
 
-      local messages = {
-        { role = 'system', content = SYSTEM_PROMPT },
-        {
-          role = 'user',
-          content = context.text .. '\n\nQuestion: ' .. question,
-        },
-      }
-
-      llm.chat(messages, { max_tokens = M.config.max_tokens }, function(answer, err)
+      ask_pi(question, context, function(answer, err)
         vim.schedule(function()
           if err then
             -- Show the error in the prompt popup
