@@ -19,8 +19,10 @@ return {
 		vim.keymap.set({ "n", "v" }, "<leader>me", "<cmd>BookmarksDesc<cr>", { desc = "Bookmark D[e]scription" })
 		vim.keymap.set("n", "<leader>mt", "<cmd>BookmarksTree<cr>", { desc = "Bookmark [T]ree" })
 		vim.keymap.set("n", "<leader>ml", "<cmd>BookmarksLists<cr>", { desc = "Bookmark [L]ists" })
-		vim.keymap.set("n", "<leader>mn", "<cmd>BookmarksGotoNext<cr>", { desc = "Bookmark [N]ext" })
-		vim.keymap.set("n", "<leader>mp", "<cmd>BookmarksGotoPrev<cr>", { desc = "Bookmark [P]revious" })
+		-- InList = walk the active list by creation id order (the numbered trail),
+		-- stepping from the last-visited stop, wrapping at the ends.
+		vim.keymap.set("n", "<leader>mn", "<cmd>BookmarksGotoNextInList<cr>", { desc = "Bookmark [N]ext stop in trail" })
+		vim.keymap.set("n", "<leader>mp", "<cmd>BookmarksGotoPrevInList<cr>", { desc = "Bookmark [P]revious stop in trail" })
 		vim.keymap.set("n", "<leader>mg", "<cmd>BookmarksGrep<cr>", { desc = "Bookmark [G]rep" })
 		vim.keymap.set("n", "<leader>mi", "<cmd>BookmarksInfo<cr>", { desc = "Bookmark [I]nfo" })
 

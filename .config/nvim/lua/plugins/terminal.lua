@@ -10,10 +10,11 @@ return {
           return vim.o.columns * 0.4 -- 40% of screen width
         end
       end,
+      auto_scroll = false,
       open_mapping = [[<C-\>]], -- Default toggle with Ctrl+\
       hide_numbers = true,
       shade_terminals = false,
-      start_in_insert = true,
+      start_in_insert = false,
       insert_mappings = true,
       terminal_mappings = true,
       persist_size = true,

@@ -586,3 +586,6 @@ alias tmux-worktreeizer="/opt/homebrew/bin/bash ~/dotfiles/scripts/tmux-worktree
 
 # prepend ~/bin so the rvm->mise shim intercepts `rvm ... do ...`
 export PATH="$HOME/bin:$PATH"
+
+# QA/debug Chrome on :9223 (chrome-devtools MCP attaches here; signed-in debug profile)
+alias chrome-debug='pkill -f "user-data-dir=$HOME/.config/chrome-debug" 2>/dev/null; sleep 1; open -na "Google Chrome" --args --remote-debugging-port=9223 --user-data-dir=$HOME/.config/chrome-debug'
