@@ -63,6 +63,7 @@ return {
 			{ "<leader>mg", desc = "Bookmark grep" },
 			{ "<leader>mi", desc = "Bookmark info" },
 			{ "<leader>g", group = "[g]it" },
+			{ "<leader>l", group = "[l]ive server" },
 		},
 	},
 }

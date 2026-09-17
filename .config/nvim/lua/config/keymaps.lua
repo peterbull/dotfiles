@@ -103,3 +103,19 @@ vim.keymap.set('n', '<leader>hh', function()
   require('config.helpme').show_history()
 end, {})
 vim.keymap.set('v', ':s', ':s/\\%V', { desc = 'Substitute strictly inside visual selection' })
+
+-- Open the current HTML buffer in the system default app (i.e. the browser).
+vim.keymap.set('n', '<leader>lo', function()
+  if vim.bo.filetype ~= 'html' then
+    vim.notify('Not an HTML buffer (filetype: ' .. vim.bo.filetype .. ')', vim.log.levels.WARN)
+    return
+  end
+
+  local path = vim.fn.expand '%:p'
+  if path == '' or vim.fn.filereadable(path) == 0 then
+    vim.notify('Save the file before opening it in the browser', vim.log.levels.WARN)
+    return
+  end
+
+  vim.ui.open(path)
+end, { desc = '[L]ive: [o]pen current HTML file in browser' })
