@@ -102,6 +102,14 @@ end, {})
 vim.keymap.set('n', '<leader>hh', function()
   require('config.helpme').show_history()
 end, {})
+
+vim.keymap.set('n', '<leader>hd', function()
+  require('config.helpme_diff').show()
+end, { desc = '[H]elpMe [D]iff (propose + approve changes)' })
+
+-- Loaded eagerly so :HelpMeDiff exists before the keymap is ever used.
+require 'config.helpme_diff'
+
 vim.keymap.set('v', ':s', ':s/\\%V', { desc = 'Substitute strictly inside visual selection' })
 
 -- Open the current HTML buffer in the system default app (i.e. the browser).
