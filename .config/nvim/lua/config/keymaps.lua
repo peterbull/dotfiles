@@ -81,6 +81,36 @@ vim.keymap.set('n', '<leader>cd', function()
   print('Buffer directory copied to clipboard: ' .. buf_dir)
 end, { desc = '[C]opy buffer [D]irectory to clipboard' })
 
+-- Copy the current buffer's path to the system clipboard.
+-- `relative` clips it to the enclosing git root, which is what a prompt or a
+-- shell command in a repo usually wants.
+local function copy_buffer_path(relative)
+  local path = vim.api.nvim_buf_get_name(0)
+  if path == '' then
+    vim.notify('Buffer has no file path', vim.log.levels.WARN)
+    return
+  end
+
+  path = vim.fn.fnamemodify(path, ':p')
+  if relative then
+    local root = vim.fs.root(path, { '.git' })
+    if root then
+      path = vim.fs.relpath(root, path) or path
+    end
+  end
+
+  vim.fn.setreg('+', path)
+  print('Buffer path copied to clipboard: ' .. path)
+end
+
+vim.keymap.set('n', '<leader>cp', function()
+  copy_buffer_path(false)
+end, { desc = '[C]opy buffer [P]ath to clipboard' })
+
+vim.keymap.set('n', '<leader>cr', function()
+  copy_buffer_path(true)
+end, { desc = '[C]opy buffer path [R]elative to git root' })
+
 local cmdheight_state = 1
 
 vim.keymap.set('n', '<leader>tt', function()

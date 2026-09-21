@@ -10,6 +10,12 @@
 --
 -- The real file is never touched until you accept something, and accepted
 -- changes land in the real buffer as ordinary (undoable) edits.
+--
+-- Notebooks work too. An `.ipynb` buffer is a jupytext `py:percent` projection
+-- of a model, not the JSON file, so the scratch is a plain `.py` of that text and
+-- the write-back goes through the notebook plugin (`jupyter.replace`) instead of
+-- `nvim_buf_set_lines`: cell identity, and therefore every cell's outputs, has
+-- to survive the replace.
 
 local M = {}
 
@@ -234,21 +240,48 @@ end
 ---@param cursor_line number
 ---@param selection { l1: number, l2: number, text: string }|nil
 ---@param instruction string
+---@param is_nb boolean the real buffer is a notebook projection, not the file
 ---@return string
-local function build_prompt(real_path, scratch_path, cursor_line, selection, instruction)
-  local parts = {
-    'You are applying one focused code change to one file.',
-    '',
-    'Real file:           ' .. real_path,
-    'Scratch copy to edit: ' .. scratch_path,
-    'The scratch copy is byte-identical to the real file.',
-    '',
-    'Apply the requested change to the scratch copy using your edit tool.',
-    'Edit ONLY ' .. scratch_path .. '. Do not create, delete, or modify any other file.',
-    'Read the scratch copy yourself before editing; the hints below are only context.',
-    '',
-    'Cursor line: ' .. cursor_line,
-  }
+local function build_prompt(real_path, scratch_path, cursor_line, selection, instruction, is_nb)
+  local parts
+  if is_nb then
+    -- The scratch is a projection, not a copy of the file: saying otherwise
+    -- sends pi looking for JSON that is deliberately not there.
+    parts = {
+      'You are applying one focused change to one Jupyter notebook.',
+      '',
+      'Notebook:             ' .. real_path,
+      'Scratch copy to edit: ' .. scratch_path,
+      '',
+      'The scratch copy is the notebook as jupytext `py:percent`: the cell',
+      'sources, as valid Python. `# %%` starts a code cell; `# %% [markdown]`',
+      'starts a markdown cell whose body lines are `# ` comments. Outputs,',
+      'execution counts and notebook metadata are not in it and cannot be',
+      'changed from it.',
+      '',
+      'Apply the requested change to the scratch copy using your edit tool.',
+      'Keep the `# %%` markers so cell boundaries survive: add one when you add a',
+      'cell, remove one together with its body to delete a cell.',
+      'Edit ONLY ' .. scratch_path .. '. Do not create, delete, or modify any other file.',
+      'Read the scratch copy yourself before editing; the hints below are only context.',
+      '',
+      'Cursor line: ' .. cursor_line,
+    }
+  else
+    parts = {
+      'You are applying one focused code change to one file.',
+      '',
+      'Real file:           ' .. real_path,
+      'Scratch copy to edit: ' .. scratch_path,
+      'The scratch copy is byte-identical to the real file.',
+      '',
+      'Apply the requested change to the scratch copy using your edit tool.',
+      'Edit ONLY ' .. scratch_path .. '. Do not create, delete, or modify any other file.',
+      'Read the scratch copy yourself before editing; the hints below are only context.',
+      '',
+      'Cursor line: ' .. cursor_line,
+    }
+  end
   if selection then
     parts[#parts + 1] = 'Selected range (lines ' .. selection.l1 .. '-' .. selection.l2 .. '):'
     parts[#parts + 1] = selection.text
@@ -268,9 +301,14 @@ end
 function M.run(real_buf, real_path, real_win, cursor_line, selection, instruction)
   local cwd = project_root_for(real_path)
   local original = vim.api.nvim_buf_get_lines(real_buf, 0, -1, false)
+  local was_modified = vim.bo[real_buf].modified
+  local is_nb = vim.b[real_buf].nb_buffer == true
 
-  -- scratch copy in the original file's directory is unnecessary; /tmp is fine
-  local ext = vim.fn.fnamemodify(real_path, ':e')
+  -- A notebook's buffer is a py:percent projection, not the JSON on disk, so the
+  -- scratch mirrors the projection as plain Python: pi edits code (not JSON),
+  -- the two diff sides match, and the scratch does not re-enter the notebook
+  -- plugin through its own *.ipynb BufReadCmd.
+  local ext = is_nb and 'py' or vim.fn.fnamemodify(real_path, ':e')
   local scratch_path = vim.fn.tempname() .. (ext ~= '' and ('.' .. ext) or '')
   write_lines(scratch_path, original)
 
@@ -340,16 +378,33 @@ function M.run(real_buf, real_path, real_win, cursor_line, selection, instructio
     end
   end
 
+  ---Land a whole new text on the real buffer. A notebook's text is a projection
+  ---owned by the jupyter plugin: replacing it wholesale collapses every header
+  ---extmark, and with it that cell's identity and outputs. It goes through the
+  ---plugin instead, which re-derives identity from the text.
+  ---@param lines string[]
+  local function apply_all(lines)
+    if is_nb then
+      require('jupyter').replace(lines, real_buf)
+    else
+      vim.api.nvim_buf_set_lines(real_buf, 0, -1, false, lines) -- one undo step
+    end
+  end
+
   local function accept_all()
     local lines = vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
-    vim.api.nvim_buf_set_lines(real_buf, 0, -1, false, lines) -- one undo step
+    apply_all(lines)
     notify(string.format('accepted all %d hunk(s) — :w to save', count_hunks(original, lines)))
     finish()
   end
 
   local function reject_all()
-    vim.api.nvim_buf_set_lines(real_buf, 0, -1, false, original)
-    if content_matches_disk(real_buf, real_path) then
+    apply_all(original)
+    if is_nb then
+      -- a notebook's projection never equals the JSON on disk, so the usual
+      -- "content matches disk" test cannot restore 'modified' here
+      vim.bo[real_buf].modified = was_modified
+    elseif content_matches_disk(real_buf, real_path) then
       vim.bo[real_buf].modified = false
     end
     notify 'rejected all changes'
@@ -395,7 +450,7 @@ function M.run(real_buf, real_path, real_win, cursor_line, selection, instructio
   stop_watch = watch_file(scratch_path, reload)
   set_statusline(scratch_buf, true, 0)
 
-  local prompt = build_prompt(real_path, scratch_path, cursor_line, selection, instruction)
+  local prompt = build_prompt(real_path, scratch_path, cursor_line, selection, instruction, is_nb)
   local args = {
     'pi',
     '-p',
@@ -459,8 +514,12 @@ function M.show()
     return
   end
   if vim.bo[real_buf].buftype ~= '' then
-    notify('current buffer is not a normal file buffer', vim.log.levels.WARN)
-    return
+    -- Notebook buffers are `acwrite`: the text is a projection of the model, and
+    -- the write-back below goes through the plugin rather than through the file.
+    if not vim.b[real_buf].nb_buffer then
+      notify('current buffer is not a normal file buffer', vim.log.levels.WARN)
+      return
+    end
   end
 
   local real_win = vim.api.nvim_get_current_win()
