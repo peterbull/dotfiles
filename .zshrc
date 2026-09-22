@@ -423,6 +423,19 @@ clipdump() {
 }
 
 alias clp="clipdump"
+# ctm-rig model catalog (key read from pi's auth.json)
+rig_models() {
+  local key
+  key=$(python3 -c "import json;print(json.load(open('$HOME/.pi/agent/auth.json'))['ctm-rig']['key'])")
+  curl -s https://rig.ctmdev.us/v1/models -H "Authorization: Bearer $key"
+}
+alias models="rig_models"
+
+# ctm-rig provider config as pi sees it (baseUrl, model ids, context windows)
+model-config() {
+  python3 -c "import json;d=json.load(open('$HOME/.pi/agent/models.json'))['providers']['ctm-rig'];print(d['baseUrl']);[print(' ',m['id']) for m in d['models']]"
+}
+
 alias lg="lazygit"
 alias work="~/shift-projects"
 alias peter="~/peter-projects"
