@@ -64,6 +64,8 @@ return {
 			{ "<leader>mi", desc = "Bookmark info" },
 			{ "<leader>g", group = "[g]it" },
 			{ "<leader>l", group = "[l]ive server" },
+			{ "<leader>lp", desc = "Markdown preview (browser)" },
+			{ "<leader>lP", desc = "Markdown preview: close" },
 		},
 	},
 }
