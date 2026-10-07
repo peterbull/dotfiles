@@ -1,18 +1,18 @@
 local M = {}
 
-M.adapters = {
-  ['pwa-node'] = {
-    type = 'server',
-    host = 'localhost',
-    port = '${port}',
-    executable = {
-      command = 'node',
-      args = {
-        vim.fn.stdpath 'data' .. '/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js',
-        '${port}',
-      },
-    },
+local js_debug_script = vim.fn.stdpath 'data' .. '/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js'
+local js_adapter = require 'dap.checked-adapter'({
+  type = 'server',
+  host = 'localhost',
+  port = '${port}',
+  executable = {
+    command = 'node',
+    args = { js_debug_script, '${port}' },
   },
+}, { js_debug_script })
+
+M.adapters = {
+  ['pwa-node'] = js_adapter,
 
   ['node'] = function(cb, config)
     if config.type == 'node' then
@@ -25,18 +25,7 @@ M.adapters = {
       cb(native)
     end
   end,
-  ['pwa-chrome'] = {
-    type = 'server',
-    host = 'localhost',
-    port = '${port}',
-    executable = {
-      command = 'node',
-      args = {
-        vim.fn.stdpath 'data' .. '/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js',
-        '${port}',
-      },
-    },
-  },
+  ['pwa-chrome'] = js_adapter,
 }
 
 M.configurations = {
@@ -45,7 +34,7 @@ M.configurations = {
     request = 'launch',
     name = 'Launch Current Node File(File Dir)',
     program = '${file}',
-    cwd = '${fileDirName}',
+    cwd = '${fileDirname}',
     console = 'integratedTerminal',
   },
   {
@@ -89,7 +78,14 @@ M.configurations = {
     request = 'launch',
     name = 'Launch Chrome (debug profile)',
     url = 'http://app.ctmdev.us',
-    runtimeExecutable = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    runtimeExecutable = function()
+      local chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+      if vim.fn.has 'mac' == 1 and vim.fn.executable(chrome) == 1 then
+        return chrome
+      end
+      -- With no override, js-debug discovers a platform-appropriate browser.
+      return nil
+    end,
     webRoot = '${workspaceFolder}',
     userDataDir = vim.fn.expand '~/.config/chrome-debug',
     cwd = '${workspaceFolder}',

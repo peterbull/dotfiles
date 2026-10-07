@@ -1,7 +1,7 @@
 local M = {}
 
 M.adapters = {
-  go = {
+  go = require 'dap.checked-adapter' {
     type = 'server',
     port = '${port}',
     executable = {

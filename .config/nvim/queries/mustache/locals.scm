@@ -1,1 +1,11 @@
-/Users/peterbull/peter-projects/tree-sitter-mustache/queries/locals.scm
+(template) @local.scope
+
+[
+  (inverted_section)
+  (section)
+] @local.scope
+
+[
+  (identifier)
+  (partial_content)
+] @local.reference

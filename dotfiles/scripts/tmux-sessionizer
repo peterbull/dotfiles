@@ -1,39 +1,118 @@
 #!/usr/bin/env bash
 
-if [[ $# -eq 1 ]]; then
+set -uo pipefail
+
+die() { printf 'tmux-sessionizer: %s\n' "$*" >&2; exit 1; }
+shell_quote() { printf "'%s'" "${1//\'/\'\\\'\'}"; }
+
+if (( $# > 1 )); then
+  die "expected at most one directory"
+elif (( $# == 1 )); then
   selected=$1
 else
-  selected=$(find ~/work ~/Code/work ~/Code/lrn ~/Code/seth ~/dotfiles -type d -mindepth 1 -maxdepth 1 | fzf)
+  roots=()
+  root_count=0
+  if [[ -n ${TMUX_SESSIONIZER_ROOTS:-} ]]; then
+    IFS=: read -r -a candidates <<<"$TMUX_SESSIONIZER_ROOTS"
+  else
+    candidates=("$HOME/work" "$HOME/peter-projects" "$HOME/Code/work" "$HOME/Code/lrn"
+      "$HOME/Code/seth" "$HOME/dotfiles")
+  fi
+  for root in "${candidates[@]}"; do
+    [[ -d $root ]] || continue
+    root=$(cd -- "$root" && pwd -P && printf '.') || exit $?
+    root=${root%$'\n'.}
+    case $root in
+      *$'\n'*|*$'\t'*) die "root names containing tabs or newlines are not supported" ;;
+    esac
+    roots+=("$root")
+    root_count=$((root_count + 1))
+  done
+  (( root_count )) || exit 0
+  command -v fzf >/dev/null 2>&1 || die "fzf is not installed"
+  selected=$(
+    find "${roots[@]}" -mindepth 1 -maxdepth 1 -type d | SHELL=/bin/sh fzf
+    statuses=("${PIPESTATUS[@]}")
+    if (( statuses[0] != 0 )); then
+      if (( statuses[0] == 141 && (statuses[1] == 1 || statuses[1] == 130) )); then
+        exit "${statuses[1]}"
+      fi
+      printf 'tmux-sessionizer: directory search failed\n' >&2
+      case ${statuses[0]} in
+        (1|130) exit 2 ;;
+        (*) exit "${statuses[0]}" ;;
+      esac
+    fi
+    exit "${statuses[1]}"
+  )
+  status=$?
+  case $status in
+    0) ;;
+    1|130) exit 0 ;;
+    *) exit "$status" ;;
+  esac
+  [[ -n $selected ]] || exit 0
 fi
 
-if [[ -z $selected ]]; then
-  exit 0
+[[ -d $selected ]] || die "not a directory: $selected"
+selected=$(cd -- "$selected" && pwd -P && printf '.') || exit $?
+selected=${selected%$'\n'.}
+case $selected in
+  *$'\n'*|*$'\t'*) die "directory names containing tabs or newlines are not supported" ;;
+esac
+command -v tmux >/dev/null 2>&1 || die "tmux is not installed"
+
+selected_name=$(basename "$selected") || exit $?
+selected_name=$(printf '%s' "$selected_name" | LC_ALL=C tr -c 'a-zA-Z0-9_-' '_') || exit $?
+[[ -n $selected_name ]] || die "empty session name"
+[[ $selected_name != -* ]] || selected_name="_$selected_name"
+
+if tmux has-session -t "=$selected_name" 2>/dev/null; then
+  session_path=$(tmux display-message -p -t "=$selected_name" '#{session_path}') || exit $?
+  [[ $session_path == "$selected" ]] || die "session name collision: $selected_name"
+else
+  status=$?
+  (( status == 1 )) || exit "$status"
+  shell=${SHELL:-}
+  if [[ $shell != /* || ! -x $shell || -d $shell ]]; then
+    if [[ -x /bin/zsh ]]; then shell=/bin/zsh
+    elif [[ -x /bin/bash ]]; then shell=/bin/bash
+    else die "no executable interactive shell found"
+    fi
+  fi
+  shell_command="exec $(shell_quote "$shell") -i"
+  editor=$(command -v nvim) || editor=""
+  if [[ -n $editor ]]; then
+    editor_command="$(shell_quote "$editor"); $shell_command"
+  else
+    editor_command=$shell_command
+  fi
+  editor_command="exec /bin/sh -c $(shell_quote "$editor_command")"
+  shell_command="exec /bin/sh -c $(shell_quote "$shell_command")"
+
+  tmux_path=${selected//#/##}
+  first=$(tmux new-session -d -s "$selected_name" -c "$tmux_path" -n editor \
+    -P -F '#{window_index}' "$editor_command") || exit $?
+  [[ $first =~ ^[0-9]+$ ]] || die "tmux returned an invalid window index"
+  if (( first == 0 )); then
+    tmux move-window -s "=$selected_name:0" -t "=$selected_name:1" || exit $?
+    first=1
+  fi
+  indices=$(tmux list-windows -t "=$selected_name" -F '#{window_index}') || exit $?
+  last=$first
+  while IFS= read -r index; do
+    [[ $index =~ ^[0-9]+$ ]] || die "tmux returned an invalid window index"
+    (( index > last )) && last=$index
+  done <<<"$indices"
+  for window in server shell; do
+    last=$((last + 1))
+    tmux new-window -t "=$selected_name:$last" -c "$tmux_path" -n "$window" "$shell_command" || exit $?
+  done
+  tmux select-window -t "=$selected_name:$first" || exit $?
 fi
 
-selected_name=$(basename "$selected" | tr . _)
-tmux_running=$(pgrep tmux)
-
-if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
-  # Create new session with first window named "editor" and start nvim
-  tmux new-session -s $selected_name -c $selected -n editor "nvim; exec fish"
-  # Create second window named "server"
-  tmux new-window -t $selected_name: -c $selected -n server
-  # Create third window named "shell"
-  tmux new-window -t $selected_name: -c $selected -n shell
-  # Select the first window (editor)
-  tmux select-window -t $selected_name:editor
-  exit 0
+if [[ -n ${TMUX:-} ]]; then
+  tmux switch-client -t "=$selected_name"
+else
+  tmux attach-session -t "=$selected_name"
 fi
-
-if ! tmux has-session -t=$selected_name 2>/dev/null; then
-  # Create new detached session with first window named "editor" and start nvim
-  tmux new-session -ds $selected_name -c $selected -n editor "nvim; exec fish"
-  # Create second window named "server"
-  tmux new-window -t $selected_name: -c $selected -n server
-  # Create third window named "shell"
-  tmux new-window -t $selected_name: -c $selected -n shell
-  # Select the first window (editor)
-  tmux select-window -t $selected_name:editor
-fi
-
-tmux switch-client -t $selected_name

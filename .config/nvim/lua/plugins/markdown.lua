@@ -18,7 +18,8 @@ return {
     'iamcco/markdown-preview.nvim',
     cmd = { 'MarkdownPreview', 'MarkdownPreviewToggle', 'MarkdownPreviewStop' },
     ft = { 'markdown' },
-    build = 'cd app && yarn install',
+    -- Corepack needs no global pnpm shim; optional native dependency scripts stay blocked.
+    build = 'cd app && MISE_AUTO_INSTALL=0 COREPACK_ENABLE_AUTO_PIN=0 COREPACK_ENABLE_PROJECT_SPEC=0 COREPACK_DEFAULT_TO_LATEST=0 mise --no-config exec node@24 -- corepack pnpm@12.3.4 install --ignore-scripts --config.minimumReleaseAge=10080 --config.minimumReleaseAgeStrict=true --config.minimumReleaseAgeIgnoreMissingTime=false',
     keys = {
       { '<leader>lp', '<cmd>MarkdownPreviewToggle<CR>', desc = '[l]ive [p]review markdown in browser' },
       { '<leader>lP', '<cmd>MarkdownPreviewStop<CR>', desc = '[l]ive [P]review markdown (close)' },

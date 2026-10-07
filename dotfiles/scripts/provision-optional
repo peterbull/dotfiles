@@ -1,0 +1,533 @@
+#!/usr/bin/env python3
+"""Explicit optional restoration; preview and metadata checks never install anything."""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import shutil
+import stat
+import subprocess
+import sys
+
+FEATURES = ("shell", "tmux", "provider", "editor", "runtimes", "node-tools", "work")
+APPROVED = {
+    "oh-my-zsh": ("shell", ".oh-my-zsh", "ohmyzsh/ohmyzsh"),
+    "tpm": ("tmux", ".tmux/plugins/tpm", "tmux-plugins/tpm"),
+    "tmux-sensible": ("tmux", ".tmux/plugins/tmux-sensible", "tmux-plugins/tmux-sensible"),
+    "tmux-resurrect": ("tmux", ".tmux/plugins/tmux-resurrect", "tmux-plugins/tmux-resurrect"),
+    "tmux-fingers": ("tmux", ".tmux/plugins/tmux-fingers", "Morantron/tmux-fingers"),
+    "nvim-jupyter": ("editor", "peter-projects/nvim-jupyter", "peterbull/nvim-jupyter"),
+    "tree-sitter-mustache": ("editor", "peter-projects/tree-sitter-mustache", "TheLeoP/tree-sitter-mustache"),
+}
+NODE_PATHS = ("Library/pnpm/bin", "Library/pnpm/global", "Library/pnpm/store",
+              "Library/Caches/dotfiles-corepack", "Library/Caches/dotfiles-pnpm",
+              ".local/state/dotfiles-pnpm", ".local/share/mise", ".cache/mise")
+UV_PATHS = (".cache/uv", ".cache/uv-python", ".local/share/uv/python",
+            ".virtualenvs/nvim", ".virtualenvs/nvim/bin", ".virtualenvs/nvim/lib",
+            ".virtualenvs/nvim/lib/python3.12/site-packages")
+MISE_PATHS = (".local/share/mise", ".cache/mise", ".local/share/mise/installs",
+              ".local/share/mise/installs/node", ".local/share/mise/installs/ruby",
+              ".local/share/mise/installs/ruby/3.4.9")
+BOB_PATHS = (".local/share/bob", ".local/share/bob/nvim-bin", ".local/state/dotfiles-bob")
+BOB_FILES = (".local/share/bob/used", ".local/share/bob/nvim-bin/nvim")
+BOB_CONFIG = ".local/state/dotfiles-bob/config.json"
+WORKSPACE = ("minimumReleaseAge: 10080\nminimumReleaseAgeStrict: true\n"
+             "minimumReleaseAgeIgnoreMissingTime: false\n")
+MARKER = ".dotfiles-provider.json"
+REPO = Path(__file__).resolve().parents[2]
+
+
+class Refusal(Exception):
+    pass
+
+
+def regular(path):
+    return path.exists() and stat.S_ISREG(path.lstat().st_mode)
+
+
+def load_manifest():
+    path = REPO / "dotfiles/provisioning.json"
+    if not regular(path):
+        raise Refusal("Manifest must be a regular file")
+    data = json.loads(path.read_text())
+    if not isinstance(data, dict) or set(data) != {"repos"} or not isinstance(data["repos"], list):
+        raise Refusal("Unexpected manifest keys")
+    seen = set()
+    for item in data["repos"]:
+        if not isinstance(item, dict) or set(item) != {"name", "feature", "path", "url", "sha"}:
+            raise Refusal("Unexpected repository manifest keys")
+        if not all(isinstance(v, str) for v in item.values()):
+            raise Refusal("Manifest values must be strings")
+        name = item["name"]
+        if name not in APPROVED or name in seen:
+            raise Refusal("Unknown or duplicate repository name")
+        seen.add(name)
+        feature, relative, github = APPROVED[name]
+        if (item["feature"], item["path"], item["url"]) != (
+                feature, relative, "https://github.com/" + github + ".git"):
+            raise Refusal("Unapproved feature, relative path or public URL: " + name)
+        if not re.fullmatch(r"[0-9a-f]{40}", item["sha"]):
+            raise Refusal("Full lowercase commit SHA required: " + name)
+    if seen != set(APPROVED):
+        raise Refusal("Manifest must contain exactly the approved repositories")
+    return data["repos"]
+
+
+def canonical_home():
+    value = os.environ.get("HOME", "")
+    home = Path(value)
+    if not home.is_absolute() or not home.is_dir() or str(home.resolve()) != value:
+        raise Refusal("HOME must be a canonical existing absolute directory")
+    return home
+
+
+def directory(home, relative):
+    parts = relative.split("/")
+    if any(p in ("", ".", "..") for p in parts) or Path(relative).is_absolute():
+        raise Refusal("Unsafe relative path: " + relative)
+    path = home
+    for part in parts:
+        path = path / part
+        if path.is_symlink():
+            raise Refusal("Symlinked destination or ancestor refused: " + str(path))
+        if path.exists() and not path.is_dir():
+            raise Refusal("Special/non-directory destination refused: " + str(path))
+    if os.path.commonpath((str(home), str(path.resolve()))) != str(home):
+        raise Refusal("Destination escapes HOME: " + str(path))
+    return path
+
+
+class PathGuards:
+    def __init__(self, home):
+        self.home = home
+        self.identities = {}
+        self.runtime_node_versions = None
+
+    def remember(self, path, created=False):
+        value = path.lstat() if path.exists() or path.is_symlink() else None
+        identity = (value.st_dev, value.st_ino) if value else None
+        if path in self.identities and self.identities[path] != identity:
+            if not (created and self.identities[path] is None):
+                raise Refusal("Path identity changed; preserved: " + str(path))
+        self.identities[path] = identity
+
+    def directory(self, relative, created=False):
+        path = directory(self.home, relative)
+        relative_path = path.relative_to(self.home)
+        for ancestor in (*reversed(relative_path.parents), relative_path):
+            self.remember(self.home / ancestor, created)
+        return path
+
+    def file(self, relative, created=False):
+        path = self.home / relative
+        self.directory(str(path.parent.relative_to(self.home)), created)
+        if path.is_symlink() or (path.exists() and not regular(path)):
+            raise Refusal("Symlinked/special file refused: " + str(path))
+        self.remember(path, created)
+        return path
+
+    def executable(self, path, *roots):
+        self.directory(str(path.parent.relative_to(self.home)))
+        resolved = path.resolve()
+        if not any(resolved.is_relative_to(root) for root in roots) or not regular(resolved) or not os.access(resolved, os.X_OK):
+            raise Refusal("Owned executable missing/redirected: " + str(path))
+        self.directory(str(resolved.parent.relative_to(self.home)))
+        self.remember(path)
+        self.remember(resolved)
+
+
+def installed_node(guards, version=None):
+    root = guards.directory(".local/share/mise/installs/node")
+    versions = sorted((p.name for p in root.iterdir() if re.fullmatch(r"24\.[0-9]+\.[0-9]+", p.name)),
+                      key=lambda value: tuple(map(int, value.split("."))), reverse=True) if root.exists() else []
+    if version is not None:
+        versions = [version] if version in versions else []
+    if not versions:
+        raise Refusal("node-tools requires installed owned stable mise Node 24 with Corepack; apply runtimes separately first")
+    prefix = guards.directory(".local/share/mise/installs/node/" + versions[0])
+    for name in ("node", "corepack"):
+        guards.executable(prefix / "bin" / name, prefix)
+    return versions[0]
+
+
+def runtime_directories(guards, created=False):
+    for path in MISE_PATHS:
+        guards.directory(path, created)
+    root = guards.home / ".local/share/mise/installs/node"
+    versions = {p.name for p in root.iterdir() if re.fullmatch(r"24\.[0-9]+\.[0-9]+", p.name)} if root.exists() else set()
+    if not created and guards.runtime_node_versions is not None and versions != guards.runtime_node_versions:
+        raise Refusal("Installed Node directories changed outside mise; preserved")
+    guards.runtime_node_versions = versions
+    for version in sorted(versions):
+        relative = ".local/share/mise/installs/node/" + version
+        for path in (relative, relative + "/bin", relative + "/lib"):
+            guards.directory(path, created)
+
+
+def bob_config(home):
+    return {"downloads_location": str(home / ".local/share/bob"),
+            "installation_location": str(home / ".local/share/bob/nvim-bin"),
+            "add_neovim_binary_to_path": False}
+
+
+def verify_bob_config(guards):
+    config = guards.file(BOB_CONFIG)
+    if config.exists() and json.loads(config.read_text()) != bob_config(guards.home):
+        raise Refusal("Existing Bob config is not the approved owned config; preserved: " + str(config))
+    return config
+
+
+def environment():
+    home = canonical_home()
+    env = os.environ.copy()
+    for name in list(env):
+        if name.lower().startswith(("npm_config_", "pnpm_", "uv_", "mise_", "bob_", "corepack_")):
+            env.pop(name)
+    env.update({"XDG_DATA_HOME": str(home / ".local/share"),
+                "XDG_CACHE_HOME": str(home / ".cache"), "XDG_CONFIG_HOME": str(home / ".config"),
+                "MISE_DATA_DIR": str(home / ".local/share/mise"), "MISE_CACHE_DIR": str(home / ".cache/mise"),
+                "BOB_CONFIG": str(home / BOB_CONFIG),
+                "UV_CACHE_DIR": str(home / ".cache/uv"), "UV_PYTHON_INSTALL_DIR": str(home / ".local/share/uv/python"),
+                "UV_PYTHON_CACHE_DIR": str(home / ".cache/uv-python"), "UV_PYTHON_PREFERENCE": "only-managed",
+                "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0", "COREPACK_ENABLE_PROJECT_SPEC": "0",
+                "COREPACK_ENABLE_AUTO_PIN": "0", "COREPACK_DEFAULT_TO_LATEST": "0",
+                "PNPM_HOME": str(home / "Library/pnpm/bin"),
+                "COREPACK_HOME": str(home / "Library/Caches/dotfiles-corepack"),
+                "NPM_CONFIG_USERCONFIG": os.devnull, "NPM_CONFIG_GLOBALCONFIG": os.devnull,
+                "UV_NO_CONFIG": "1"})
+    env.update({"GIT_OPTIONAL_LOCKS": "0", "GIT_TERMINAL_PROMPT": "0",
+                "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull,
+                "GIT_CONFIG_COUNT": "3", "GIT_CONFIG_KEY_0": "core.hooksPath",
+                "GIT_CONFIG_VALUE_0": os.devnull, "GIT_CONFIG_KEY_1": "init.templateDir",
+                "GIT_CONFIG_VALUE_1": "", "GIT_CONFIG_KEY_2": "core.fsmonitor",
+                "GIT_CONFIG_VALUE_2": "false", "MISE_AUTO_INSTALL": "0",
+                "HOMEBREW_NO_AUTO_UPDATE": "1", "HOMEBREW_NO_ANALYTICS": "1",
+                "HOMEBREW_NO_INSTALL_CLEANUP": "1"})
+    for name in ("HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP", "HOMEBREW_BUNDLE_INSTALL_CLEANUP"):
+        env.pop(name, None)
+    # Ambient Git redirection must not send inspection/checkout to another worktree.
+    for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                 "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CONFIG_PARAMETERS"):
+        env.pop(name, None)
+    return env
+
+
+def inspect(argv):
+    result = subprocess.run(argv, env=environment(), cwd=REPO / "dotfiles",
+                            capture_output=True, text=True, check=False)
+    if result.returncode:
+        raise Refusal("Read-only inspection failed: " + argv[0])
+    return result.stdout.strip()
+
+
+def checkout(home, item):
+    dest = directory(home, item["path"])
+    if not dest.exists():
+        return dest, False
+    metadata = dest / ".git"
+    if metadata.is_symlink() or not (metadata.is_dir() or regular(metadata)):
+        raise Refusal("Unexpected directory (not an identifiable checkout): " + str(dest))
+    if inspect(["git", "-C", str(dest), "rev-parse", "--show-toplevel"]) != str(dest):
+        raise Refusal("Existing destination is not a checkout root: " + str(dest))
+    rev = inspect(["git", "-C", str(dest), "rev-parse", "HEAD"])
+    print("OK [optional] Preserve existing checkout: " + str(dest))
+    if rev != item["sha"]:
+        print("WARN [optional] Differing revision at " + str(dest) + "; no checkout/reset/pull")
+    print("WARN [optional] Dirty/untracked state UNVERIFIED; no content/filter inspection: " + str(dest))
+    return dest, True
+
+
+def provider_marker(home):
+    return {"owner": "dotfiles/provision-optional", "home": str(home),
+            "python": "3.12.13", "pynvim": "0.6.0"}
+
+
+def verify_provider_config(dest):
+    config = dest / "pyvenv.cfg"
+    if not regular(config):
+        raise Refusal("Provider pyvenv.cfg must be regular")
+    values = dict(line.split(" = ", 1) for line in config.read_text().splitlines() if " = " in line)
+    if values.get("version_info", values.get("version")) != "3.12.13" or values.get("include-system-site-packages") != "false":
+        raise Refusal("Provider metadata does not match isolated Python 3.12.13")
+    if not (dest / "bin/python3").is_file() or not os.access(dest / "bin/python3", os.X_OK):
+        raise Refusal("Provider python3 executable missing")
+
+
+def verify_provider(dest):
+    verify_provider_config(dest)
+    package = dest / "lib/python3.12/site-packages/pynvim-0.6.0.dist-info/METADATA"
+    if not regular(package) or "Version: 0.6.0" not in package.read_text().splitlines():
+        raise Refusal("Provider pynvim==0.6.0 package metadata missing")
+
+
+def provider(home):
+    dest = directory(home, ".virtualenvs/nvim")
+    if dest.exists():
+        marker = dest / MARKER
+        if not regular(marker) or json.loads(marker.read_text()) != provider_marker(home):
+            raise Refusal("Existing provider is not a verified owned environment; preserve it: " + str(dest))
+        directory(home, ".virtualenvs/nvim/bin")
+        directory(home, ".virtualenvs/nvim/lib/python3.12/site-packages/pynvim-0.6.0.dist-info")
+        verify_provider(dest)
+        print("OK [editor] Owned provider metadata matches; no reinstall or interpreter execution")
+        return dest, True
+    return dest, False
+
+
+def preflight(home, selected, repos):
+    errors, plans = [], []
+    guards = PathGuards(home)
+
+    def attempt(action):
+        try:
+            action()
+        except (Refusal, OSError, ValueError) as exc:
+            errors.append(str(exc))
+
+    required = set()
+    if any(r["feature"] in selected for r in repos):
+        required.add("git")
+    if "provider" in selected:
+        required.add("uv")
+    if "runtimes" in selected:
+        required.update(("mise", "bob"))
+    if "node-tools" in selected:
+        required.add("mise")
+    if "work" in selected:
+        required.update(("brew", "uname", "xcode-select"))
+    for tool in sorted(required):
+        if not shutil.which(tool):
+            errors.append("Missing tool: " + tool)
+
+    for item in repos:
+        if item["feature"] in selected:
+            def repo_plan(item=item):
+                dest, exists = checkout(home, item)
+                guards.directory(item["path"])
+                if not exists:
+                    plans.extend((["git", "clone", "--no-checkout", "--", item["url"], str(dest)],
+                                  ["git", "-C", str(dest), "checkout", "--detach", item["sha"]]))
+            attempt(repo_plan)
+    if "provider" in selected:
+        for path in UV_PATHS:
+            attempt(lambda path=path: guards.directory(path))
+        def provider_plan():
+            dest, exists = provider(home)
+            if not exists:
+                plans.extend((["uv", "venv", "--python", "3.12.13", str(dest)],
+                              ["uv", "pip", "install", "--python", str(dest / "bin/python3"), "pynvim==0.6.0"]))
+        attempt(provider_plan)
+    if "runtimes" in selected:
+        attempt(lambda: runtime_directories(guards))
+        for path in BOB_PATHS:
+            attempt(lambda path=path: guards.directory(path))
+        for path in BOB_FILES:
+            attempt(lambda path=path: guards.file(path))
+        attempt(lambda: verify_bob_config(guards))
+        plans.extend((["mise", "--no-config", "install", "node@24", "ruby@3.4.9"],
+                      ["bob", "install", "0.11.7"], ["bob", "use", "0.11.7"]))
+    if "node-tools" in selected:
+        def node_plan():
+            for path in NODE_PATHS:
+                guards.directory(path)
+            base, bin_path = home / "Library/pnpm", home / "Library/pnpm/bin"
+            if os.environ.get("PNPM_HOME", str(base)) not in (str(base), str(bin_path)):
+                raise Refusal("PNPM_HOME must match ~/Library/pnpm or its bin; user config will not be changed")
+            version = installed_node(guards)
+            workspace = REPO / "dotfiles/pnpm-workspace.yaml"
+            if not regular(workspace) or workspace.read_text() != WORKSPACE:
+                raise Refusal("Reviewed pnpm workspace strict delay/missing-time policy missing")
+            plans.append(["mise", "--no-config", "exec", "node@" + version, "--", "corepack", "pnpm@12.3.4", "add", "--global",
+                          "--global-bin-dir=" + str(bin_path), "--global-dir=" + str(base / "global"),
+                          "--store-dir=" + str(base / "store"),
+                          "--config.cacheDir=" + str(home / "Library/Caches/dotfiles-pnpm"),
+                          "--config.stateDir=" + str(home / ".local/state/dotfiles-pnpm"),
+                          "--config.minimumReleaseAge=10080", "--config.minimumReleaseAgeStrict=true",
+                          "--config.minimumReleaseAgeIgnoreMissingTime=false", "--ignore-scripts",
+                          "@earendil-works/pi-coding-agent@1.0.4", "@usebruno/cli@4.0.0"])
+        attempt(node_plan)
+    if "work" in selected:
+        def work_plan():
+            if inspect(["uname", "-s"]) != "Darwin":
+                raise Refusal("work requires macOS/Darwin")
+            inspect(["xcode-select", "-p"])
+            prefix = Path(inspect(["brew", "--prefix"]))
+            if not prefix.is_absolute() or not prefix.is_dir():
+                raise Refusal("brew --prefix must identify an existing absolute directory")
+            brewfile = REPO / "Brewfile.work"
+            if not regular(brewfile):
+                raise Refusal("Brewfile.work must be regular")
+            plans.append(["brew", "bundle", "install", "--no-upgrade", "--file=" + str(brewfile)])
+        attempt(work_plan)
+    return plans, errors, guards
+
+
+def check(home, repos):
+    for item in repos:
+        try:
+            dest, exists = checkout(home, item)
+            if not exists:
+                print("WARN [optional] Missing checkout: " + str(dest))
+        except (Refusal, OSError, ValueError) as exc:
+            print("WARN [optional] " + str(exc))
+    try:
+        _, exists = provider(home)
+        if not exists:
+            print("WARN [editor] Configured provider python3 missing")
+    except (Refusal, OSError, ValueError) as exc:
+        print("WARN [editor] " + str(exc))
+    packages = ("stylua", "prettier", "black", "isort", "shfmt", "debugpy", "bash-debug-adapter",
+                "js-debug-adapter", "codelldb", "delve", "cpptools")
+    for package in packages:
+        path = home / ".local/share/nvim/mason/packages" / package / "mason-receipt.json"
+        valid = False
+        if regular(path):
+            try:
+                receipt = json.loads(path.read_text())
+                if isinstance(receipt, dict):
+                    schema = receipt.get("schema_version")
+                    source = receipt.get("source" if schema == "2.0" else "primary_source")
+                    valid = (receipt.get("name") == package and schema in ("1.0", "1.1", "2.0")
+                             and isinstance(receipt.get("links"), dict) and isinstance(source, dict)
+                             and isinstance(source.get("id"), str) and source["id"].startswith("pkg:"))
+            except (OSError, ValueError):
+                print("WARN [editor] Cannot read Mason receipt: " + package)
+        print(("OK" if valid else "WARN") + " [editor] Mason receipt " + package +
+              (" present; metadata only" if valid else " missing/invalid; not a shell PATH requirement"))
+    print("Metadata only: no provider/plugin execution; runtime health remains unverified.")
+
+
+def apply(home, plans, guards):
+    os.umask(0o077)
+    env = environment()
+    fresh_clones = set()
+
+    def recheck(argv, created=False):
+        if canonical_home() != home:
+            raise Refusal("HOME changed after preflight")
+        if argv[0] == "git":
+            dest = Path(argv[-1] if argv[1] == "clone" else argv[2])
+            guards.directory(str(dest.relative_to(home)), created)
+            if argv[1] != "clone":
+                if dest not in fresh_clones:
+                    raise Refusal("Checkout restricted to this run's fresh clones")
+                metadata = guards.directory(str((dest / ".git").relative_to(home)))
+                if not metadata.is_dir():
+                    raise Refusal("Fresh clone metadata missing: " + str(dest))
+        if argv[0] == "uv":
+            for path in UV_PATHS:
+                guards.directory(path, created)
+            guards.file(".virtualenvs/nvim/pyvenv.cfg", created)
+            guards.file(".virtualenvs/nvim/" + MARKER, created)
+        if argv[0] == "bob" or argv[:3] == ["mise", "--no-config", "install"]:
+            runtime_directories(guards, created and argv[0] == "mise")
+            for path in BOB_PATHS:
+                guards.directory(path, created and argv[0] == "bob")
+            for path in BOB_FILES:
+                guards.file(path, created and argv[:2] == ["bob", "use"])
+            verify_bob_config(guards)
+        if argv[:3] == ["mise", "--no-config", "exec"]:
+            for path in NODE_PATHS:
+                guards.directory(path, created)
+            installed_node(guards, argv[3].removeprefix("node@"))
+            workspace = REPO / "dotfiles/pnpm-workspace.yaml"
+            if not regular(workspace) or workspace.read_text() != WORKSPACE:
+                raise Refusal("Reviewed pnpm workspace policy changed after preflight")
+        if argv[0] == "brew" and not regular(REPO / "Brewfile.work"):
+            raise Refusal("Brewfile.work changed after preflight")
+
+    for argv in plans:
+        recheck(argv)
+        if argv[:2] == ["git", "clone"]:
+            dest = Path(argv[-1])
+            if dest.exists():
+                raise Refusal("Destination appeared after preflight; preserved: " + str(dest))
+            dest.mkdir(parents=True)
+            guards.directory(str(dest.relative_to(home)), created=True)
+            fresh_clones.add(dest)
+        if argv[:2] == ["uv", "venv"]:
+            dest, exists = provider(home)
+            if exists or dest.exists():
+                raise Refusal("Provider appeared after preflight; preserved")
+            dest.mkdir(parents=True)
+            guards.directory(".virtualenvs/nvim", created=True)
+        if argv[:3] == ["uv", "pip", "install"]:
+            dest = guards.directory(".virtualenvs/nvim")
+            verify_provider_config(dest)
+            guards.executable(dest / "bin/python3", dest, home / ".local/share/uv/python")
+        if argv[0] == "bob":
+            for path in (".local/share/bob", ".local/state/dotfiles-bob"):
+                dest = guards.directory(path)
+                dest.mkdir(parents=True, exist_ok=True)
+                guards.directory(path, created=True)
+            config = verify_bob_config(guards)
+            if not config.exists():
+                with config.open("x") as target:
+                    json.dump(bob_config(home), target, sort_keys=True)
+                guards.file(BOB_CONFIG, created=True)
+            recheck(argv)
+        child_env = env.copy()
+        executable = shutil.which(argv[0], path=env.get("PATH"))
+        if not executable:
+            raise Refusal("Installer disappeared after preflight: " + argv[0])
+        if argv[:3] == ["mise", "--no-config", "exec"]:
+            child_env["PATH"] = str(home / "Library/pnpm/bin") + os.pathsep + env.get("PATH", "")
+        print("Apply: " + shlex.join(argv), flush=True)
+        result = subprocess.run(argv, executable=executable, env=child_env, cwd=REPO / "dotfiles", check=False)
+        if result.returncode:
+            print("ERROR: Installer status " + str(result.returncode) +
+                  "; all completed/partial state preserved; no cleanup, deletion or rollback", file=sys.stderr)
+            return result.returncode if result.returncode > 0 else 1
+        recheck(argv, created=True)
+        if argv[:2] == ["git", "clone"]:
+            guards.directory(str((dest / ".git").relative_to(home)), created=True)
+        if argv[:3] == ["uv", "pip", "install"]:
+            dest = guards.directory(".virtualenvs/nvim")
+            guards.directory(".virtualenvs/nvim/lib/python3.12/site-packages/pynvim-0.6.0.dist-info")
+            verify_provider(dest)
+            with (dest / MARKER).open("x") as marker:
+                json.dump(provider_marker(home), marker, sort_keys=True)
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--feature", action="append", choices=FEATURES, help="repeat for explicit optional groups")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--apply", action="store_true", help="install only explicitly selected groups")
+    mode.add_argument("--check", action="store_true", help="read-only local checkout/provider/Mason metadata")
+    args = parser.parse_args()
+    if args.apply and not args.feature:
+        parser.error("--apply requires at least one explicit --feature")
+    try:
+        home, repos = canonical_home(), load_manifest()
+        if args.check:
+            check(home, repos)
+            return 0
+        selected = [f for f in FEATURES if f in (args.feature or FEATURES)]
+        print(("Apply requested" if args.apply else "Preview only; no changes") + ": " + ", ".join(selected))
+        print("Existing checkouts are always preserved. Notebook pin is a candidate baseline, not customized working-tree equivalence.")
+        print("No TPM execution/tmux reload. Mustache parser pin is a candidate, not runtime-tested; queries are vendored separately. Reef source unknown/excluded.")
+        print("Path identities rechecked between commands; installer execution is not atomic against concurrent filesystem changes.")
+        print("Pi credentials/settings/extensions belong to pi-config; not restored. Package scripts disabled; functionality unverified.")
+        print("Work excludes Docker provider choice (Docker Desktop OR OrbStack), host servers, mailcatcher, percona-toolkit, Yarn/corepack and Lua extras; ngrok is manual.")
+        plans, errors, guards = preflight(home, selected, repos)
+        for argv in plans:
+            print("Plan: " + shlex.join(argv))
+        for error in errors:
+            print(("ERROR" if args.apply else "WARN") + ": " + error, file=sys.stderr)
+        if not args.apply:
+            return 0
+        if errors:
+            print("Preflight refused; no installers ran.", file=sys.stderr)
+            return 1
+        return apply(home, plans, guards)
+    except (Refusal, OSError, ValueError) as exc:
+        print("ERROR: " + str(exc) + "; existing/partial state preserved; no automatic cleanup", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

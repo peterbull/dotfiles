@@ -57,35 +57,37 @@ return {
     },
   },
   config = function(_, opts)
-    vim.opt.runtimepath:append(vim.fn.expand '~/peter-projects/tree-sitter-reef')
-    vim.opt.runtimepath:append(vim.fn.expand '~/peter-projects/tree-sitter-mustache')
-
     local parser_config = require('nvim-treesitter.parsers').get_parser_configs()
-    parser_config.reef = {
-      install_info = {
-        url = vim.fn.expand '~/peter-projects/tree-sitter-reef',
-        files = { 'src/parser.c' },
-        branch = 'main',
-      },
-      filetype = 'reef',
+    local available = {}
+    local custom_parsers = {
+      reef = { files = { 'src/parser.c' }, branch = 'main' },
+      mustache = { files = { 'src/parser.c', 'src/scanner.c' } },
     }
-
-    parser_config.mustache = {
-      install_info = {
-        url = vim.fn.expand '~/peter-projects/tree-sitter-mustache',
-        files = { 'src/parser.c', 'src/scanner.c' },
-      },
-      filetype = 'mustache',
-    }
+    for _, lang in ipairs { 'reef', 'mustache' } do
+      local info = custom_parsers[lang]
+      info.url = vim.fn.expand('~/peter-projects/tree-sitter-' .. lang)
+      local readable = true
+      for _, file in ipairs(info.files) do
+        readable = readable and vim.fn.filereadable(info.url .. '/' .. file) == 1
+      end
+      if readable then
+        parser_config[lang] = { install_info = info, filetype = lang }
+        available[#available + 1] = lang
+      end
+    end
 
     require('nvim-treesitter.configs').setup(opts)
 
-    -- Auto-start treesitter for reef and mustache files
-    vim.api.nvim_create_autocmd('FileType', {
-      pattern = { 'reef', 'mustache' },
-      callback = function(args)
-        vim.treesitter.start(args.buf)
-      end,
-    })
+    if #available > 0 then
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = available,
+        callback = function(args)
+          local ok, err = pcall(vim.treesitter.start, args.buf)
+          if not ok then
+            vim.notify('Optional Treesitter parser unavailable: ' .. tostring(err), vim.log.levels.WARN)
+          end
+        end,
+      })
+    end
   end,
 }

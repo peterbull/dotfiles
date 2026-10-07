@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Legacy `rvm <ruby> do` calls use mise's project toolchain, not RVM's stale gemsets.
+set -e
+
+if [[ "${2:-}" == "do" ]]; then
+  shift 2
+  if ! command -v mise >/dev/null 2>&1; then
+    printf '%s\n' 'rvm: mise is required for rvm <ruby> do <command>' >&2
+    exit 127
+  fi
+  exec mise exec -- "$@"
+fi
+
+if [[ -x "$HOME/.rvm/bin/rvm" ]]; then
+  exec "$HOME/.rvm/bin/rvm" "$@"
+fi
+printf '%s\n' "rvm: RVM is not installed at $HOME/.rvm/bin/rvm" >&2
+exit 127

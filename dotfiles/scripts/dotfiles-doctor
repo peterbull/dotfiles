@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+set -u
+set -o pipefail
+
+usage() {
+  printf 'Usage: bash dotfiles/scripts/dotfiles-doctor [--brew-check]\n'
+  printf 'Read-only local checks; --brew-check also checks the reviewed Brewfile.\n'
+}
+
+brew_check=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --brew-check) brew_check=1 ;;
+    *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
+if ! repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P); then
+  printf 'ERROR [base] Cannot locate the repository.\n' >&2
+  exit 1
+fi
+
+errors=0
+warnings=0
+report() {
+  printf '%s [%s] %s\n' "$1" "$2" "$3"
+  case "$1" in
+    ERROR|MISSING) errors=$((errors + 1)) ;;
+    WARN) warnings=$((warnings + 1)) ;;
+  esac
+}
+
+printf 'Dotfiles prerequisite checks: %s\n' "$repo"
+if platform=$(uname -s 2>/dev/null) && [ "$platform" = Darwin ]; then
+  report OK base 'macOS platform'
+else
+  report ERROR base 'macOS/Darwin is required for this baseline.'
+fi
+
+for tool in brew git mise bob nvim uv node ruby tmux fzf rg fd gh lazygit delta git-lfs; do
+  if command -v "$tool" >/dev/null 2>&1; then
+    report OK base "$tool executable available"
+  else
+    report MISSING base "$tool executable unavailable on PATH"
+  fi
+done
+
+if command -v xcode-select >/dev/null 2>&1 && xcode-select -p >/dev/null 2>&1; then
+  report OK base 'Apple developer tools selected (xcode-select)'
+else
+  report MISSING base 'Apple developer tools/CLT selection (xcode-select)'
+fi
+
+if command -v brew >/dev/null 2>&1; then
+  if brew_prefix=$(HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_ANALYTICS=1 brew --prefix 2>/dev/null) \
+      && [ -n "$brew_prefix" ] && [ -d "$brew_prefix" ]; then
+    report OK base "brew prefix: $brew_prefix"
+    for asset in powerlevel10k/powerlevel10k.zsh-theme \
+        zsh-autosuggestions/zsh-autosuggestions.zsh \
+        zsh-syntax-highlighting/zsh-syntax-highlighting.zsh; do
+      if [ -f "$brew_prefix/share/$asset" ]; then
+        report OK base "$asset available"
+      else
+        report MISSING base "$asset missing under the brew prefix"
+      fi
+    done
+  else
+    report ERROR base 'brew --prefix failed or did not identify an existing directory.'
+  fi
+fi
+
+for input in Brewfile .config/mise/config.toml dotfiles/scripts/dotfiles-doctor dotfiles/README.md; do
+  if [ ! -f "$repo/$input" ]; then
+    report MISSING base "$input repository input missing"
+  elif command -v git >/dev/null 2>&1; then
+    if git -C "$repo" ls-files --error-unmatch -- "$input" >/dev/null 2>&1; then
+      report OK base "$input present in the Git index"
+    else
+      report ERROR base "$input is not tracked in this repository"
+    fi
+  fi
+done
+
+for input in Brewfile.work dotfiles/provisioning.json dotfiles/pnpm-workspace.yaml dotfiles/scripts/provision-optional; do
+  if [ ! -f "$repo/$input" ]; then
+    report WARN optional "$input restoration input missing"
+  elif command -v git >/dev/null 2>&1 && git -C "$repo" ls-files --error-unmatch -- "$input" >/dev/null 2>&1; then
+    report OK optional "$input present in the Git index"
+  else
+    report WARN optional "$input not yet tracked; stage reviewed restoration inputs separately"
+  fi
+done
+
+if [ -f "$repo/dotfiles/scripts/provision-optional" ] && [ -f "$repo/dotfiles/provisioning.json" ] \
+    && command -v python3 >/dev/null 2>&1; then
+  if metadata=$(python3 -B "$repo/dotfiles/scripts/provision-optional" --check 2>&1); then
+    while IFS= read -r line; do
+      case "$line" in
+        WARN*) warnings=$((warnings + 1)) ;;
+      esac
+      printf '%s\n' "$line"
+    done <<< "$metadata"
+  else
+    report WARN optional 'Restoration metadata check refused; check canonical HOME and reviewed manifest'
+  fi
+else
+  report WARN optional 'Detailed checkout/provider/Mason metadata needs Python 3 and optional restoration inputs'
+fi
+
+for feature in .oh-my-zsh/oh-my-zsh.sh .tmux/plugins/tpm/tpm; do
+  if [ -f "$HOME/$feature" ]; then
+    report OK optional "$feature available"
+  else
+    report WARN optional "$feature missing; plugin provisioning is a separate step"
+  fi
+done
+
+if [ -x "$HOME/.virtualenvs/nvim/bin/python3" ]; then
+  report OK editor 'Configured provider python3 exists; packages not checked'
+else
+  report WARN editor 'Configured provider ~/.virtualenvs/nvim/bin/python3 is missing'
+fi
+if [ -d "$HOME/peter-projects/nvim-jupyter" ]; then
+  report OK editor 'Local nvim-jupyter directory exists; revision not checked'
+else
+  report WARN editor 'Local ~/peter-projects/nvim-jupyter checkout is missing'
+fi
+
+queries="$repo/.config/nvim/queries"
+if [ -d "$queries" ]; then
+  while IFS= read -r -d '' query; do
+    if [ ! -e "$query" ]; then
+      report WARN editor "Broken query symlink: ${query#"$repo/"}"
+    fi
+  done < <(find "$queries" -type l -print0)
+fi
+
+for app in Ghostty Tinycast; do
+  if [ -d "/Applications/$app.app" ] || [ -d "$HOME/Applications/$app.app" ]; then
+    report OK optional "$app application directory exists"
+  else
+    report WARN optional "$app application not found in the usual Applications directories"
+  fi
+done
+
+font_found=0
+for directory in "$HOME/Library/Fonts" /Library/Fonts; do
+  if [ -d "$directory" ]; then
+    for font in "$directory"/*JetBrainsMono*Nerd*; do
+      if [ -f "$font" ]; then font_found=1; break; fi
+    done
+  fi
+done
+if [ "$font_found" -eq 1 ]; then
+  report OK optional 'JetBrainsMono Nerd Font file found'
+else
+  report WARN optional 'JetBrainsMono Nerd Font not found in the usual font directories'
+fi
+
+if [ "$brew_check" -eq 1 ]; then
+  if command -v brew >/dev/null 2>&1 && [ -f "$repo/Brewfile" ]; then
+    if HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_ANALYTICS=1 \
+        brew bundle check --no-upgrade --verbose --file="$repo/Brewfile"; then
+      report OK base 'brew bundle inventory satisfies the Brewfile'
+    else
+      report ERROR base 'brew bundle inventory check failed; no installation was requested'
+    fi
+  else
+    report ERROR base 'brew bundle check needs Homebrew and the repository Brewfile'
+  fi
+fi
+
+printf '\nBase errors: %s; editor/optional warnings: %s.\n' "$errors" "$warnings"
+printf 'These are limited prerequisite checks, not full Neovim readiness.\n'
+printf 'Runtime versions, Mason/project tools, plugin health and signing remain unverified.\n'
+if [ "$errors" -gt 0 ]; then exit 1; fi

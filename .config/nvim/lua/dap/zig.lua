@@ -1,14 +1,18 @@
 local M = {}
-local zig_prettifier_file = '/Users/peterbull/tools/zig/lldb_pretty_printers.py'
-local zig_prettifier_init = 'command script import ' .. zig_prettifier_file
-local zig_init_commands = {
-  zig_prettifier_init,
-  'type category enable zig.lang',
-  'type category enable zig.std',
+local zig_prettifier_file = vim.fn.expand '~/tools/zig/lldb_pretty_printers.py'
+local zig_init_commands = {}
+if vim.fn.filereadable(zig_prettifier_file) == 1 then
+  vim.list_extend(zig_init_commands, {
+    'command script import "' .. vim.fn.escape(zig_prettifier_file, '\\"') .. '"',
+    'type category enable zig.lang',
+    'type category enable zig.std',
+  })
+end
+vim.list_extend(zig_init_commands, {
   'type format add --format decimal uint8_t',
   'type format add --format decimal "unsigned char"',
   'settings set target.inline-breakpoint-strategy always',
-}
+})
 
 local function get_target_zig_dir(cwd)
   local target_dir
@@ -31,12 +35,11 @@ local function get_target_zig_dir(cwd)
         return vim.fn.fnamemodify(p, ':h:t')
       end, build_files)
 
-      local choice = vim.fn.inputlist(vim.list_extend(
-        { 'Select Zig project:' },
-        vim.tbl_map(function(i, v)
-          return i .. '. ' .. v
-        end, ipairs(choices))
-      ))
+      local menu = { 'Select Zig project:' }
+      for i, name in ipairs(choices) do
+        menu[#menu + 1] = i .. '. ' .. name
+      end
+      local choice = vim.fn.inputlist(menu)
 
       if choice < 1 or choice > #build_files then
         vim.notify('Invalid selection', vim.log.levels.ERROR)
@@ -47,17 +50,35 @@ local function get_target_zig_dir(cwd)
   end
   return target_dir
 end
--- M.adapters = {} // lldb
+local function build_project(trace)
+  local target_dir = get_target_zig_dir(vim.fn.getcwd())
+  if not target_dir then
+    return require('dap').ABORT
+  end
+  local command = { 'zig', 'build', '-Doptimize=Debug' }
+  if trace then
+    command[#command + 1] = '-freference-trace'
+  end
+  vim.list_extend(command, { '--build-file', target_dir .. '/build.zig' })
+  local result = vim.fn.system(command)
+  if vim.v.shell_error ~= 0 then
+    vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
+    return require('dap').ABORT
+  end
+  local project_name = vim.fn.fnamemodify(target_dir, ':t'):gsub('-', '_')
+  return target_dir .. '/zig-out/bin/' .. project_name
+end
+
 M.configurations = {
   {
     name = 'Launch Zig Workspace',
     type = 'lldb',
     request = 'launch',
     program = function()
-      local result = vim.fn.system 'zig build'
+      local result = vim.fn.system { 'zig', 'build' }
       if vim.v.shell_error ~= 0 then
         vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
-        return nil
+        return require('dap').ABORT
       end
 
       local exe_path = vim.fn.getcwd() .. '/zig-out/bin/'
@@ -82,14 +103,13 @@ M.configurations = {
       local file_name = vim.fn.expand '%:t:r'
       local exe_path = vim.fn.getcwd() .. '/zig-out/bin/' .. file_name
 
-      vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/zig-out/bin')
+      vim.fn.mkdir(vim.fn.getcwd() .. '/zig-out/bin', 'p')
 
-      local compile_cmd = string.format('zig build-exe -femit-bin=%s %s', exe_path, current_file)
-      local result = vim.fn.system(compile_cmd)
+      local result = vim.fn.system { 'zig', 'build-exe', '-femit-bin=' .. exe_path, current_file }
 
       if vim.v.shell_error ~= 0 then
         vim.notify('Zig compile failed: ' .. result, vim.log.levels.ERROR)
-        return nil
+        return require('dap').ABORT
       end
 
       return exe_path
@@ -104,18 +124,7 @@ M.configurations = {
     type = 'lldb',
     request = 'launch',
     program = function()
-      local cwd = vim.fn.getcwd()
-      local target_dir = get_target_zig_dir(cwd)
-
-      local result = vim.fn.system('zig build -Doptimize=Debug --build-file ' .. target_dir .. '/build.zig')
-      if vim.v.shell_error ~= 0 then
-        vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
-        return nil
-      end
-
-      local project_name = vim.fn.fnamemodify(target_dir, ':t')
-      project_name = string.gsub(project_name, '-', '_')
-      return target_dir .. '/zig-out/bin/' .. project_name
+      return build_project(false)
     end,
     cwd = '${workspaceFolder}',
     stopOnEntry = false,
@@ -128,18 +137,7 @@ M.configurations = {
     type = 'lldb',
     request = 'launch',
     program = function()
-      local cwd = vim.fn.getcwd()
-      local target_dir = get_target_zig_dir(cwd)
-
-      local result = vim.fn.system('zig build -Doptimize=Debug -freference-trace --build-file ' .. target_dir .. '/build.zig')
-      if vim.v.shell_error ~= 0 then
-        vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
-        return nil
-      end
-
-      local project_name = vim.fn.fnamemodify(target_dir, ':t')
-      project_name = string.gsub(project_name, '-', '_')
-      return target_dir .. '/zig-out/bin/' .. project_name
+      return build_project(true)
     end,
     args = { '--debug-trace' },
     cwd = '${workspaceFolder}',
@@ -152,18 +150,7 @@ M.configurations = {
     type = 'lldb',
     request = 'launch',
     program = function()
-      local cwd = vim.fn.getcwd()
-      local target_dir = get_target_zig_dir(cwd)
-
-      local result = vim.fn.system('zig build -Doptimize=Debug -freference-trace --build-file ' .. target_dir .. '/build.zig')
-      if vim.v.shell_error ~= 0 then
-        vim.notify('Zig build failed: ' .. result, vim.log.levels.ERROR)
-        return nil
-      end
-
-      local project_name = vim.fn.fnamemodify(target_dir, ':t')
-      project_name = string.gsub(project_name, '-', '_')
-      return target_dir .. '/zig-out/bin/' .. project_name
+      return build_project(true)
     end,
     args = { './reef/hello.reef', '--debug-trace' },
     cwd = '${workspaceFolder}',

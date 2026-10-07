@@ -89,5 +89,10 @@ vim.opt.smartindent = true
 vim.opt.shiftwidth = 2
 vim.opt.expandtab = true
 
-vim.g.python3_host_prog = vim.fn.expand '~/.virtualenvs/nvim/bin/python3'
+local python_provider = vim.fn.expand '~/.virtualenvs/nvim/bin/python3'
+if vim.fn.executable(python_provider) == 1 then
+  vim.g.python3_host_prog = python_provider
+else
+  vim.g.loaded_python3_provider = 0
+end
 vim.opt.tags:append(vim.fn.expand '~/src/apple-libc/tags')

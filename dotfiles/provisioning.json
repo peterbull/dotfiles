@@ -1,0 +1,11 @@
+{
+  "repos": [
+    {"name":"oh-my-zsh","feature":"shell","path":".oh-my-zsh","url":"https://github.com/ohmyzsh/ohmyzsh.git","sha":"83a0ec79ee3b1f64c6ae2e80dcb1fb27a55e5952"},
+    {"name":"tpm","feature":"tmux","path":".tmux/plugins/tpm","url":"https://github.com/tmux-plugins/tpm.git","sha":"e261deb1b47614eed3400089ce7197dc68acc4eb"},
+    {"name":"tmux-sensible","feature":"tmux","path":".tmux/plugins/tmux-sensible","url":"https://github.com/tmux-plugins/tmux-sensible.git","sha":"25cb91f42d020f675bb0a2ce3fbd3a5d96119efa"},
+    {"name":"tmux-resurrect","feature":"tmux","path":".tmux/plugins/tmux-resurrect","url":"https://github.com/tmux-plugins/tmux-resurrect.git","sha":"cff343cf9e81983d3da0c8562b01616f12e8d548"},
+    {"name":"tmux-fingers","feature":"tmux","path":".tmux/plugins/tmux-fingers","url":"https://github.com/Morantron/tmux-fingers.git","sha":"fc3c750b8d73ac3e29675aae3b3ac6a00a0718f1"},
+    {"name":"nvim-jupyter","feature":"editor","path":"peter-projects/nvim-jupyter","url":"https://github.com/peterbull/nvim-jupyter.git","sha":"f9f0a77f17182d351ba425531f72b42d3e54bddb"},
+    {"name":"tree-sitter-mustache","feature":"editor","path":"peter-projects/tree-sitter-mustache","url":"https://github.com/TheLeoP/tree-sitter-mustache.git","sha":"0f1f3cf07508a64b84cbff457f1446a787c48a0e"}
+  ]
+}

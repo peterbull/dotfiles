@@ -1,0 +1,217 @@
+#!/bin/bash
+
+install=0
+link=0
+backup=0
+dry=0
+help=0
+backup_dir=
+names=(settings.json keybindings.json)
+
+usage() {
+    printf '%s\n' 'Usage: bootstrap-mac [--dry-run | --install] [--link-vscode [--backup]] [--help]' \
+        'No arguments preview the base Brewfile install and the two VS Code links.'
+}
+
+fail() {
+    printf 'Error: %s\n' "$1" >&2
+    printf 'No automatic rollback; any previously completed actions remain.\n' >&2
+    if [ -n "$backup_dir" ]; then
+        printf 'Preserved backups: %s (manual recovery; prior actions remain).\n' "$backup_dir" >&2
+    fi
+    exit "${2:-1}"
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --install) install=1 ;;
+        --link-vscode) link=1 ;;
+        --backup) backup=1 ;;
+        --dry-run) dry=1 ;;
+        --help) help=1 ;;
+        *) fail "Unknown flag: $arg" 2 ;;
+    esac
+done
+[ "$backup" -eq 0 ] || [ "$link" -eq 1 ] || fail '--backup requires --link-vscode' 2
+if [ "$dry" -eq 1 ] && { [ "$install" -eq 1 ] || [ "$link" -eq 1 ] || [ "$backup" -eq 1 ]; }; then
+    fail '--dry-run cannot accompany mutating flags' 2
+fi
+if [ "$help" -eq 1 ]; then
+    usage
+    exit 0
+fi
+
+case "${HOME:-}" in
+    /*) [ -d "$HOME" ] || fail 'HOME must be an existing absolute directory' ;;
+    *) fail 'HOME must be an existing absolute directory' ;;
+esac
+home=$(CDPATH= cd -P -- "$HOME" && pwd -P) || fail 'Cannot resolve HOME'
+repo=$(CDPATH= cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P) || fail 'Cannot resolve repository'
+platform=$(uname -s) || fail 'Cannot determine platform'
+[ "$platform" = Darwin ] || fail "macOS (Darwin) required; platform is $platform"
+
+preview=0
+if [ "$install" -eq 0 ] && [ "$link" -eq 0 ]; then
+    preview=1
+fi
+brewfile="$repo/Brewfile"
+user_dir="$home/Library/Application Support/Code/User"
+backup_base="$home/Library/Application Support/dotfiles-backups"
+
+# Walk from canonical HOME without traversing symlinked ancestors.
+check_parents() {
+    local remaining current component
+    remaining=${1#"$home"/}
+    current=$home
+    while [ -n "$remaining" ]; do
+        component=${remaining%%/*}
+        if [ "$remaining" = "$component" ]; then
+            remaining=
+        else
+            remaining=${remaining#*/}
+        fi
+        current="$current/$component"
+        [ ! -L "$current" ] || fail "Symlinked ancestor refused: $current"
+        if [ -e "$current" ] && [ ! -d "$current" ]; then
+            fail "Non-directory ancestor refused: $current"
+        fi
+    done
+}
+
+check_target() {
+    local source target
+    source="$repo/.vscode/$1"
+    target="$user_dir/$1"
+    [ -f "$source" ] || fail "Missing regular VS Code source: $source"
+    [ ! -d "$target" ] || fail "Directory target refused: $target"
+    if [ -e "$target" ] && [ ! -f "$target" ] && [ ! -L "$target" ]; then
+        fail "Special filesystem target refused: $target"
+    fi
+    target_state=new
+    if [ "$target" -ef "$source" ]; then
+        target_state=correct
+    elif [ -e "$target" ] || [ -L "$target" ]; then
+        target_state=conflict
+        if [ "$backup" -eq 0 ]; then
+            if [ "$preview" -eq 1 ]; then
+                printf 'Warning: conflict requires --link-vscode --backup: %s\n' "$target"
+            else
+                fail "Conflict requires --backup: $target"
+            fi
+        fi
+    fi
+}
+
+check_links() {
+    local name
+    check_parents "$user_dir"
+    if [ "$backup" -eq 1 ]; then
+        check_parents "$backup_base"
+    fi
+    for name in "${names[@]}"; do
+        check_target "$name"
+    done
+}
+
+prerequisite_problem() {
+    if [ "$preview" -eq 1 ]; then
+        printf 'Warning: %s\n' "$1"
+    else
+        fail "$1"
+    fi
+}
+
+if [ "$install" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    [ -f "$brewfile" ] || fail "Missing regular Brewfile: $brewfile"
+    if command -v brew >/dev/null 2>&1; then
+        prefix=$(brew --prefix)
+        status=$?
+        if [ "$status" -ne 0 ] || [ -z "$prefix" ] || [ ! -d "$prefix" ]; then
+            prerequisite_problem 'brew --prefix must return an existing directory'
+        fi
+    else
+        prerequisite_problem 'brew is unavailable on PATH; install Homebrew separately'
+    fi
+    if command -v xcode-select >/dev/null 2>&1; then
+        if ! xcode-select -p >/dev/null 2>&1; then
+            prerequisite_problem 'Apple developer tools are unavailable (xcode-select -p failed)'
+        fi
+    else
+        prerequisite_problem 'xcode-select is unavailable on PATH'
+    fi
+fi
+if [ "$link" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    check_links
+fi
+
+if [ "$preview" -eq 1 ]; then
+    printf 'Preview only; no changes.\n'
+fi
+if [ "$install" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    printf 'Install plan: brew bundle install --no-upgrade --file=%s\n' "$brewfile"
+    printf 'Disable automatic updates, analytics, install-time and inherited Bundle cleanup.\n'
+fi
+if [ "$link" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    for name in "${names[@]}"; do
+        check_target "$name"
+        printf 'Link plan (%s): %s -> %s\n' "$target_state" "$user_dir/$name" "$repo/.vscode/$name"
+    done
+    if [ "$backup" -eq 1 ]; then
+        printf 'Backup plan: preserve conflicts in %s/vscode.XXXXXXXX only if needed.\n' "$backup_base"
+    fi
+fi
+[ "$preview" -eq 0 ] || exit 0
+
+if [ "$install" -eq 1 ]; then
+    (
+        unset HOMEBREW_BUNDLE_FORCE_INSTALL_CLEANUP HOMEBREW_BUNDLE_INSTALL_CLEANUP
+        export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_ANALYTICS=1 HOMEBREW_NO_INSTALL_CLEANUP=1
+        brew bundle install --no-upgrade --file="$brewfile"
+    )
+    status=$?
+    [ "$status" -eq 0 ] || fail "Brew installation failed (status $status); no links attempted" "$status"
+fi
+
+if [ "$link" -eq 1 ]; then
+    check_links
+    umask 077
+    for name in "${names[@]}"; do
+        check_parents "$user_dir"
+        [ "$backup" -eq 0 ] || check_parents "$backup_base"
+        check_target "$name"
+        [ "$target_state" != correct ] || continue
+        if [ ! -d "$user_dir" ]; then
+            mkdir -p "$user_dir" || fail "Cannot create VS Code directory: $user_dir"
+        fi
+        check_parents "$user_dir"
+        check_target "$name"
+        [ "$target_state" != correct ] || continue
+        if [ "$target_state" = conflict ]; then
+            if [ -z "$backup_dir" ]; then
+                check_parents "$backup_base"
+                mkdir -p "$backup_base" || fail "Cannot create backup base: $backup_base"
+                check_parents "$backup_base"
+                backup_dir=$(mktemp -d "$backup_base/vscode.XXXXXXXX") || fail 'Cannot create unique backup directory'
+                check_parents "$backup_dir"
+                chmod 700 "$backup_dir" || fail 'Cannot secure backup directory'
+                printf 'Preserved backups will be in: %s\n' "$backup_dir"
+            fi
+            check_parents "$backup_dir"
+            check_parents "$user_dir"
+            check_target "$name"
+            [ "$target_state" != correct ] || continue
+            if [ "$target_state" = conflict ]; then
+                if [ -e "$backup_dir/$name" ] || [ -L "$backup_dir/$name" ]; then
+                    fail "Backup destination already exists: $backup_dir/$name"
+                fi
+                mv "$user_dir/$name" "$backup_dir/$name" || fail "Cannot preserve original: $user_dir/$name"
+            fi
+        fi
+        check_parents "$user_dir"
+        check_target "$name"
+        [ "$target_state" != correct ] || continue
+        [ "$target_state" = new ] || fail "Target changed before linking: $user_dir/$name"
+        ln -s "$repo/.vscode/$name" "$user_dir/$name" || fail "Cannot create link: $user_dir/$name"
+        printf 'Linked: %s\n' "$user_dir/$name"
+    done
+fi

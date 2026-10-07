@@ -87,11 +87,19 @@
 
 set -uo pipefail
 
-SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+if (( BASH_VERSINFO[0] < 4 )); then
+  printf 'tmux-worktreeizer: Bash 4.0 or newer is required (brew install bash).\n' >&2
+  exit 1
+fi
+
+SELF="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")" || exit $?
+# fzf parses action delimiters before the shell sees quotes. Keep paths in the environment.
+export TW_BASH="$BASH" TW_SELF="$SELF"
+SELF_COMMAND='"$TW_BASH" "$TW_SELF"'
 TAB=$'\t'
 
 TW_ROOT="${TW_ROOT:-$HOME/work/.worktrees}"
-TW_ROOTS="${TW_ROOTS:-$HOME/work:$HOME/Code/work:$HOME/Code/lrn:$HOME/Code/seth}"
+TW_ROOTS="${TW_ROOTS:-$HOME/work:$HOME/peter-projects:$HOME/Code/work:$HOME/Code/lrn:$HOME/Code/seth}"
 TW_REPOS="${TW_REPOS:-$HOME/dotfiles}"
 TW_PR_TTL="${TW_PR_TTL:-900}"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-worktreeizer"
@@ -129,7 +137,7 @@ prompt_default() {
   if [[ -t 0 ]]; then
     read -r -e -i "$def" -p "$prompt" out || return 1
   else
-    read -r -p "$prompt[$def] " out || return 1
+    read -r -p "${prompt}[$def] " out || return 1
     out="${out:-$def}"
   fi
   printf '%s' "$out"
@@ -200,8 +208,15 @@ appearance() {
 }
 
 sessions_at() {
-  tmux list-sessions -F "#{session_path}${TAB}#{session_name}" 2>/dev/null |
-    awk -F"$TAB" -v p="$1" '$1 == p {print $2}'
+  local rows status
+  rows="$(tmux list-sessions -F "#{session_path}${TAB}#{session_name}" 2>/dev/null)"
+  status=$?
+  case $status in
+    0) ;;
+    1) return 0 ;;
+    *) return "$status" ;;
+  esac
+  printf '%s\n' "$rows" | TW_SESSION_PATH="$1" awk -F"$TAB" '$1 == ENVIRON["TW_SESSION_PATH"] {print $2}'
 }
 
 # ---------------------------------------------------------------- repos
@@ -250,38 +265,63 @@ refresh_prs() {
 }
 
 pr_cache_stale() {
-  local file age
+  local file age modified now
   file="$(pr_cache_file "$1")"
   [[ -f $file ]] || return 0
-  age=$(($(date +%s) - $(stat -f %m "$file")))
+  modified="$(stat -c %Y "$file" 2>/dev/null)" || modified="$(stat -f %m "$file")" || return 2
+  now="$(date +%s)" || return 2
+  [[ $modified =~ ^[0-9]+$ && $now =~ ^[0-9]+$ && $TW_PR_TTL =~ ^[0-9]+$ ]] || {
+    printf 'tmux-worktreeizer: invalid cache timestamp or TW_PR_TTL\n' >&2
+    return 2
+  }
+  age=$((now - modified))
   ((age > TW_PR_TTL))
 }
 
 # Kick off cache refreshes for the repos that actually have worktrees.
 refresh_prs_in_background() {
-  local repo
+  local repo status
   command -v gh >/dev/null 2>&1 || return 0
   while read -r repo; do
     has_extra_worktrees "$repo" || continue
-    pr_cache_stale "$repo" || continue
+    if pr_cache_stale "$repo"; then
+      :
+    else
+      status=$?
+      (( status == 1 )) && continue
+      return "$status"
+    fi
     (refresh_prs "$repo" &) >/dev/null 2>&1
   done < <(repo_list)
 }
 
 # ---------------------------------------------------------------- listing
 
-PORCELAIN_AWK='
-function emit() { print p "\t" b "\t" f }
-/^worktree /   { if (p != "") emit(); p = substr($0, 10); b = ""; f = "" }
-/^branch /     { b = substr($0, 8); sub(/^refs\/heads\//, "", b) }
-/^detached$/   { b = "(detached)" }
-/^locked/      { f = f (f ? "," : "") "locked" }
-/^prunable/    { f = f (f ? "," : "") "prunable" }
-/^bare$/       { f = f (f ? "," : "") "bare" }
-END            { if (p != "") emit() }
-'
+worktree_rows() {
+  local record path="" branch="" flags="" flag
+  while IFS= read -r -d '' record; do
+    case $record in
+      'worktree '*)
+        [[ -z $path ]] || printf 'W\t%s\t%s\t%s\n' "$path" "$branch" "$flags"
+        path=${record#worktree }
+        case $path in
+          *$'\n'*|*$'\t'*) die "directory names containing tabs or newlines are not supported" ;;
+        esac
+        branch="" flags=""
+        ;;
+      'branch '*) branch=${record#branch refs/heads/} ;;
+      detached) branch='(detached)' ;;
+      locked*|prunable*|bare)
+        flag=${record%% *}
+        flags="${flags:+$flags,}$flag"
+        ;;
+    esac
+  done
+  [[ -z $path ]] || printf 'W\t%s\t%s\t%s\n' "$path" "$branch" "$flags"
+}
 
 RENDER_AWK='
+BEGIN { repo = ENVIRON["TW_RENDER_REPO"]; HOME = ENVIRON["TW_RENDER_HOME"] }
 function tildify(p) {
   if (index(p, HOME) == 1) return "~" substr(p, length(HOME) + 1)
   return p
@@ -415,31 +455,42 @@ END {
 '
 
 render_repo() {
-  local repo=$1 sess_file=$2 view=${3:-group} pr_file
+  local repo=$1 sess_file=$2 view=${3:-group} pr_file wt_file refs rows
   pr_file="$(pr_cache_file "$repo")"
+  wt_file="$sess_file.worktrees.$BASHPID"
+  refs="$(git -C "$repo" for-each-ref \
+    --format="B${TAB}%(refname:short)${TAB}%(upstream:short)${TAB}%(upstream:track)" \
+    refs/heads)" || return $?
+  git -C "$repo" worktree list --porcelain -z >"$wt_file" || return $?
+  rows="$(worktree_rows <"$wt_file")" || return $?
   {
-    git -C "$repo" for-each-ref \
-      --format="B${TAB}%(refname:short)${TAB}%(upstream:short)${TAB}%(upstream:track)" \
-      refs/heads 2>/dev/null
-    [[ -f $pr_file ]] && sed "s|^|P${TAB}|" "$pr_file"
-    cat "$sess_file"
-    git -C "$repo" worktree list --porcelain 2>/dev/null |
-      awk "$PORCELAIN_AWK" | sed "s|^|W${TAB}|"
-  } | awk -F"$TAB" -v OFS="$TAB" -v repo="$repo" -v HOME="$HOME" -v color=1 \
+    printf '%s\n' "$refs"
+    if [[ -f $pr_file ]]; then
+      sed "s|^|P${TAB}|" "$pr_file" || exit $?
+    fi
+    cat "$sess_file" || exit $?
+    printf '%s\n' "$rows"
+  } | TW_RENDER_REPO="$repo" TW_RENDER_HOME="$HOME" awk -F"$TAB" -v OFS="$TAB" -v color=1 \
     -v view="$view" -v REPO_C="1;34" "$RENDER_AWK"
 }
 
 list_view() {
-  local view=$1 only=${2:-} tmpdir sess_file here repo key i=0
-  tmpdir="$(mktemp -d)"
+  local view=$1 only=${2:-} tmpdir sess_file here repo key i=0 status=0 pid pids=()
+  tmpdir="$(mktemp -d)" || return $?
   sess_file="$tmpdir/sessions"
-  tmux list-sessions -F "S${TAB}#{session_path}${TAB}#{session_name}" 2>/dev/null >"$sess_file" || :
-  touch "$sess_file"
+  tmux list-sessions -F "S${TAB}#{session_path}${TAB}#{session_name}" 2>/dev/null >"$sess_file"
+  status=$?
+  if (( status != 0 && status != 1 )); then
+    rm -rf "$tmpdir" || return $?
+    return "$status"
+  fi
+  status=0
 
   if [[ -n $only ]]; then
     render_repo "$only" "$sess_file" "$view"
-    rm -rf "$tmpdir"
-    return
+    status=$?
+    rm -rf "$tmpdir" || return $?
+    return "$status"
   fi
 
   here="$(repo_of "$PWD" 2>/dev/null)" || here=""
@@ -456,15 +507,28 @@ list_view() {
     fi
     printf '%s\t%s\t%s\n' "$key" "$(basename "$repo")" "$repo"
   done < <(repo_list) | sort -t"$TAB" -k1,1 -k2,2 >"$tmpdir/repos"
+  status=$?
+  if (( status != 0 )); then
+    rm -rf "$tmpdir" || return $?
+    return "$status"
+  fi
 
   while IFS="$TAB" read -r _ _ repo; do
     i=$((i + 1))
     render_repo "$repo" "$sess_file" "$view" >"$tmpdir/out.$(printf '%04d' "$i")" &
+    pids+=("$!")
   done <"$tmpdir/repos"
-  wait
+  if (( i > 0 )); then
+    for pid in "${pids[@]}"; do
+      wait "$pid" || status=$?
+    done
+  fi
 
-  cat "$tmpdir"/out.* 2>/dev/null
-  rm -rf "$tmpdir"
+  if (( status == 0 && i > 0 )); then
+    cat "$tmpdir"/out.* || status=$?
+  fi
+  rm -rf "$tmpdir" || return $?
+  return "$status"
 }
 
 # ---------------------------------------------------------------- views
@@ -491,13 +555,13 @@ view_write() { printf '%s\t%s\n' "$1" "$2" >"$(state_file)"; }
 view_actions() {
   local mode=$1 drill=$2 prompt
   if [[ -n $drill ]]; then
-    prompt="$(basename "$drill")> "
+    prompt='repo> '
   elif [[ $mode == flat ]]; then
     prompt='worktrees> '
   else
     prompt='repos> '
   fi
-  printf 'reload(%s --view-list)+change-prompt(%s)+first' "$SELF" "$prompt"
+  printf 'reload(%s --view-list)+change-prompt(%s)+first' "$SELF_COMMAND" "$prompt"
 }
 
 do_view_list() {
@@ -751,25 +815,74 @@ session_name_for() {
   else
     name="$(basename "$repo")/$(basename "$path")"
   fi
-  printf '%s' "${name//[.:]/_}"
+  name="$(printf '%s' "$name" | LC_ALL=C tr -c 'a-zA-Z0-9_/-' '_')"
+  [[ $name != -* ]] || name="_$name"
+  [[ -n $name ]] || die "empty session name"
+  printf '%s' "$name"
 }
 
+shell_quote() { printf "'%s'" "${1//\'/\'\\\'\'}"; }
+
 open_session() {
-  local repo=$1 path=$2 name
+  local repo=$1 path=$2 name names session_path status shell editor editor_command shell_command first indices last index window tmux_path
   [[ -d $path ]] || {
-    printf 'worktree directory is gone: %s\n' "$path"
+    printf 'worktree directory is gone: %s\n' "$path" >&2
     pause
     return 1
   }
+  path="$(cd -- "$path" && pwd -P && printf '.')" || return $?
+  path=${path%$'\n'.}
+  repo="$(cd -- "$repo" && pwd -P && printf '.')" || return $?
+  repo=${repo%$'\n'.}
+  case $path$repo in
+    *$'\n'*|*$'\t'*) die "directory names containing tabs or newlines are not supported" ;;
+  esac
 
-  name="$(sessions_at "$path" | head -1)"
-  [[ -n $name ]] || name="$(session_name_for "$repo" "$path")"
+  names="$(sessions_at "$path")" || return $?
+  name=${names%%$'\n'*}
+  [[ -n $name ]] || name="$(session_name_for "$repo" "$path")" || return $?
 
-  if ! tmux has-session -t "=$name" 2>/dev/null; then
-    tmux new-session -ds "$name" -c "$path" -n editor "nvim; exec $SHELL"
-    tmux new-window -t "=$name:" -c "$path" -n server
-    tmux new-window -t "=$name:" -c "$path" -n shell
-    tmux select-window -t "=$name:editor"
+  if tmux has-session -t "=$name" 2>/dev/null; then
+    session_path="$(tmux display-message -p -t "=$name" '#{session_path}')" || return $?
+    [[ $session_path == "$path" ]] || die "session name collision: $name"
+  else
+    status=$?
+    (( status == 1 )) || return "$status"
+    shell=${SHELL:-}
+    if [[ $shell != /* || ! -x $shell || -d $shell ]]; then
+      if [[ -x /bin/zsh ]]; then shell=/bin/zsh
+      elif [[ -x /bin/bash ]]; then shell=/bin/bash
+      else die "no executable interactive shell found"
+      fi
+    fi
+    shell_command="exec $(shell_quote "$shell") -i"
+    editor="$(command -v nvim)" || editor=""
+    if [[ -n $editor ]]; then
+      editor_command="$(shell_quote "$editor"); $shell_command"
+    else
+      editor_command=$shell_command
+    fi
+    editor_command="exec /bin/sh -c $(shell_quote "$editor_command")"
+    shell_command="exec /bin/sh -c $(shell_quote "$shell_command")"
+    tmux_path=${path//#/##}
+    first="$(tmux new-session -d -s "$name" -c "$tmux_path" -n editor \
+      -P -F '#{window_index}' "$editor_command")" || return $?
+    [[ $first =~ ^[0-9]+$ ]] || die "tmux returned an invalid window index"
+    if (( first == 0 )); then
+      tmux move-window -s "=$name:0" -t "=$name:1" || return $?
+      first=1
+    fi
+    indices="$(tmux list-windows -t "=$name" -F '#{window_index}')" || return $?
+    last=$first
+    while IFS= read -r index; do
+      [[ $index =~ ^[0-9]+$ ]] || die "tmux returned an invalid window index"
+      (( index > last )) && last=$index
+    done <<<"$indices"
+    for window in server shell; do
+      last=$((last + 1))
+      tmux new-window -t "=$name:$last" -c "$tmux_path" -n "$window" "$shell_command" || return $?
+    done
+    tmux select-window -t "=$name:$first" || return $?
   fi
 
   if [[ -n ${TMUX:-} ]]; then
@@ -794,7 +907,7 @@ branch_choices() {
 }
 
 create_worktree() {
-  local repo=$1 rname base branch name path defbranch remote_ref out
+  local repo=$1 rname base branch name path defbranch remote_ref out status
   rname="$(basename "$repo")"
   defbranch="$(default_branch "$repo")"
 
@@ -807,8 +920,14 @@ create_worktree() {
     {
       printf 'new branch from %s\n' "$defbranch"
       branch_choices "$repo"
-    } | fzf --reverse --prompt="base for new worktree in $rname> " --height='100%'
-  )" || return 0
+    } | fzf --with-shell='/bin/sh -c' --reverse --prompt="base for new worktree in $rname> " --height='100%'
+  )"
+  status=$?
+  case $status in
+    0) ;;
+    1|130) return 0 ;;
+    *) return "$status" ;;
+  esac
   [[ -n $base ]] || return 0
 
   if [[ $base == "new branch from "* ]]; then
@@ -934,14 +1053,14 @@ usage() {
 }
 
 main_ui() {
-  local line kind repo path backtick row_bg match
+  local line kind repo path backtick row_bg match status
   command -v fzf >/dev/null 2>&1 || die "fzf is not installed"
   command -v tmux >/dev/null 2>&1 || die "tmux is not installed"
 
-  refresh_prs_in_background
+  refresh_prs_in_background || return $?
 
-  mkdir -p "$CACHE_DIR"
-  view_write repos ""
+  mkdir -p "$CACHE_DIR" || return $?
+  view_write repos "" || return $?
   backtick="$(printf '\140')"
 
   if [[ "$(appearance)" == dark ]]; then
@@ -953,7 +1072,7 @@ main_ui() {
   fi
 
   line="$(
-    do_view_list | fzf \
+    do_view_list | fzf --with-shell='/bin/sh -c' \
       --ansi \
       --delimiter="$TAB" \
       --with-nth=6 \
@@ -971,21 +1090,39 @@ main_ui() {
       --color='info:bright-black,header:bright-black,separator:bright-black' \
       --color='border:bright-black,scrollbar:bright-black,query:-1:bold' \
       --header='enter open   ` repos/worktrees   ctrl-t new   ctrl-x remove   ctrl-r prs   ctrl-s fetch   ctrl-o pr' \
-      --preview "$SELF --preview {1} {2} {3} {4}" \
+      --preview "$SELF_COMMAND --preview {1} {2} {3} {4}" \
       --preview-window='right,50%,border-left,wrap' \
       --preview-label=' details ' \
       --color='preview-border:bright-black,preview-label:bold' \
-      --bind "ctrl-x:execute($SELF --remove {1} {2} {3} {4})+reload($SELF --view-list)" \
-      --bind "ctrl-r:execute($SELF --refresh {2})+reload($SELF --view-list)" \
-      --bind "ctrl-s:execute($SELF --fetch {2})+reload($SELF --view-list)" \
-      --bind "ctrl-o:execute-silent($SELF --open-pr {5})" \
-      --bind "$backtick:transform:$SELF --view-toggle" \
-      --bind "bspace:transform:$SELF --view-back {q}" \
-      --bind "ctrl-t:become($SELF --new {2})" \
-      --bind "enter:transform:$SELF --view-enter {1} {2}" \
-      --bind "tab:transform:$SELF --jump next {*1}" \
-      --bind "btab:transform:$SELF --jump prev {*1}"
-  )" || return 0
+      --bind "ctrl-x:execute($SELF_COMMAND --remove {1} {2} {3} {4})+reload($SELF_COMMAND --view-list)" \
+      --bind "ctrl-r:execute($SELF_COMMAND --refresh {2})+reload($SELF_COMMAND --view-list)" \
+      --bind "ctrl-s:execute($SELF_COMMAND --fetch {2})+reload($SELF_COMMAND --view-list)" \
+      --bind "ctrl-o:execute-silent($SELF_COMMAND --open-pr {5})" \
+      --bind "$backtick:transform:$SELF_COMMAND --view-toggle" \
+      --bind "bspace:transform:$SELF_COMMAND --view-back {q}" \
+      --bind "ctrl-t:become($SELF_COMMAND --new {2})" \
+      --bind "enter:transform:$SELF_COMMAND --view-enter {1} {2}" \
+      --bind "tab:transform:$SELF_COMMAND --jump next {*1}" \
+      --bind "btab:transform:$SELF_COMMAND --jump prev {*1}"
+    statuses=("${PIPESTATUS[@]}")
+    if (( statuses[0] != 0 )); then
+      if (( statuses[0] == 141 && (statuses[1] == 1 || statuses[1] == 130) )); then
+        exit "${statuses[1]}"
+      fi
+      printf 'tmux-worktreeizer: picker listing failed\n' >&2
+      case ${statuses[0]} in
+        1|130) exit 2 ;;
+        *) exit "${statuses[0]}" ;;
+      esac
+    fi
+    exit "${statuses[1]}"
+  )"
+  status=$?
+  case $status in
+    0) ;;
+    1|130) return 0 ;;
+    *) return "$status" ;;
+  esac
   [[ -n $line ]] || return 0
 
   IFS="$TAB" read -r kind repo path _ <<<"$line"
@@ -1034,7 +1171,17 @@ case "${1:-}" in
 --open-pr)
   shift
   [[ -n ${1:-} ]] || exit 0
-  open "$1"
+  case $1 in
+    http://*|https://*) ;;
+    *) die "expected an http(s) pull request URL" ;;
+  esac
+  if command -v open >/dev/null 2>&1; then
+    open "$1"
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$1"
+  else
+    die "no URL opener found (open or xdg-open)"
+  fi
   ;;
 --fetch)
   shift

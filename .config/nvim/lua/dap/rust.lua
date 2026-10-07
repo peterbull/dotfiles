@@ -17,10 +17,10 @@ local function get_rust_package_name()
   return nil
 end
 local function rust_package()
-  local result = vim.fn.system 'cargo build'
+  local result = vim.fn.system { 'cargo', 'build' }
   if vim.v.shell_error ~= 0 then
     vim.notify('Cargo build failed: ' .. result, vim.log.levels.ERROR)
-    return nil
+    return require('dap').ABORT
   end
 
   local package_name = get_rust_package_name() or 'backend'
@@ -32,26 +32,23 @@ local function rust_file()
   local file_name = vim.fn.expand '%:t:r'
   local exe_path = vim.fn.getcwd() .. '/target/debug/' .. file_name
 
-  vim.fn.system('mkdir -p ' .. vim.fn.getcwd() .. '/target/debug')
+  vim.fn.mkdir(vim.fn.getcwd() .. '/target/debug', 'p')
 
-  local compile_cmd = string.format('rustc -g --edition 2021 -o %s %s', exe_path, current_file)
-  local result = vim.fn.system(compile_cmd)
+  local result = vim.fn.system { 'rustc', '-g', '--edition', '2021', '-o', exe_path, current_file }
 
   if vim.v.shell_error ~= 0 then
     vim.notify('Rust compile failed: ' .. result, vim.log.levels.ERROR)
-    return nil
+    return require('dap').ABORT
   end
 
   return exe_path
 end
 
--- https://github.com/cmrschwarz/rust-prettifier-for-lldb
--- lldb doesn't have great rust prettification support ootb
--- clone the repo somewhere and point to it here to use it instead
-local rust_prettifier_file = '/Users/peterbull/peter-projects/rust-prettifier-for-lldb/rust_prettifier_for_lldb.py'
-local rust_prettifier_init = 'command script import ' .. rust_prettifier_file
-
--- M.adapters = {} -- lldb
+local rust_prettifier_file = vim.fn.expand '~/peter-projects/rust-prettifier-for-lldb/rust_prettifier_for_lldb.py'
+local rust_prettifier_init
+if vim.fn.filereadable(rust_prettifier_file) == 1 then
+  rust_prettifier_init = 'command script import "' .. vim.fn.escape(rust_prettifier_file, '\\"') .. '"'
+end
 M.configurations = {
   {
     name = 'Launch Rust Workspace',

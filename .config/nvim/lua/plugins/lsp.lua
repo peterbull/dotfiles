@@ -316,12 +316,14 @@ return {
     local servers = {
       vtsls = false, -- managed separately in typescript-tools.lua (monorepo root_dir)
       clangd = {},
+      gopls = {},
 
       ty = {
-        on_new_config = function(config, root_dir)
-          local venv = require('venv-selector').venv()
+        settings = {}, -- before_init mutates the settings table already held by the client.
+        before_init = function(_, config)
+          local ok, selector = pcall(require, 'venv-selector')
+          local venv = ok and selector.venv() or nil
           if venv then
-            config.settings = config.settings or {}
             config.settings.python = config.settings.python or {}
             config.settings.python.pythonPath = venv .. '/bin/python'
           end
@@ -426,7 +428,7 @@ return {
         },
       },
       zls = {
-        cmd = { vim.fn.expand '~/.zvm/bin/zls' },
+        cmd = { 'zls' },
         settings = {
           zls = {
             enable_build_on_save = true,
@@ -462,13 +464,21 @@ return {
     --
     -- You can add other tools here that you want Mason to install
     -- for you, so that they are available from within Neovim.
-    local ensure_installed = vim.tbl_keys(servers or {})
-    vim.list_extend(ensure_installed, {
-      'stylua', -- Used to format Lua code
-      'helm-ls',
-      'yaml-language-server',
-    })
-    require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+    local active_servers = {}
+    for name, server in pairs(servers) do
+      if server ~= false then
+        server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+        vim.lsp.config(name, server)
+        active_servers[#active_servers + 1] = name
+      end
+    end
+    table.sort(active_servers)
+    local ensure_installed = require('config.mason-tools').ensure_installed()
+    vim.list_extend(ensure_installed, active_servers)
+    require('mason-tool-installer').setup {
+      ensure_installed = ensure_installed,
+      integrations = { ['mason-lspconfig'] = true, ['mason-null-ls'] = false, ['mason-nvim-dap'] = false },
+    }
     -- gopls setup directly to ensure semantic tokens work
 
     vim.lsp.config('gopls', {
@@ -570,6 +580,7 @@ return {
       ),
       filetypes = { 'ruby' },
       root_markers = { 'sorbet/' },
+      capabilities = vim.tbl_deep_extend('force', {}, capabilities),
       handlers = {
         ['textDocument/publishDiagnostics'] = function(err, result, ctx, config)
           if result and result.diagnostics then
@@ -585,23 +596,8 @@ return {
     vim.lsp.enable 'ruby_lsp'
     vim.lsp.enable 'sorbet'
     require('mason-lspconfig').setup {
-      ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-      automatic_installation = false,
-      automatic_enable = { exclude = { 'vtsls', 'ruby_lsp', 'sorbet' } }, -- prevent double enable from vim.lsp.enable()
-      handlers = {
-        function(server_name)
-          local server = servers[server_name]
-          if server == false then
-            return -- explicitly disabled (managed elsewhere)
-          end
-          server = server or {}
-          -- This handles overriding only values explicitly passed
-          -- by the server configuration above. Useful when disabling
-          -- certain features of an LSP (for example, turning off formatting for ts_ls)
-          server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-          require('lspconfig')[server_name].setup(server)
-        end,
-      },
+      ensure_installed = {}, -- mason-tool-installer owns installation.
+      automatic_enable = active_servers,
     }
   end,
 }

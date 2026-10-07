@@ -1,1 +1,2 @@
-/Users/peterbull/peter-projects/tree-sitter-mustache/queries/injections.scm
+((comment_statement) @injection.content
+  (#set! injection.language "comment"))

@@ -85,7 +85,41 @@ plugins=(
 
 
 
-source $ZSH/oh-my-zsh.sh
+_dotfiles_brew=$(command -v brew)
+if [[ -z "$_dotfiles_brew" ]]; then
+  if [[ -x "/opt/homebrew/bin/brew" ]]; then
+    _dotfiles_brew="/opt/homebrew/bin/brew"
+  elif [[ -x "/usr/local/bin/brew" ]]; then
+    _dotfiles_brew="/usr/local/bin/brew"
+  fi
+fi
+_dotfiles_brew_prefix=""
+if [[ -n "$_dotfiles_brew" ]]; then
+  if ! _dotfiles_brew_prefix=$("$_dotfiles_brew" --prefix 2>/dev/null); then
+    _dotfiles_brew_prefix=""
+  fi
+fi
+if [[ "$_dotfiles_brew_prefix" != /* || ! -d "$_dotfiles_brew_prefix" ]]; then
+  _dotfiles_brew_prefix=""
+fi
+if [[ -n "$_dotfiles_brew_prefix" ]]; then
+  for _dotfiles_brew_dir in "$_dotfiles_brew_prefix/sbin" "$_dotfiles_brew_prefix/bin"; do
+    [[ -d "$_dotfiles_brew_dir" ]] || continue
+    case ":$PATH:" in
+      *":$_dotfiles_brew_dir:"*) ;;
+      *) export PATH="$_dotfiles_brew_dir:$PATH" ;;
+    esac
+  done
+  unset _dotfiles_brew_dir
+fi
+
+[[ -r "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
+
+# The following lines have been added by Docker Desktop to enable Docker CLI completions.
+fpath=("$HOME/.docker/completions" $fpath)
+autoload -Uz compinit
+compinit
+# End of Docker CLI completions
 
 # get secrets
 if [ -f ~/.secrets ]; then
@@ -110,23 +144,21 @@ fi
 setopt NO_BEEP
 
 ZSH_THEME="powerlevel10k/powerlevel10k"
-source /opt/homebrew/share/powerlevel10k/powerlevel10k.zsh-theme
+if [[ -n "$_dotfiles_brew_prefix" && -r "$_dotfiles_brew_prefix/share/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
+  source "$_dotfiles_brew_prefix/share/powerlevel10k/powerlevel10k.zsh-theme"
+fi
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+[[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 
-source <(fzf --zsh)
+if command -v fzf >/dev/null 2>&1; then
+  source <(fzf --zsh)
+fi
 
 export GOPATH=$HOME/go
 export GOBIN=$GOPATH/bin
-export PATH=$PATH:/usr/local/go/bin:$GOBIN
+export PATH="$PATH:/usr/local/go/bin:$GOBIN"
 
-
-export NVM_DIR="$HOME/.nvm"
-  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
-  [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" 
-
-nvm alias default 24 &> /dev/null
 
 export EDITOR=nvim
 export PATH="$HOME/.local/share/bob/nvim-bin:$PATH"
@@ -443,30 +475,19 @@ alias peter="~/peter-projects"
 
 
 
-# Homebrew Ruby (brew install ruby)
-export PATH="/opt/homebrew/opt/ruby@3.4/bin:$PATH"
-export PATH="/opt/homebrew/lib/ruby/gems/3.4.0/bin:$PATH"
-# Python Path
-export PATH="/opt/homebrew/opt/python@3.12/bin:$PATH"
-export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
+if [[ -n "$_dotfiles_brew_prefix" && -d "$_dotfiles_brew_prefix/opt/postgresql@15/bin" ]]; then
+  export PATH="$_dotfiles_brew_prefix/opt/postgresql@15/bin:$PATH"
+fi
 # python alias
 alias python="python3"
 
-# NVM version
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-# nvm use default
-
-
-
 # pnpm
-export PNPM_HOME="/Users/peterbull/Library/pnpm"
+export PNPM_HOME="$HOME/Library/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME/bin:"*) ;;
   *) export PATH="$PNPM_HOME/bin:$PATH" ;;
 esac
 # pnpm end
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Turn off annoying accented char suggestion on macos.
 # Note: On the first run this won't work, you have to log out and
@@ -476,10 +497,10 @@ esac
 
 
 # Created by `pipx` on 2025-01-15 19:08:15
-export PATH="$PATH:/Users/peterbull/.local/bin"
+export PATH="$PATH:$HOME/.local/bin"
 
 # Added by LM Studio CLI (lms)
-export PATH="$PATH:/Users/peterbull/.lmstudio/bin"
+export PATH="$PATH:$HOME/.lmstudio/bin"
 
 # tab binds to suggestions
 bindkey '^I' complete-word
@@ -489,25 +510,35 @@ bindkey '^ ' complete-word
 
 # Stop 10k prompt from appearing
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
-source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+if [[ -n "$_dotfiles_brew_prefix" && -r "$_dotfiles_brew_prefix/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+  source "$_dotfiles_brew_prefix/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+fi
 
-source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+if [[ -n "$_dotfiles_brew_prefix" && -r "$_dotfiles_brew_prefix/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
+  source "$_dotfiles_brew_prefix/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
 
 # Macos -- make app switcher appear on all screens
 # defaults write com.apple.Dock appswitcher-all-displays -bool true; killall Dock
 
 
 
-export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+if [[ -n "$_dotfiles_brew_prefix" && -d "$_dotfiles_brew_prefix/opt/postgresql@16/bin" ]]; then
+  export PATH="$_dotfiles_brew_prefix/opt/postgresql@16/bin:$PATH"
+fi
 
 # export PATH="$HOME/.local/zig:$PATH"
 export PATH="$HOME/.zvm/bin:$HOME/.zvm/self:$PATH"
 
 export PATH=$PATH:$HOME/.luarocks/bin
 
-autoload -U +X bashcompinit && bashcompinit
-complete -o nospace -C /opt/homebrew/bin/terraform terraform
-source <(kubectl completion zsh)
+if command -v terraform >/dev/null 2>&1; then
+  autoload -U +X bashcompinit && bashcompinit
+  complete -o nospace -C "$(command -v terraform)" terraform
+fi
+if command -v kubectl >/dev/null 2>&1; then
+  source <(kubectl completion zsh)
+fi
 
 
 alias lzd='lazydocker'
@@ -516,7 +547,9 @@ alias kfwd="sudo -E kubefwd svc -n default --tui"
 
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+if command -v pyenv >/dev/null 2>&1; then
+  eval "$(pyenv init -)"
+fi
 
 bindkey -v
 bindkey -M viins 'jk' vi-cmd-mode
@@ -525,19 +558,16 @@ bindkey -M viins 'jk' vi-cmd-mode
 alias pib='bash ~/peter-projects/pi-config/sandbox/run-msb.sh'
 
 
-# The following lines have been added by Docker Desktop to enable Docker CLI completions.
-fpath=(/Users/peterbull/.docker/completions $fpath)
-autoload -Uz compinit
-compinit
-# End of Docker CLI completions
-#
-eval "$(mise activate zsh)"
-. "/Users/peterbull/.deno/env"
-eval "$(mise activate zsh)"
-[ -f "$HOME/work/ctm-dev/ctm.shell" ] && . "$HOME/work/ctm-dev/ctm.shell"
+[[ -r "$HOME/.deno/env" ]] && . "$HOME/.deno/env"
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$HOME/.bend/bin:$PATH"
 
-# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+# Keep RVM administration available without activating its Ruby environment.
 export PATH="$PATH:$HOME/.rvm/bin"
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+[ -f "$HOME/work/ctm-dev/ctm.shell" ] && . "$HOME/work/ctm-dev/ctm.shell"
 
 alias ctmstart="~/dotfiles/scripts/ctmstart.sh"
 alias ctmstop="~/dotfiles/scripts/ctmstop.sh"
@@ -595,7 +625,12 @@ git() {
 
   command git "$@"
 }
-alias tmux-worktreeizer="/opt/homebrew/bin/bash ~/dotfiles/scripts/tmux-worktreeizer.sh"
+if [[ -n "$_dotfiles_brew_prefix" && -x "$_dotfiles_brew_prefix/bin/bash" ]]; then
+  alias tmux-worktreeizer="\"$_dotfiles_brew_prefix/bin/bash\" \"\$HOME/dotfiles/scripts/tmux-worktreeizer.sh\""
+else
+  alias tmux-worktreeizer='bash "$HOME/dotfiles/scripts/tmux-worktreeizer.sh"'
+fi
+unset _dotfiles_brew _dotfiles_brew_prefix
 
 # prepend ~/bin so the rvm->mise shim intercepts `rvm ... do ...`
 export PATH="$HOME/bin:$PATH"
@@ -604,10 +639,11 @@ export PATH="$HOME/bin:$PATH"
 alias chrome-debug='pkill -f "user-data-dir=$HOME/.config/chrome-debug" 2>/dev/null; sleep 1; open -na "Google Chrome" --args --remote-debugging-port=9223 --user-data-dir=$HOME/.config/chrome-debug'
 
 # bun completions
-[ -s "/Users/peterbull/.bun/_bun" ] && source "/Users/peterbull/.bun/_bun"
+[[ -r "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
 
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
-export PATH="/Users/peterbull/.bend/bin:$PATH"
+if [[ -r "$HOME/.config/zsh/work.local.zsh" ]]; then
+  source "$HOME/.config/zsh/work.local.zsh"
+fi
+if [[ -r "$HOME/.zshrc.local" ]]; then
+  source "$HOME/.zshrc.local"
+fi

@@ -12,44 +12,27 @@ return {
         'mfussenegger/nvim-dap-python',
         ft = 'python',
         config = function()
-          require('dap-python').setup 'python3'
+          local adapter_path = vim.fn.stdpath 'data' .. '/mason/bin/debugpy-adapter'
+          require('dap-python').setup(adapter_path)
 
           local dap = require 'dap'
           local py = require 'dap.python'
-
-          dap.adapters.python = py.adapters.python
+          local adapter = dap.adapters.python
+          dap.adapters.python = function(cb, config)
+            if config.request ~= 'attach' and vim.fn.executable(adapter_path) ~= 1 then
+              vim.notify('Missing Mason debugpy adapter: ' .. adapter_path, vim.log.levels.ERROR)
+              return
+            end
+            adapter(cb, config)
+          end
+          dap.adapters.debugpy = dap.adapters.python
 
           for _, conf in ipairs(py.configurations.python) do
             table.insert(dap.configurations.python, conf)
           end
         end,
       },
-      {
-        'jay-babu/mason-nvim-dap.nvim',
-        dependencies = 'mason.nvim',
-        cmd = { 'DapInstall', 'DapUninstall' },
-        opts = {
-          automatic_installation = true,
-          handlers = {},
-          ensure_installed = {
-            'js-debug-adapter',
-            'codelldb',
-            'cpptools',
-            'delve',
-          },
-        },
-      },
-
-      {
-        'mason-org/mason.nvim',
-        opts = function(_, opts)
-          opts.ensure_installed = opts.ensure_installed or {}
-          vim.list_extend(opts.ensure_installed, {
-            'js-debug-adapter',
-            'codelldb',
-          })
-        end,
-      },
+      'mason-org/mason.nvim',
     },
 
     keys = require('dap.keys').keys,

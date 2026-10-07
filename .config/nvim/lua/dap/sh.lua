@@ -1,10 +1,10 @@
 local M = {}
 M.adapters = {
-  sh = {
+  sh = require 'dap.checked-adapter'({
     type = 'executable',
     command = vim.fn.stdpath 'data' .. '/mason/bin/bash-debug-adapter',
     name = 'sh',
-  },
+  }, { vim.fn.stdpath 'data' .. '/mason/packages/bash-debug-adapter/extension/bashdb_dir/bashdb' }, { 'bash', 'cat', 'mkfifo', 'pkill' }),
 }
 
 M.configurations = {

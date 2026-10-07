@@ -80,9 +80,14 @@ M.adapters = {
         options = { source_filetype = 'python' },
       }
     else
+      local adapter_path = vim.fn.stdpath 'data' .. '/mason/bin/debugpy-adapter'
+      if vim.fn.executable(adapter_path) ~= 1 then
+        vim.notify('Missing Mason debugpy adapter: ' .. adapter_path, vim.log.levels.ERROR)
+        return
+      end
       cb {
         type = 'executable',
-        command = vim.fn.exepath 'debugpy-adapter',
+        command = adapter_path,
         options = { source_filetype = 'python' },
       }
     end

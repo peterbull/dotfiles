@@ -16,8 +16,36 @@
 !.obsidian.vimrc
 !.p10k.zsh
 !.zshrc
+!.zshenv
+!.zprofile
+!.zlogin
+!.profile
+!.bash_profile
+!bin/
+!bin/rvm
+!Brewfile
+!Brewfile.work
+
+!dotfiles/
+!dotfiles/README.md
+!dotfiles/PORTABILITY-PLAN.md
+!dotfiles/provisioning.json
+!dotfiles/pnpm-workspace.yaml
+!dotfiles/scripts/
+!dotfiles/scripts/dotfiles-doctor
+!dotfiles/scripts/bootstrap-mac
+!dotfiles/scripts/provision-optional
+!dotfiles/tests/
+!dotfiles/tests/test_dotfiles_doctor.py
+!dotfiles/tests/test_bootstrap_mac.py
+!dotfiles/tests/test_shell_portability.py
+!dotfiles/tests/test_session_portability.py
+!dotfiles/tests/test_nvim_portability.py
+!dotfiles/tests/test_provision_optional.py
 
 !.config/
+!.config/mise/
+!.config/mise/config.toml
 !.vscode/
 
 !.config/nvim/

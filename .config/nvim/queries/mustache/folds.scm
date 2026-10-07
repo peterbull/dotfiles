@@ -1,1 +1,4 @@
-/Users/peterbull/peter-projects/tree-sitter-mustache/queries/folds.scm
+[
+  (inverted_section)
+  (section)
+] @fold
