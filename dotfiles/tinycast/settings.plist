@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>boundAppBundleIDs</key>
+	<array>
+		<string>com.openai.codex</string>
+		<string>com.mitchellh.ghostty</string>
+		<string>com.google.Chrome</string>
+		<string>com.tinyspeck.slackmacgap</string>
+	</array>
+	<key>calendarMenuBarDisplay</key>
+	<integer>0</integer>
+	<key>favoriteApps</key>
+	<array/>
+	<key>hotkey.app.com.google.Chrome</key>
+	<string>{"combo":{"_0":{"carbonKeyCode":18,"carbonModifiers":2048}}}</string>
+	<key>hotkey.app.com.mitchellh.ghostty</key>
+	<string>{"combo":{"_0":{"carbonKeyCode":19,"carbonModifiers":2048}}}</string>
+	<key>hotkey.app.com.openai.codex</key>
+	<string>{"combo":{"_0":{"carbonModifiers":2048,"carbonKeyCode":20}}}</string>
+	<key>hotkey.app.com.tinyspeck.slackmacgap</key>
+	<string>{"combo":{"_0":{"carbonModifiers":2048,"carbonKeyCode":25}}}</string>
+	<key>hotkey.command:clipboard-history</key>
+	<string>{"combo":{"_0":{"carbonModifiers":2048,"carbonKeyCode":9}}}</string>
+	<key>hotkey.togglePalette</key>
+	<string>{"combo":{"_0":{"carbonModifiers":256,"carbonKeyCode":49}}}</string>
+	<key>quicklinksEnabled</key>
+	<true/>
+	<key>showInMenuBar</key>
+	<true/>
+</dict>
+</plist>
