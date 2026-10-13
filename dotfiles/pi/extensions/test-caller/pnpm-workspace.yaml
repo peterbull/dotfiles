@@ -1,0 +1,7 @@
+packages:
+  - .
+minimumReleaseAge: 10080
+allowBuilds:
+  "@google/genai": true
+  koffi: true
+  protobufjs: true

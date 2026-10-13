@@ -41,6 +41,7 @@
 !dotfiles/tests/test_shell_portability.py
 !dotfiles/tests/test_session_portability.py
 !dotfiles/tests/test_nvim_portability.py
+!dotfiles/tests/test_pr_picker.py
 !dotfiles/tests/test_provision_optional.py
 
 !.config/
@@ -71,3 +72,26 @@ foo.*
 data
 .secrets
 .vscode/extensions/extensions.json
+
+# Public Pi test caller package
+!dotfiles/pi/
+!dotfiles/pi/extensions/
+!dotfiles/pi/extensions/test-caller/
+!dotfiles/pi/extensions/test-caller/README.md
+!dotfiles/pi/extensions/test-caller/browser.test.ts
+!dotfiles/pi/extensions/test-caller/caller.html
+!dotfiles/pi/extensions/test-caller/config.example.json
+!dotfiles/pi/extensions/test-caller/ctm-token.rb
+!dotfiles/pi/extensions/test-caller/ctm-token.ts
+!dotfiles/pi/extensions/test-caller/engine.test.ts
+!dotfiles/pi/extensions/test-caller/engine.ts
+!dotfiles/pi/extensions/test-caller/index.ts
+!dotfiles/pi/extensions/test-caller/runtime.test.ts
+!dotfiles/pi/extensions/test-caller/runtime.ts
+!dotfiles/pi/extensions/test-caller/package.json
+!dotfiles/pi/extensions/test-caller/pnpm-lock.yaml
+!dotfiles/pi/extensions/test-caller/pnpm-workspace.yaml
+!dotfiles/pi/extensions/test-caller/tts/
+!dotfiles/pi/extensions/test-caller/tts/engine.ts
+!dotfiles/pi/extensions/test-caller/tts/engine.test.ts
+!dotfiles/pi/extensions/test-caller/tts/audio.swift

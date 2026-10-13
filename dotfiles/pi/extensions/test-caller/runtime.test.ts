@@ -1,0 +1,44 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile,writeFile,mkdtemp} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {CallerRuntime} from './runtime.ts';
+const options={accountSid:'AC'+'1'.repeat(32),apiKeySid:'SK'+'2'.repeat(32),apiSecret:'never-print-secret',applicationSid:'AP'+'3'.repeat(32),identity:'local-test',maxCallSeconds:180};
+test('loopback capability, single browser lease, token grants, issued audio and command acknowledgments',async()=>{
+ const runtime=new CallerRuntime(options);const {url}=await runtime.start();const parsed=new URL(url);const origin=parsed.origin;
+ let sequence=0;
+ const headers:Record<string,string>={'X-Caller-Capability':parsed.hash.slice(1),'Content-Type':'application/json'};
+ const request=(path:string,extra:RequestInit={})=>fetch(origin+path,{...extra,headers:{...headers,...extra.headers}});
+ try{
+ assert.equal((await fetch(origin+'/api/token')).status,403);
+ assert.equal((await request('/api/claim',{method:'POST',headers:{Origin:'https://foreign.example'}})).status,403);
+ assert.match(await (await fetch(origin+'/sdk.js')).text(),/Twilio/);
+ const lease=await (await request('/api/claim',{method:'POST',body:'{}'})).json() as {lease:string};headers['X-Caller-Lease']=lease.lease;
+ assert.equal((await request('/api/claim',{method:'POST',body:'{}'})).status,409);
+ const {token}=await (await request('/api/token')).json() as {token:string};
+ const claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString());
+ assert.equal(claims.sub,options.accountSid);assert.equal(claims.iss,options.apiKeySid);assert.equal(claims.exp-claims.iat,600);
+ assert.equal(claims.grants.voice.outgoing.application_sid,options.applicationSid);assert.equal(claims.grants.voice.incoming,undefined);assert.equal(JSON.stringify(claims).includes(options.apiSecret),false);
+ const event=(snapshot:unknown,extra={})=>request('/api/event',{method:'POST',body:JSON.stringify({snapshot,sequence:++sequence,...extra})});
+ await event({ready:true,call_status:'idle'});
+ const promise=runtime.command('dial',{});
+ const commands=await (await request('/api/commands')).json() as {commands:{id:string;action:string}[]};
+ assert.equal(commands.commands.length,1);assert.equal(commands.commands[0].action,'dial');
+ assert.equal((await (await request('/api/commands')).json() as {commands:unknown[]}).commands.length,0);
+ await event({ready:true,dial_id:commands.commands[0].id,call_status:'connected',call_sid:'CA'+'4'.repeat(32)},{id:commands.commands[0].id,ok:true,result:{status:'connected'}});
+ assert.deepEqual(await promise,{status:'connected'});
+ await request('/api/event',{method:'POST',body:JSON.stringify({sequence:1,snapshot:{ready:true,call_status:'idle'}})});
+ assert.equal(runtime.snapshot.call_status,'connected');
+ const dir=await mkdtemp(join(tmpdir(),'caller-runtime-'));const file=join(dir,'audio.wav');await writeFile(file,Buffer.alloc(48));
+ const id=await runtime.registerAudio(file);assert.equal((await request('/audio/'+id)).status,200);
+ assert.equal((await request('/audio/not-issued')).status,404);assert.equal((await fetch(origin+'/audio/'+id)).status,403);
+ const cancel=new AbortController();const canceled=runtime.command('digits',{digits:'1'},cancel.signal);cancel.abort();await assert.rejects(canceled,/canceled/);
+ assert.equal((await (await request('/api/commands')).json() as {commands:unknown[]}).commands.length,0);
+ const playbackAbort=new AbortController();const playback=runtime.command('play',{audio_id:id},playbackAbort.signal);
+ const delivered=await (await request('/api/commands')).json() as {commands:{action:string}[]};assert.equal(delivered.commands[0].action,'play');
+ playbackAbort.abort();await assert.rejects(playback,/canceled/);
+ const cleanup=await (await request('/api/commands')).json() as {commands:{action:string}[]};assert.equal(cleanup.commands[0].action,'stop_audio');
+ await event({ready:false,dial_id:commands.commands[0].id,call_status:'disconnected'});
+ }finally{await runtime.close();}
+});

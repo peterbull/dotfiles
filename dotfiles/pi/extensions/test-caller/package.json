@@ -1,0 +1,28 @@
+{
+  "name": "pi-test-caller",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Fixed-route local WebRTC test caller extension for Pi",
+  "engines": {
+    "node": ">=24"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "scripts": {
+    "test": "node --test *.test.ts tts/*.test.ts",
+    "typecheck": "tsc --noEmit --allowImportingTsExtensions --module nodenext --moduleResolution nodenext --target esnext --strict --skipLibCheck *.ts tts/*.ts"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.74.0",
+    "@twilio/voice-sdk": "2.18.4",
+    "twilio": "6.1.2",
+    "typebox": "1.1.38"
+  },
+  "devDependencies": {
+    "@types/node": "25.8.0",
+    "typescript": "5.9.3"
+  }
+}

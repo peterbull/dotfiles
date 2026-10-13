@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Local CTM test caller</title>
+<style>body{font:16px system-ui;max-width:760px;margin:48px auto;padding:0 24px;color:#17212a}button{font:inherit;padding:10px 18px;margin-right:12px}pre{white-space:pre-wrap;background:#f1f4f6;padding:16px}small{color:#46535e}</style>
+<h1>Local CTM test caller</h1>
+<p>This is the external caller. Keep your CTM agent browser open separately.</p>
+<button id="start">Start caller audio</button><button id="hangup" disabled>Hang up</button>
+<p id="state">Click Start to activate browser audio.</p>
+<small>Start activates browser audio without microphone access. The caller sends a generated silent stream until you play a local clip. Received call audio plays through this browser.</small>
+<pre id="error" role="alert"></pre>
+<script src="/sdk.js"></script>
+<script>
+const capability = location.hash.slice(1);
+history.replaceState(null, '', '/');
+let lease, device, call, processor, maxCallSeconds = 180, callTimer, pollTimer;
+let state = {ready:false,call_status:'idle'};
+let lastControllerContact = Date.now();
+let sequence=0, dialGeneration=0;
+const stateElement = document.getElementById('state');
+const errorElement = document.getElementById('error');
+async function api(path, options={}) {
+  const response = await fetch(path, {signal:AbortSignal.timeout(path==='/api/token'?65000:2000), ...options, headers:{'X-Caller-Capability':capability, ...(lease ? {'X-Caller-Lease':lease} : {}), 'Content-Type':'application/json', ...options.headers}});
+  if (!response.ok) throw new Error(`Local caller request failed (${response.status}).`);
+  lastControllerContact = Date.now();
+  return response.json();
+}
+function showError(error) { errorElement.textContent = error instanceof Error ? error.message : String(error); }
+function update(status) {
+  state.call_status = status;
+  state.call_sid = call?.parameters?.CallSid;
+  stateElement.textContent = `Caller: ${status}. Media connected does not prove the CTM agent answered.`;
+  document.getElementById('hangup').disabled = !call;
+}
+async function event(extra={}) { await api('/api/event', {method:'POST',body:JSON.stringify({sequence:++sequence,snapshot:state,...extra})}); }
+class LocalAudioProcessor {
+  constructor() { this.context = new AudioContext(); this.active = null; this.generation=0; }
+  async createProcessedStream(_physicalInput) {
+    this.stop(); this.silence?.stop(); this.destination?.stream.getTracks().forEach(track=>track.stop());
+    await this.context.resume();
+    this.destination = this.context.createMediaStreamDestination();
+    this.silence = this.context.createOscillator();
+    const gain = this.context.createGain(); gain.gain.value=0;
+    this.silence.connect(gain); gain.connect(this.destination); this.silence.start();
+    return this.destination.stream;
+  }
+  async destroyProcessedStream() {
+    this.stop(); this.silence?.stop(); this.silence=null;
+    this.destination?.stream.getTracks().forEach(track=>track.stop()); this.destination=null;
+  }
+  stop() {
+    this.generation++; const active=this.active; this.active=null;
+    if (active) { active.source.onended=null; active.source.stop(); active.source.disconnect(); active.resolve({status:'stopped'}); }
+  }
+  async play(audioId) {
+    if (!this.destination || state.call_status!=='connected') throw new Error('Caller media is not connected.');
+    this.stop(); const generation=this.generation;
+    const ownedCall=call;
+    const response=await fetch(`/audio/${encodeURIComponent(audioId)}`,{signal:AbortSignal.timeout(10000),headers:{'X-Caller-Capability':capability,'X-Caller-Lease':lease}});
+    if(!response.ok) throw new Error('Issued audio is unavailable.');
+    const buffer=await this.context.decodeAudioData(await response.arrayBuffer());
+    if(generation!==this.generation)return {status:'stopped'};
+    if(buffer.duration>120) throw new Error('Audio must be at most 120 seconds.');
+    if(call!==ownedCall || state.call_status!=='connected' || !this.destination) throw new Error('Call ended before audio could play.');
+    await this.context.resume();
+    if(generation!==this.generation)return {status:'stopped'};
+    if(call!==ownedCall || state.call_status!=='connected' || !this.destination)throw new Error('Call ended before audio start.');
+    return new Promise(resolve=>{
+      const source=this.context.createBufferSource(); source.buffer=buffer; source.connect(this.destination);
+      const active={source,resolve}; this.active=active;
+      source.onended=()=>{ if(this.active!==active)return; this.active=null; source.disconnect(); resolve({status:'completed',duration_ms:Math.round(buffer.duration*1000),call_received:'unverified'}); };
+      source.start();
+    });
+  }
+}
+function hangup() {
+  dialGeneration++; processor?.stop(); clearTimeout(callTimer); const owned=call; call=null;
+  owned?.disconnect(); update('disconnected');
+}
+async function execute(command) {
+  let commandGeneration;
+  try {
+    let result={};
+    if(command.action==='dial') {
+      if(call || state.call_status==='connecting' || state.call_status==='ringing') throw new Error('Caller already has a call.');
+      if(!state.ready) throw new Error('Start caller audio first.');
+      state.dial_id=command.id;
+      const generation=++dialGeneration;commandGeneration=generation;
+      update('connecting');
+      const connected=await device.connect({params:{}});
+      if(generation!==dialGeneration){connected.disconnect();throw new Error('Dial was canceled before media setup.');}
+      call=connected; update('connecting');
+      const ended=()=>{ if(call!==connected)return; processor.stop(); clearTimeout(callTimer); call=null; update('disconnected'); void event().catch(showError); };
+      connected.on('ringing',()=>{ if(call===connected){update('ringing');void event().catch(showError);} });
+      connected.on('accept',()=>{ if(call===connected){update('connected');void event().catch(showError);} });
+      connected.on('disconnect',ended); connected.on('cancel',ended); connected.on('reject',ended);
+      connected.on('error',error=>{ showError(error); ended(); });
+      callTimer=setTimeout(hangup,maxCallSeconds*1000);
+      if(connected.status()==='open')update('connected');
+      result={status:state.call_status,call_received:'unverified'};
+    } else if(command.action==='hangup') { hangup(); result={status:'disconnected'}; }
+    else if(command.action==='stop_audio') { processor.stop(); result={status:'stopped'}; }
+    else if(command.action==='digits') {
+      if(!call || state.call_status!=='connected' || typeof command.payload.digits!=='string' || !/^[0-9*#w]{1,40}$/.test(command.payload.digits)) throw new Error('Invalid DTMF or caller media is not connected.');
+      call.sendDigits(command.payload.digits); result={status:'submitted',call_received:'unverified'};
+    } else if(command.action==='play') result=await processor.play(command.payload.audio_id);
+    else throw new Error('Unsupported command.');
+    await event({id:command.id,ok:true,result});
+  } catch(error) {
+    showError(error);
+    if(command.action==='dial' && commandGeneration===dialGeneration){hangup();update('failed');}
+    await event({id:command.id,ok:false}).catch(showError);
+  }
+}
+async function poll() {
+  try {
+    const {commands}=await api('/api/commands');
+    for(const command of commands) void execute(command);
+    await event();
+  } catch(error) { showError(error); if(Date.now()-lastControllerContact>5000)hangup(); }
+  pollTimer=setTimeout(poll,300);
+}
+document.getElementById('start').onclick=async()=>{
+  const button=document.getElementById('start');button.disabled=true;
+  try {
+    processor=new LocalAudioProcessor();await processor.context.resume();
+    const claim=await api('/api/claim',{method:'POST',body:'{}'});lease=claim.lease;maxCallSeconds=claim.maxCallSeconds;
+    const {token}=await api('/api/token');
+    device=new Twilio.Device(token,{closeProtection:true,logLevel:'error',getUserMedia:async()=>processor.context.createMediaStreamDestination().stream});
+    device.on('error',showError);
+    device.on('tokenWillExpire',async()=>{try{const {token}=await api('/api/token');device.updateToken(token);}catch(error){showError(error);hangup();}});
+    await device.audio.addProcessor(processor,false);
+    state.ready=true;update('idle');await event();void poll();
+    button.textContent='Caller audio started';
+  } catch(error) {showError(error);state.ready=false;device?.destroy();button.textContent='Reload this caller page and pi extension to retry';}
+};
+document.getElementById('hangup').onclick=()=>{hangup();void event().catch(showError);};
+const controllerWatchdog=setInterval(()=>{if(call && Date.now()-lastControllerContact>5000){hangup();showError(new Error('Caller controller stopped responding; call disconnected.'));}},1000);
+window.addEventListener('beforeunload',()=>{clearInterval(controllerWatchdog);clearTimeout(pollTimer);hangup();device?.destroy();});
+</script></html>

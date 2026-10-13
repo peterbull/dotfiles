@@ -1,0 +1,12 @@
+{
+  "credential_source": "ctm-dev",
+  "ctm_account_id": 1,
+  "account_sid": "AC00000000000000000000000000000000",
+  "application_sid": "AP00000000000000000000000000000000",
+  "identity": "pi-test-caller",
+  "target_alias": "ctm-test",
+  "target_number": "+15550000000",
+  "provider_time_limit_confirmed": false,
+  "maxCallsPerDay": 5,
+  "maxCallSeconds": 180
+}

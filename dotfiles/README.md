@@ -2,8 +2,10 @@
 
 This repository currently lives at `$HOME`. Do not clone over an existing home
 or symlink the entire `.config` directory. The baseline bootstrap supports a
-separate source checkout, but deploys **only two VS Code files**. Installing
-packages is not the same as deploying the remaining home-root configuration.
+separate source checkout. Its configuration deployment is limited to **two VS
+Code files, one shared agent skills directory link and one Codex instructions
+file link**, each explicitly selected.
+Installing packages is not the same as deploying the remaining home-root configuration.
 
 Phases 1–4 are implemented, tested and independently reviewed. **All 146 fixture
 tests passed with no skips**, with monitored sources unchanged during execution.
@@ -19,7 +21,7 @@ service starts, commits or pushes were performed during this work.
 2. Bring the reviewed configuration into the existing home-root checkout.
    Preserve conflicting local settings and private files. No command here
    overwrites or deploys the entire home directory.
-3. Preview the shared package and VS Code plans:
+3. Preview the shared package, VS Code, agent skills and Codex instructions plans:
 
    ```sh
    bash "$HOME/dotfiles/scripts/bootstrap-mac" --dry-run
@@ -48,7 +50,17 @@ service starts, commits or pushes were performed during this work.
    /usr/bin/python3 -B "$HOME/dotfiles/scripts/provision-optional" --apply --feature node-tools
    ```
 
-7. Run read-only checks, then validate the real setup on the destination Mac.
+7. After a reviewed `pi-config` checkout exists at
+   `~/peter-projects/pi-config`, explicitly link its shared skills and Codex instructions.
+   Select either option alone or combine both:
+
+   ```sh
+   bash "$HOME/dotfiles/scripts/bootstrap-mac" --link-agent-skills
+   bash "$HOME/dotfiles/scripts/bootstrap-mac" --link-codex-instructions
+   bash "$HOME/dotfiles/scripts/bootstrap-mac" --link-agent-skills --link-codex-instructions
+   ```
+
+8. Run read-only checks, then validate the real setup on the destination Mac.
    Start a new terminal/editor yourself after reviewing configuration changes.
    Neither installer reloads your running tmux server or starts CTM.
 
@@ -81,7 +93,7 @@ can change dependencies even with `--no-upgrade`. Preserve the existing work
 Mac's standalone uv and manually installed apps; inventory differences are not
 permission to relink or reinstall them.
 
-## Baseline bootstrap and VS Code
+## Baseline bootstrap, VS Code, agent skills and Codex instructions
 
 No arguments or `--dry-run` are read-only previews. `--install` installs only
 `Brewfile` with `--no-upgrade`. Automatic Brew updates, analytics and install-time
@@ -106,8 +118,57 @@ targets are rechecked before mutation. Failures preserve completed actions and
 backups rather than deleting data for an automatic rollback. Restore an original
 manually only after closing the affected app and reviewing the generated link.
 
-Install/link modes can be combined. `--backup` requires `--link-vscode`;
-`--dry-run` cannot accompany mutating flags. Unknown/incompatible flags exit 2.
+`--link-agent-skills` creates only
+`~/.agents/skills -> ~/peter-projects/pi-config/skills`. Both paths use canonical
+`HOME`, even when the dotfiles source checkout is elsewhere. It does not clone
+`pi-config`, install skills or restore other agent configuration. `--install`
+does not create this link because the source checkout may not exist yet.
+
+Default and `--dry-run` previews include this link. A missing or non-directory
+source warns in preview and fails when explicitly selected. Only a symlink
+resolving to the source directory is a no-op. Existing real directories (even
+empty), files, wrong or dangling links and special objects are preserved and
+refused; preview conflicts warn. Symlinked or non-directory `.agents` parents
+are also refused. The parent is created only when needed, and source, parent
+and target are rechecked immediately before linking without force.
+
+`--link-codex-instructions` creates only
+`~/.codex/AGENTS.md -> ~/peter-projects/pi-config/AGENTS.md`, using canonical
+`HOME` regardless of the dotfiles checkout location. It does not clone
+`pi-config`, deploy other agent configuration, change environment variables or
+edit `config.toml`. `--install` alone does not create this link.
+
+Default and `--dry-run` previews include the Codex link. The source must be a
+nonempty, readable regular file; missing or invalid sources warn in preview and
+fail when explicitly selected. Only a symlink resolving to the source file is
+a no-op. Existing real files (including hard links), directories, foreign or
+dangling links and special objects are preserved and refused. Conflicts warn
+in preview. Symlinked or non-directory `.codex` parents are also refused.
+The parent is created only when needed; checks run again before linking without
+force.
+
+This deployment supports only Codex's default `~/.codex` root. A nonempty
+`CODEX_HOME` must exactly match canonical `$HOME/.codex` or the original `HOME`
+spelling plus `/.codex`. Other values warn in preview and fail an explicitly
+selected Codex link before any selected action runs. Custom profiles require
+separate manual setup; the script never changes `CODEX_HOME`.
+
+Codex loads a nonempty `~/.codex/AGENTS.override.md` instead of `AGENTS.md`.
+Such an override warns in preview and blocks the selected link; it remains
+unchanged. An empty override is allowed. Restart Codex after restoration to
+load the shared instructions. See the official
+[AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md/).
+The default combined instruction budget is **32 KiB**, including global and
+project instructions. The current shared file is **25,474 bytes**, leaving
+little project headroom. Review instruction sizes; this bootstrap changes
+neither the shared file nor the configured budget.
+
+Install/link modes can be combined. All selected actions are preflighted before
+package installation or link writes. `--backup` is VS Code-only and requires
+`--link-vscode`; it never replaces or backs up skills or Codex conflicts.
+`--dry-run` cannot accompany mutating flags, including `--link-agent-skills`
+and `--link-codex-instructions`.
+Unknown/incompatible flags exit 2.
 
 ## Optional provisioning
 
@@ -139,8 +200,9 @@ metadata. A failure can leave a preserved, unowned partial environment; inspect
 it manually before deciding how to recover. Never delete a venv automatically
 or copy one between Macs.
 
-Node CLI provisioning does not restore Pi credentials, provider settings, skills
-or extensions; those belong to the separate `pi-config` setup. Corepack is
+Node CLI provisioning (`node-tools`) does not create the shared agent skills
+link or restore Pi credentials, provider settings, skills or extensions; those
+belong to the separate `pi-config` setup and explicit link step above. Corepack is
 invoked directly; no global pnpm shim is created or enabled. Shared commands can
 use `mise --no-config exec node@24 -- corepack pnpm@12.3.4 ...`; use a project's
 own declared pnpm version for that project's work. Seven-day package
@@ -179,6 +241,16 @@ Its interactive create/remove workflows remain explicit user actions. Validation
 uses stubs, not your live server or repositories.
 
 ## Neovim and local development checkouts
+
+Use `<leader>gvp` to pick an open GitHub pull request with Telescope. The picker
+groups your PRs, review requests, and repository PRs, with duplicates removed.
+It loads up to 50 PRs per group and previews the description. Press Enter to
+review the pushed changes in Diffview, Alt-b to open GitHub, or Ctrl-y to copy
+the URL. Requires `gh auth login` and Git access to the repository.
+
+The diff compares the PR head with its merge base against the PR's base branch,
+including fork and stacked PRs. Fetches update `refs/pr-picker/<number>/base`
+and `refs/pr-picker/<number>/head`; your checkout and index stay unchanged.
 
 Missing provider, notebook checkout or custom parser sources are intentionally
 optional. The provider is not a notebook kernel. Active notebooks use uv overlays

@@ -2,6 +2,8 @@
 
 install=0
 link=0
+link_skills=0
+link_codex=0
 backup=0
 dry=0
 help=0
@@ -9,8 +11,8 @@ backup_dir=
 names=(settings.json keybindings.json)
 
 usage() {
-    printf '%s\n' 'Usage: bootstrap-mac [--dry-run | --install] [--link-vscode [--backup]] [--help]' \
-        'No arguments preview the base Brewfile install and the two VS Code links.'
+    printf '%s\n' 'Usage: bootstrap-mac [--dry-run | --install] [--link-vscode [--backup]] [--link-agent-skills] [--link-codex-instructions] [--help]' \
+        'No arguments preview the base Brewfile install, two VS Code links, shared agent skills and Codex instructions links.'
 }
 
 fail() {
@@ -26,6 +28,8 @@ for arg in "$@"; do
     case "$arg" in
         --install) install=1 ;;
         --link-vscode) link=1 ;;
+        --link-agent-skills) link_skills=1 ;;
+        --link-codex-instructions) link_codex=1 ;;
         --backup) backup=1 ;;
         --dry-run) dry=1 ;;
         --help) help=1 ;;
@@ -33,7 +37,7 @@ for arg in "$@"; do
     esac
 done
 [ "$backup" -eq 0 ] || [ "$link" -eq 1 ] || fail '--backup requires --link-vscode' 2
-if [ "$dry" -eq 1 ] && { [ "$install" -eq 1 ] || [ "$link" -eq 1 ] || [ "$backup" -eq 1 ]; }; then
+if [ "$dry" -eq 1 ] && { [ "$install" -eq 1 ] || [ "$link" -eq 1 ] || [ "$link_skills" -eq 1 ] || [ "$link_codex" -eq 1 ] || [ "$backup" -eq 1 ]; }; then
     fail '--dry-run cannot accompany mutating flags' 2
 fi
 if [ "$help" -eq 1 ]; then
@@ -51,16 +55,22 @@ platform=$(uname -s) || fail 'Cannot determine platform'
 [ "$platform" = Darwin ] || fail "macOS (Darwin) required; platform is $platform"
 
 preview=0
-if [ "$install" -eq 0 ] && [ "$link" -eq 0 ]; then
+if [ "$install" -eq 0 ] && [ "$link" -eq 0 ] && [ "$link_skills" -eq 0 ] && [ "$link_codex" -eq 0 ]; then
     preview=1
 fi
 brewfile="$repo/Brewfile"
 user_dir="$home/Library/Application Support/Code/User"
 backup_base="$home/Library/Application Support/dotfiles-backups"
+skills_source="$home/peter-projects/pi-config/skills"
+agents_dir="$home/.agents"
+skills_target="$agents_dir/skills"
+codex_source="$home/peter-projects/pi-config/AGENTS.md"
+codex_dir="$home/.codex"
+codex_target="$codex_dir/AGENTS.md"
 
 # Walk from canonical HOME without traversing symlinked ancestors.
 check_parents() {
-    local remaining current component
+    local remaining current component problem
     remaining=${1#"$home"/}
     current=$home
     while [ -n "$remaining" ]; do
@@ -71,9 +81,18 @@ check_parents() {
             remaining=${remaining#*/}
         fi
         current="$current/$component"
-        [ ! -L "$current" ] || fail "Symlinked ancestor refused: $current"
-        if [ -e "$current" ] && [ ! -d "$current" ]; then
-            fail "Non-directory ancestor refused: $current"
+        problem=
+        if [ -L "$current" ]; then
+            problem="Symlinked ancestor refused: $current"
+        elif [ -e "$current" ] && [ ! -d "$current" ]; then
+            problem="Non-directory ancestor refused: $current"
+        fi
+        if [ -n "$problem" ]; then
+            if [ "${2:-0}" -eq 1 ]; then
+                prerequisite_problem "$problem"
+                return 1
+            fi
+            fail "$problem"
         fi
     done
 }
@@ -121,6 +140,55 @@ prerequisite_problem() {
     fi
 }
 
+check_skills_link() {
+    skills_state=new
+    if [ ! -d "$skills_source" ]; then
+        skills_state=unavailable
+        prerequisite_problem "Missing directory agent skills source: $skills_source"
+    fi
+    if ! check_parents "$agents_dir" "$preview"; then
+        skills_state=conflict
+        return
+    fi
+    if [ -L "$skills_target" ] && [ "$skills_target" -ef "$skills_source" ]; then
+        skills_state=correct
+    elif [ -e "$skills_target" ] || [ -L "$skills_target" ]; then
+        skills_state=conflict
+        prerequisite_problem "Agent skills target conflict; no replacement or backup: $skills_target"
+    fi
+}
+
+check_codex_link() {
+    codex_state=new
+    if [ -n "${CODEX_HOME:-}" ] && [ "$CODEX_HOME" != "$codex_dir" ] && [ "$CODEX_HOME" != "$HOME/.codex" ]; then
+        codex_state=unavailable
+        prerequisite_problem "Non-default CODEX_HOME is unsupported; default Codex instructions would be ignored: $CODEX_HOME"
+        return
+    fi
+    if [ ! -f "$codex_source" ] || [ ! -r "$codex_source" ] || [ ! -s "$codex_source" ]; then
+        codex_state=unavailable
+        prerequisite_problem "Missing, empty or unreadable regular Codex instructions source: $codex_source"
+    fi
+    if ! check_parents "$codex_dir" "$preview"; then
+        codex_state=conflict
+        return
+    fi
+    if [ -s "$codex_dir/AGENTS.override.md" ]; then
+        codex_state=conflict
+        prerequisite_problem "Nonempty Codex override takes precedence over AGENTS.md: $codex_dir/AGENTS.override.md"
+        return
+    fi
+    if [ -L "$codex_target" ] && [ "$codex_target" -ef "$codex_source" ]; then
+        codex_state=correct
+    elif [ -e "$codex_target" ] || [ -L "$codex_target" ]; then
+        codex_state=conflict
+        prerequisite_problem "Codex instructions target conflict; no replacement or backup: $codex_target"
+    fi
+}
+
+if [ "$link_codex" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    check_codex_link
+fi
 if [ "$install" -eq 1 ] || [ "$preview" -eq 1 ]; then
     [ -f "$brewfile" ] || fail "Missing regular Brewfile: $brewfile"
     if command -v brew >/dev/null 2>&1; then
@@ -143,6 +211,9 @@ fi
 if [ "$link" -eq 1 ] || [ "$preview" -eq 1 ]; then
     check_links
 fi
+if [ "$link_skills" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    check_skills_link
+fi
 
 if [ "$preview" -eq 1 ]; then
     printf 'Preview only; no changes.\n'
@@ -159,6 +230,12 @@ if [ "$link" -eq 1 ] || [ "$preview" -eq 1 ]; then
     if [ "$backup" -eq 1 ]; then
         printf 'Backup plan: preserve conflicts in %s/vscode.XXXXXXXX only if needed.\n' "$backup_base"
     fi
+fi
+if [ "$link_skills" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    printf 'Agent skills link plan (%s): %s -> %s\n' "$skills_state" "$skills_target" "$skills_source"
+fi
+if [ "$link_codex" -eq 1 ] || [ "$preview" -eq 1 ]; then
+    printf 'Codex instructions link plan (%s): %s -> %s\n' "$codex_state" "$codex_target" "$codex_source"
 fi
 [ "$preview" -eq 0 ] || exit 0
 
@@ -214,4 +291,34 @@ if [ "$link" -eq 1 ]; then
         ln -s "$repo/.vscode/$name" "$user_dir/$name" || fail "Cannot create link: $user_dir/$name"
         printf 'Linked: %s\n' "$user_dir/$name"
     done
+fi
+
+if [ "$link_skills" -eq 1 ]; then
+    check_skills_link
+    if [ "$skills_state" != correct ]; then
+        umask 077
+        if [ ! -d "$agents_dir" ]; then
+            mkdir -p "$agents_dir" || fail "Cannot create agent directory: $agents_dir"
+        fi
+        check_skills_link
+        if [ "$skills_state" != correct ]; then
+            ln -s "$skills_source" "$skills_target" || fail "Cannot create agent skills link: $skills_target"
+            printf 'Linked: %s\n' "$skills_target"
+        fi
+    fi
+fi
+
+if [ "$link_codex" -eq 1 ]; then
+    check_codex_link
+    if [ "$codex_state" != correct ]; then
+        umask 077
+        if [ ! -d "$codex_dir" ]; then
+            mkdir -p "$codex_dir" || fail "Cannot create Codex directory: $codex_dir"
+        fi
+        check_codex_link
+        if [ "$codex_state" != correct ]; then
+            ln -s "$codex_source" "$codex_target" || fail "Cannot create Codex instructions link: $codex_target"
+            printf 'Linked: %s\n' "$codex_target"
+        fi
+    fi
 fi

@@ -88,9 +88,16 @@ end
 return {
 	{
 		"sindrets/diffview.nvim",
-		dependencies = { "nvim-lua/plenary.nvim" },
+		dependencies = { "nvim-lua/plenary.nvim", "nvim-telescope/telescope.nvim" },
 		cmd = { "DiffviewOpen", "DiffviewClose", "DiffviewFileHistory" },
 		keys = {
+			{
+				"<leader>gvp",
+				function()
+					require("config.pr_picker").open()
+				end,
+				desc = "[G]it [v]iew [p]ull requests",
+			},
 			{
 				"<leader>gM",
 				function()

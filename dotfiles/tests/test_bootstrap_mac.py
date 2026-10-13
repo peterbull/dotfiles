@@ -48,6 +48,10 @@ class BootstrapMacTests(unittest.TestCase):
             (self.repo / ".vscode" / name).write_text('{}\n' if name == NAMES[0] else '[]\n')
         self.target = self.home / "Library/Application Support/Code/User"
         self.backups = self.home / "Library/Application Support/dotfiles-backups"
+        self.skills_source = self.home / "peter-projects/pi-config/skills"
+        self.skills_target = self.home / ".agents/skills"
+        self.instructions_source = self.home / "peter-projects/pi-config/AGENTS.md"
+        self.instructions_target = self.home / ".codex/AGENTS.md"
         self.log = self.root / "commands.jsonl"
         self.env = {"HOME": str(self.home), "PATH": str(self.bin) + ":/usr/bin:/bin",
                     "ROOT": str(self.root), "REPO": str(self.repo), "LOG": str(self.log),
@@ -87,11 +91,12 @@ class BootstrapMacTests(unittest.TestCase):
         if readonly:
             self.assertEqual(before, after, "Unexpected fixture mutation")
         else:
-            allowed = {str(p.relative_to(self.root)) for p in (self.target, self.backups,
-                       *self.target.parents, *self.backups.parents) if p != self.root and self.root in p.parents}
+            managed = (self.target, self.backups, self.skills_target, self.instructions_target)
+            allowed = {str(p.relative_to(self.root)) for target in managed for p in (target, *target.parents)
+                       if p != self.root and self.root in p.parents}
             for key in before.keys() | after.keys():
                 path = self.root / key
-                if key not in allowed and self.target not in path.parents and self.backups not in path.parents:
+                if key not in allowed and not any(target in path.parents for target in managed):
                     self.assertEqual(before.get(key), after.get(key), "Unexpected mutation: " + key)
         self.assertNotIn("PRIVATE_SENTINEL", output)
         self.assertFalse((self.root / "SOURCED").exists(), "Private shell files were sourced")
@@ -303,6 +308,250 @@ class BootstrapMacTests(unittest.TestCase):
                 if directory:
                     path.rmdir()
             path.write_bytes(data)
+
+    def create_shared_skill(self):
+        skill = self.skills_source / "example/SKILL.md"
+        skill.parent.mkdir(parents=True)
+        skill.write_text("---\nname: example\ndescription: Example skill\n---\n")
+
+    def test_agent_skills_link_is_home_relative_and_idempotent_without_installers(self):
+        self.create_shared_skill()
+        for name in ("brew", "xcode-select"):
+            (self.bin / name).unlink()
+        (self.repo / "Brewfile").unlink()
+        _, calls = self.run_bootstrap("--link-agent-skills", readonly=False)
+        self.assertTrue(self.skills_target.is_symlink())
+        self.assertEqual(str(self.skills_source), os.readlink(self.skills_target))
+        self.assertEqual((self.skills_source / "example/SKILL.md").read_text(),
+                         (self.skills_target / "example/SKILL.md").read_text())
+        self.assertFalse(self.target.exists())
+        self.assertFalse(any(c[0] in ("brew", "xcode-select") for c in calls))
+        self.run_bootstrap("--link-agent-skills")
+        self.assertEqual(["example"], sorted(p.name for p in self.skills_source.iterdir()))
+
+    def test_agent_skills_preview_reports_link_and_missing_source_without_writes(self):
+        output, _ = self.run_bootstrap("--dry-run")
+        self.assertIn(str(self.skills_source), output)
+        self.assertIn(str(self.skills_target), output)
+        self.assertRegex(output.lower(), r"warn|missing")
+        self.create_shared_skill()
+        output, _ = self.run_bootstrap("--dry-run")
+        self.assertIn(str(self.skills_target), output)
+        self.assertIn(str(self.skills_source), output)
+        self.assertFalse(self.skills_target.parent.exists())
+
+    def test_agent_skills_missing_source_preflights_all_selected_actions(self):
+        for kind in ("missing", "file"):
+            with self.subTest(kind=kind):
+                if kind == "file":
+                    self.skills_source.parent.mkdir(parents=True)
+                    self.skills_source.write_text("not a directory")
+                _, calls = self.run_bootstrap("--install", "--link-vscode", "--link-agent-skills", code=1)
+                self.assertEqual([], self.installs(calls))
+                self.assertFalse(self.target.exists())
+                self.assertFalse(self.skills_target.parent.exists())
+
+    def test_agent_skills_combines_with_existing_actions_and_preserves_other_agent_files(self):
+        self.create_shared_skill()
+        local = self.skills_target.parent / "local/SKILL.md"
+        local.parent.mkdir(parents=True)
+        local.write_text("keep")
+        _, calls = self.run_bootstrap("--install", "--link-vscode", "--link-agent-skills", readonly=False)
+        self.assertEqual(1, len(self.installs(calls)))
+        self.assert_links()
+        self.assertTrue(self.skills_target.is_symlink())
+        self.assertTrue(os.path.samefile(self.skills_target, self.skills_source))
+        self.assertEqual("keep", local.read_text())
+
+    def test_agent_skills_conflicts_are_preserved_even_with_vscode_backup(self):
+        self.create_shared_skill()
+        self.skills_target.parent.mkdir()
+        foreign = self.root / "foreign skills"
+        foreign.mkdir()
+        for kind in ("empty directory", "nonempty directory", "file", "foreign link", "dangling link"):
+            with self.subTest(kind=kind):
+                if "directory" in kind:
+                    self.skills_target.mkdir()
+                    if kind == "nonempty directory":
+                        (self.skills_target / "local.md").write_text("keep")
+                elif kind == "file":
+                    self.skills_target.write_text("keep")
+                else:
+                    self.skills_target.symlink_to(foreign if kind == "foreign link" else "missing")
+                try:
+                    _, calls = self.run_bootstrap("--install", "--link-vscode", "--backup",
+                                                  "--link-agent-skills", code=1)
+                    self.assertEqual([], self.installs(calls))
+                    output, _ = self.run_bootstrap("--dry-run")
+                    self.assertRegex(output.lower(), r"warn|conflict")
+                finally:
+                    if self.skills_target.is_dir() and not self.skills_target.is_symlink():
+                        shutil.rmtree(self.skills_target)
+                    else:
+                        self.skills_target.unlink()
+
+    def test_agent_skills_parent_symlink_or_file_refuses_without_effects(self):
+        self.create_shared_skill()
+        foreign = self.root / "foreign parent"
+        foreign.mkdir()
+        parent = self.skills_target.parent
+        for kind in ("symlink", "file"):
+            with self.subTest(kind=kind):
+                if kind == "symlink":
+                    parent.symlink_to(foreign, target_is_directory=True)
+                else:
+                    parent.write_text("keep")
+                try:
+                    _, calls = self.run_bootstrap("--install", "--link-agent-skills", code=1)
+                    self.assertEqual([], self.installs(calls))
+                finally:
+                    parent.unlink()
+
+    def test_agent_skills_correct_relative_directory_link_is_noop(self):
+        self.create_shared_skill()
+        self.skills_target.parent.mkdir()
+        self.skills_target.symlink_to(os.path.relpath(self.skills_source, self.skills_target.parent),
+                                      target_is_directory=True)
+        self.run_bootstrap("--link-agent-skills")
+
+    def test_agent_skills_invalid_flags_stop_before_checks(self):
+        for args in (("--dry-run", "--link-agent-skills"), ("--link-agent-skills", "--backup")):
+            _, calls = self.run_bootstrap(*args, code=2)
+            self.assertEqual([], calls)
+
+    def create_shared_instructions(self):
+        self.instructions_source.parent.mkdir(parents=True, exist_ok=True)
+        self.instructions_source.write_text("# Shared instructions\nUse pnpm.\n")
+
+    def test_codex_instructions_link_is_idempotent_and_preserves_config(self):
+        self.create_shared_instructions()
+        config = self.instructions_target.parent / "config.toml"
+        config.parent.mkdir()
+        config.write_text('model = "local-model"\n')
+        for name in ("brew", "xcode-select"):
+            (self.bin / name).unlink()
+        (self.repo / "Brewfile").unlink()
+        _, calls = self.run_bootstrap("--link-codex-instructions", readonly=False)
+        self.assertTrue(self.instructions_target.is_symlink())
+        self.assertEqual(str(self.instructions_source), os.readlink(self.instructions_target))
+        self.assertEqual(self.instructions_source.read_text(), self.instructions_target.read_text())
+        self.assertEqual('model = "local-model"\n', config.read_text())
+        self.assertFalse(any(c[0] in ("brew", "xcode-select") for c in calls))
+        self.run_bootstrap("--link-codex-instructions")
+
+    def test_codex_preview_reports_target_and_missing_source_read_only(self):
+        output, _ = self.run_bootstrap("--dry-run")
+        self.assertIn(str(self.instructions_source), output)
+        self.assertIn(str(self.instructions_target), output)
+        self.create_shared_instructions()
+        output, _ = self.run_bootstrap("--dry-run")
+        self.assertIn(str(self.instructions_target), output)
+        self.assertFalse(self.instructions_target.parent.exists())
+
+    def test_codex_missing_or_empty_source_preflights_all_selected_actions(self):
+        self.create_shared_skill()
+        for kind in ("missing", "empty", "directory"):
+            with self.subTest(kind=kind):
+                if kind == "empty":
+                    self.instructions_source.write_text("")
+                elif kind == "directory":
+                    self.instructions_source.unlink()
+                    self.instructions_source.mkdir()
+                _, calls = self.run_bootstrap("--install", "--link-vscode", "--link-agent-skills",
+                                              "--link-codex-instructions", code=1)
+                self.assertEqual([], self.installs(calls))
+                self.assertFalse(self.target.exists())
+                self.assertFalse(self.skills_target.exists())
+
+    def test_codex_conflicts_are_preserved_even_with_vscode_backup(self):
+        self.create_shared_instructions()
+        self.instructions_target.parent.mkdir()
+        foreign = self.root / "foreign instructions.md"
+        foreign.write_text("keep")
+        for kind in ("file", "directory", "foreign link", "dangling link"):
+            with self.subTest(kind=kind):
+                if kind == "file":
+                    self.instructions_target.write_text("keep")
+                elif kind == "directory":
+                    self.instructions_target.mkdir()
+                else:
+                    self.instructions_target.symlink_to(foreign if kind == "foreign link" else "missing")
+                try:
+                    _, calls = self.run_bootstrap("--install", "--link-vscode", "--backup",
+                                                  "--link-codex-instructions", code=1)
+                    self.assertEqual([], self.installs(calls))
+                finally:
+                    if kind == "directory":
+                        self.instructions_target.rmdir()
+                    else:
+                        self.instructions_target.unlink()
+
+    def test_codex_parent_symlink_or_file_refuses_without_effects(self):
+        self.create_shared_instructions()
+        foreign = self.root / "foreign codex"
+        foreign.mkdir()
+        parent = self.instructions_target.parent
+        for kind in ("symlink", "file"):
+            with self.subTest(kind=kind):
+                if kind == "symlink":
+                    parent.symlink_to(foreign, target_is_directory=True)
+                else:
+                    parent.write_text("keep")
+                try:
+                    _, calls = self.run_bootstrap("--install", "--link-codex-instructions", code=1)
+                    self.assertEqual([], self.installs(calls))
+                finally:
+                    parent.unlink()
+
+    def test_codex_override_precedence_is_detected_without_modifying_it(self):
+        self.create_shared_instructions()
+        override = self.instructions_target.parent / "AGENTS.override.md"
+        override.parent.mkdir()
+        override.write_text("Local override")
+        output, calls = self.run_bootstrap("--install", "--link-codex-instructions", code=1)
+        self.assertIn("AGENTS.override.md", output)
+        self.assertEqual([], self.installs(calls))
+        output, _ = self.run_bootstrap("--dry-run")
+        self.assertIn("AGENTS.override.md", output)
+        override.write_text("")
+        self.run_bootstrap("--link-codex-instructions", readonly=False)
+        self.assertTrue(self.instructions_target.is_symlink())
+
+    def test_codex_correct_relative_link_is_noop(self):
+        self.create_shared_instructions()
+        self.instructions_target.parent.mkdir()
+        self.instructions_target.symlink_to(
+            os.path.relpath(self.instructions_source, self.instructions_target.parent))
+        self.run_bootstrap("--link-codex-instructions")
+
+    def test_codex_invalid_flags_stop_before_checks(self):
+        for args in (("--dry-run", "--link-codex-instructions"), ("--link-codex-instructions", "--backup")):
+            _, calls = self.run_bootstrap(*args, code=2)
+            self.assertEqual([], calls)
+
+    def test_codex_home_override_cannot_silently_link_inactive_default_profile(self):
+        self.create_shared_instructions()
+        for value in ("", str(self.instructions_target.parent)):
+            self.env["CODEX_HOME"] = value
+            self.run_bootstrap("--link-codex-instructions", readonly=False)
+            self.assertTrue(os.path.samefile(self.instructions_target, self.instructions_source))
+        self.instructions_target.unlink()
+        for value in (str(self.home / "custom codex"), "relative codex"):
+            with self.subTest(value=value):
+                self.env["CODEX_HOME"] = value
+                output, calls = self.run_bootstrap("--install", "--link-codex-instructions", code=1)
+                self.assertIn("CODEX_HOME", output)
+                self.assertEqual([], self.installs(calls))
+                output, _ = self.run_bootstrap("--dry-run")
+                self.assertIn("CODEX_HOME", output)
+                self.assertFalse(self.instructions_target.exists())
+
+    def test_codex_and_skills_can_be_linked_together(self):
+        self.create_shared_skill()
+        self.create_shared_instructions()
+        self.run_bootstrap("--link-agent-skills", "--link-codex-instructions", readonly=False)
+        self.assertTrue(os.path.samefile(self.skills_target, self.skills_source))
+        self.assertTrue(os.path.samefile(self.instructions_target, self.instructions_source))
 
     def test_failed_install_reports_failure_and_does_not_link_or_backup(self):
         for status in (1, 42):
