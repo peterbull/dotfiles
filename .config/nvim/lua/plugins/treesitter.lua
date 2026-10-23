@@ -62,17 +62,21 @@ return {
     local custom_parsers = {
       reef = { files = { 'src/parser.c' }, branch = 'main' },
       mustache = { files = { 'src/parser.c', 'src/scanner.c' } },
+      bend2 = { files = { 'src/parser.c', 'src/scanner.c' }, branch = 'main' },
     }
-    for _, lang in ipairs { 'reef', 'mustache' } do
+    local filetypes = { bend2 = 'bend' }
+    for _, lang in ipairs { 'reef', 'mustache', 'bend2' } do
       local info = custom_parsers[lang]
+      local filetype = filetypes[lang] or lang
       info.url = vim.fn.expand('~/peter-projects/tree-sitter-' .. lang)
       local readable = true
       for _, file in ipairs(info.files) do
         readable = readable and vim.fn.filereadable(info.url .. '/' .. file) == 1
       end
       if readable then
-        parser_config[lang] = { install_info = info, filetype = lang }
-        available[#available + 1] = lang
+        parser_config[lang] = { install_info = info, filetype = filetype }
+        vim.treesitter.language.register(lang, filetype)
+        available[#available + 1] = filetype
       end
     end
 

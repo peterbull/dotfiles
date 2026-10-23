@@ -561,26 +561,35 @@ return {
       },
     })
 
-    -- Sorbet alongside ruby_lsp, per ~/work/ctm/sorbet/README.md (opt-in pilot for VoiceBot /
-    -- ChatBot). Attaches only where a sorbet/ dir exists, so it stays silent in other Ruby
-    -- projects. nvim spawns servers in its own cwd (not root_dir) -- open nvim at repo root.
-    -- Watchman is required: without it `srb tc --lsp` answers initialize, then exits 100.
-    --
-    -- Keep Sorbet's real type errors, drop the missing-RBI noise: with no gem RBIs generated,
-    -- every ActiveSupport core extension and Rails macro reads as 7003 "method does not exist"
-    -- (284 of them in voice_bot.rb alone). Filtering just that code leaves 7004 "argument does
-    -- not have expected type", 7017, 5002 etc. visible. Empty the table to see everything.
+    -- Projects opt in through sorbet/config; Ruby LSP supplies Rails features.
     local sorbet_noise_codes = { ['7003'] = true, [7003] = true }
     local publish_diagnostics = vim.lsp.handlers['textDocument/publishDiagnostics']
 
     vim.lsp.config('sorbet', {
-      cmd = vim.list_extend(
-        { 'mise', 'exec', '--', 'bundle', 'exec', 'srb', 'tc', '--lsp' },
-        vim.fn.executable 'watchman' == 1 and {} or { '--disable-watchman' }
-      ),
+      cmd = function(dispatchers, config)
+        local command = { 'mise', 'exec', '--', 'bundle', 'exec', 'srb', 'tc', '--lsp' }
+        if vim.fn.executable 'watchman' == 0 then
+          table.insert(command, '--disable-watchman')
+        end
+        return vim.lsp.rpc.start(command, dispatchers, { cwd = config.root_dir, env = config.cmd_env })
+      end,
+      cmd_env = { SRB_SKIP_GEM_RBIS = '1' },
       filetypes = { 'ruby' },
-      root_markers = { 'sorbet/' },
+      root_dir = function(bufnr, on_dir)
+        local config_file = vim.fs.find('sorbet/config', {
+          path = vim.fs.dirname(vim.api.nvim_buf_get_name(bufnr)),
+          upward = true,
+          type = 'file',
+        })[1]
+        if config_file then
+          on_dir(vim.fs.dirname(vim.fs.dirname(config_file)))
+        end
+      end,
+      workspace_required = true,
       capabilities = vim.tbl_deep_extend('force', {}, capabilities),
+      on_attach = function(_, bufnr)
+        vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = bufnr, desc = 'Sorbet hover' })
+      end,
       handlers = {
         ['textDocument/publishDiagnostics'] = function(err, result, ctx, config)
           if result and result.diagnostics then

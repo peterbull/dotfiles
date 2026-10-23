@@ -1,8 +1,5 @@
--- Resolve the repo's default branch ("main" or "master"). The authoritative
--- source is origin/HEAD: it handles repos where BOTH branches exist but the
--- real default is still master (e.g. ctm-ui: origin/HEAD -> master). Only when
--- origin/HEAD is unset do we fall back to local refs, preferring master when
--- both exist.
+local branch_diff_pending = false
+
 local function get_default_branch()
 	local out = vim.fn.system({ "git", "symbolic-ref", "refs/remotes/origin/HEAD" })
 	local db = out:match("refs/remotes/origin/([^%s]+)")
@@ -14,12 +11,12 @@ local function get_default_branch()
 		vim.fn.system({ "git", "show-ref", "--verify", "--quiet", ref })
 		return vim.v.shell_error == 0
 	end
-	local has_main = ref_exists("refs/heads/main")
-	local has_master = ref_exists("refs/heads/master")
-	if has_main and has_master then
-		return "master"
-	elseif has_main then
-		return "main"
+	for _, prefix in ipairs({ "refs/remotes/origin/", "refs/heads/" }) do
+		for _, branch in ipairs({ "master", "main" }) do
+			if ref_exists(prefix .. branch) then
+				return branch
+			end
+		end
 	end
 	return "master"
 end
@@ -119,30 +116,59 @@ return {
 						return
 					end
 
-					local current_branch = vim.fn.system({ "git", "branch", "--show-current" }):gsub("%s", "")
+					if branch_diff_pending then
+						vim.notify("Fetching origin for branch diff", vim.log.levels.INFO)
+						return
+					end
+
+					local cwd = vim.fn.getcwd()
+					local tab = vim.api.nvim_get_current_tabpage()
 					local default_branch = get_default_branch()
+					local remote_ref = "refs/remotes/origin/" .. default_branch
+					branch_diff_pending = true
 
-					-- On the default branch there's no branch point to diff against;
-					-- the plain view (worktree vs HEAD) includes untracked natively.
-					if current_branch == default_branch then
-						vim.cmd("DiffviewOpen --untracked-files=all")
-						return
+					local complete = vim.schedule_wrap(function(result)
+						branch_diff_pending = false
+						if result.code ~= 0 then
+							local reason = (result.stderr or ""):gsub("%s+$", "")
+							vim.notify(
+								"Could not fetch origin/" .. default_branch .. "; trying cached ref. " .. reason,
+								vim.log.levels.WARN
+							)
+						end
+						if
+							vim.fn.getcwd() ~= cwd
+							or vim.api.nvim_get_current_tabpage() ~= tab
+							or next(lib.views) ~= nil
+						then
+							return
+						end
+						local merge_base = vim.fn.system({ "git", "-C", cwd, "merge-base", "HEAD", remote_ref })
+						if vim.v.shell_error ~= 0 or merge_base:match("^%s*$") then
+							vim.notify(
+								"Could not find merge base with origin/"
+									.. default_branch
+									.. ": "
+									.. merge_base:gsub("%s+$", ""),
+								vim.log.levels.ERROR
+							)
+							return
+						end
+						open_branch_diff(merge_base:gsub("%s", ""))
+					end)
+					local ok, result = pcall(vim.system, {
+						"git",
+						"fetch",
+						"--no-tags",
+						"--no-recurse-submodules",
+						"origin",
+						"+refs/heads/" .. default_branch .. ":" .. remote_ref,
+					}, { cwd = cwd, text = true, timeout = 15000 }, complete)
+					if not ok then
+						complete({ code = -1, stderr = tostring(result) })
 					end
-
-					local merge_base = vim.fn.system({ "git", "merge-base", "HEAD", default_branch }):gsub("%s", "")
-					if merge_base == "" or vim.v.shell_error ~= 0 then
-						-- No local default branch (fresh/shallow clone): try the
-						-- remote-tracking ref before giving up.
-						merge_base =
-							vim.fn.system({ "git", "merge-base", "HEAD", "origin/" .. default_branch }):gsub("%s", "")
-					end
-					if merge_base == "" or vim.v.shell_error ~= 0 then
-						vim.notify("Could not find merge base with '" .. default_branch .. "'", vim.log.levels.ERROR)
-						return
-					end
-					open_branch_diff(merge_base)
 				end,
-				desc = "Diff vs branch point (merge base), incl. untracked",
+				desc = "Fetch origin and diff vs default branch point, incl. untracked",
 			},
 			{
 				"<leader>gd",

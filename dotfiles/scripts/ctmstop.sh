@@ -3,24 +3,39 @@
 
 echo "Stopping ctm-server services..."
 
-# Send Ctrl-C to each window to gracefully stop processes
-tmux send-keys -t ctm-server:rails C-c
-# tmux send-keys -t ctm-server:resque C-c
-tmux send-keys -t ctm-server:resque-debug C-c
-tmux send-keys -t ctm-server:scheduler C-c
-tmux send-keys -t ctm-server:ctm-events C-c
-tmux send-keys -t ctm-server:ctm-ai C-c
-tmux send-keys -t ctm-server:ctm-chat C-c
-tmux send-keys -t ctm-server:ctmcalls C-c
-tmux send-keys -t ctm-server:nginx C-c
-tmux send-keys -t ctm-server:pool C-c
-tmux send-keys -t ctm-server:logs C-c
-tmux send-keys -t ctm-server:ctm-ui C-c
-tmux send-keys -t ctm-server:ctm-ui-storybook C-c
-tmux send-keys -t ctm-server:askctm C-c
+# Send Ctrl-C to every window ctmstart.sh opened (and any added since) to stop processes gracefully.
+tmux list-windows -t ctm-server -F '#{window_id}' | while read -r window; do
+  tmux send-keys -t "$window" C-c
+done
 
-# Wait a moment for graceful shutdown
-sleep 4
+# Wait for every window to return to its shell and for the resque debugger port to close;
+# a lingering rdbg on 38699 breaks the next resque worker's forked jobs.
+busy_windows() {
+  tmux list-panes -s -t ctm-server -F '#{window_name} #{pane_pid} #{pane_current_command}' 2>/dev/null |
+    while read -r name pid command; do
+      case "$command" in
+        zsh|bash|sh|fish) pgrep -P "$pid" >/dev/null && echo "$name: $(pgrep -P "$pid" -l | head -1)" ;;
+        *) echo "$name: $command" ;;
+      esac
+    done
+}
+
+busy=""
+for _ in $(seq 1 30); do
+  busy=$(busy_windows)
+  if [ -z "$busy" ] && ! lsof -nP -iTCP:38699 -sTCP:LISTEN >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+if [ -n "$busy" ]; then
+  echo "Still running after 30s (closing the session anyway):"
+  echo "$busy"
+fi
+if lsof -nP -iTCP:38699 -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "Warning: port 38699 is still held; stop the leftover rdbg before the next ctmstart:"
+  lsof -nP -iTCP:38699 -sTCP:LISTEN
+fi
 
 # Stop docker containers (each repo runs its own compose)
 for dir in ctm ctm-pool askctm ctm-nginx; do
