@@ -561,30 +561,16 @@ return {
       },
     })
 
-    -- Projects opt in through sorbet/config; Ruby LSP supplies Rails features.
+    -- Capture uses local tooling; other projects opt in through sorbet/config.
+    local sorbet = require 'config.sorbet'
     local sorbet_noise_codes = { ['7003'] = true, [7003] = true }
     local publish_diagnostics = vim.lsp.handlers['textDocument/publishDiagnostics']
 
     vim.lsp.config('sorbet', {
-      cmd = function(dispatchers, config)
-        local command = { 'mise', 'exec', '--', 'bundle', 'exec', 'srb', 'tc', '--lsp' }
-        if vim.fn.executable 'watchman' == 0 then
-          table.insert(command, '--disable-watchman')
-        end
-        return vim.lsp.rpc.start(command, dispatchers, { cwd = config.root_dir, env = config.cmd_env })
-      end,
+      cmd = sorbet.cmd,
       cmd_env = { SRB_SKIP_GEM_RBIS = '1' },
       filetypes = { 'ruby' },
-      root_dir = function(bufnr, on_dir)
-        local config_file = vim.fs.find('sorbet/config', {
-          path = vim.fs.dirname(vim.api.nvim_buf_get_name(bufnr)),
-          upward = true,
-          type = 'file',
-        })[1]
-        if config_file then
-          on_dir(vim.fs.dirname(vim.fs.dirname(config_file)))
-        end
-      end,
+      root_dir = sorbet.root_dir,
       workspace_required = true,
       capabilities = vim.tbl_deep_extend('force', {}, capabilities),
       on_attach = function(_, bufnr)

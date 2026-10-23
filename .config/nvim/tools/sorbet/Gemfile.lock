@@ -1,0 +1,15 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    sorbet (0.6.13466)
+      sorbet-static (= 0.6.13466)
+    sorbet-static (0.6.13466-universal-darwin)
+
+PLATFORMS
+  universal-darwin
+
+DEPENDENCIES
+  sorbet (= 0.6.13466)
+
+BUNDLED WITH
+   2.6.9
