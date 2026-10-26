@@ -292,7 +292,7 @@ class ProvisionOptionalTests(unittest.TestCase):
     def test_runtime_commands_do_not_rewrite_global_configuration(self):
         _, calls = self.run_cli("--apply", "--feature", "runtimes")
         self.assertEqual([["mise", ["--no-config", "install", "node@24", "ruby@3.4.9"]],
-                          ["bob", ["install", "0.11.7"]], ["bob", ["use", "0.11.7"]]],
+                          ["bob", ["install", "0.12.6"]], ["bob", ["use", "0.12.6"]]],
                          [c[:2] for c in calls])
         self.assertFalse((self.home / ".config/mise/config.toml").exists())
 
@@ -423,7 +423,7 @@ class ProvisionOptionalTests(unittest.TestCase):
         self.home.mkdir()
         self.env.update(HOME=str(self.home), FIXTURE_BOB_CONFIG_SWAP="1")
         _, calls = self.run_cli("--apply", "--feature", "runtimes", code=1)
-        self.assertFalse(any(c[1] == ["use", "0.11.7"] for c in calls))
+        self.assertFalse(any(c[1] == ["use", "0.12.6"] for c in calls))
 
     def test_mise_cannot_adopt_bob_directories_or_config(self):
         for index, path in enumerate((".local/share/bob", ".local/state/dotfiles-bob")):
@@ -503,14 +503,14 @@ class ProvisionOptionalTests(unittest.TestCase):
                     self.env.pop("FIXTURE_BOB_LEAF_SWAP", None)
                     self.env[key] = relative
                     _, calls = self.run_cli("--apply", "--feature", "runtimes", code=1)
-                    self.assertFalse(any(c[1] == ["use", "0.11.7"] for c in calls))
+                    self.assertFalse(any(c[1] == ["use", "0.12.6"] for c in calls))
                     if command == "mise":
                         self.assertFalse(any(c[0] == "bob" for c in calls))
 
     def test_only_bob_use_can_create_selection_and_proxy_leaves(self):
         self.env["FIXTURE_BOB_CREATE_STAGE"] = "install"
         _, calls = self.run_cli("--apply", "--feature", "runtimes", code=1)
-        self.assertFalse(any(c[1] == ["use", "0.11.7"] for c in calls))
+        self.assertFalse(any(c[1] == ["use", "0.12.6"] for c in calls))
         temp = tempfile.TemporaryDirectory(prefix="Bob use outputs ", dir=self.root)
         self.addCleanup(temp.cleanup)
         self.home = Path(temp.name).resolve()

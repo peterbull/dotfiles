@@ -1,3 +1,5 @@
+; extends
+
 ; Hogan.compile(`...`) - inject as HTML
 (call_expression
   function: (member_expression

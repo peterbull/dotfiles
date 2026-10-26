@@ -1,32 +1,9 @@
--- HelpMeDiff: ask pi for a change, review it as a live diff, accept or reject.
---
--- Flow:
---   1. Snapshot the current buffer, write a scratch copy to a temp file.
---   2. Show that scratch copy in a right-hand split, in diff mode against the
---      real buffer (so the diff starts empty and lights up as pi edits it).
---   3. Run pi against the scratch copy with its edit tool, polling the file so
---      the diff updates live while pi works.
---   4. You accept/reject hunks with native diff keys, or bulk with A / R.
---
--- The real file is never touched until you accept something, and accepted
--- changes land in the real buffer as ordinary (undoable) edits.
---
--- Notebooks work too. An `.ipynb` buffer is a jupytext `py:percent` projection
--- of a model, not the JSON file, so the scratch is a plain `.py` of that text and
--- the write-back goes through the notebook plugin (`jupyter.replace`) instead of
--- `nvim_buf_set_lines`: cell identity, and therefore every cell's outputs, has
--- to survive the replace.
-
 local M = {}
 
 M.config = {
   pi_timeout = 180000,
   poll_ms = 400,
 }
-
-----------------------------------------------------------------------
--- Helpers
-----------------------------------------------------------------------
 
 local function notify(msg, level)
   vim.notify('HelpMeDiff: ' .. msg, level or vim.log.levels.INFO)
@@ -91,7 +68,7 @@ local function count_hunks(a, b)
   if as_text(a) == as_text(b) then
     return 0
   end
-  local ok, hunks = pcall(vim.diff, as_text(a), as_text(b), { result_type = 'indices' })
+  local ok, hunks = pcall(vim.text.diff, as_text(a), as_text(b), { result_type = 'indices' })
   if ok and type(hunks) == 'table' then
     return #hunks
   end
@@ -123,7 +100,7 @@ end
 ---@param on_change fun()
 ---@return fun()
 local function watch_file(path, on_change)
-  local uv = vim.uv or vim.loop
+  local uv = vim.uv
   local timer = uv.new_timer()
   local last = nil
   local function mtime()
@@ -200,10 +177,6 @@ local function prompt_user(title, on_submit)
 
   vim.cmd 'startinsert'
 end
-
-----------------------------------------------------------------------
--- Review session
-----------------------------------------------------------------------
 
 ---Open the scratch copy in a right-hand split, diffed against the real buffer.
 ---@param real_win number
@@ -501,10 +474,6 @@ function M.run(real_buf, real_path, real_win, cursor_line, selection, instructio
   end)
 end
 
-----------------------------------------------------------------------
--- Entry point
-----------------------------------------------------------------------
-
 function M.show()
   local real_buf = vim.api.nvim_get_current_buf()
   local real_path = vim.api.nvim_buf_get_name(real_buf)
@@ -530,10 +499,6 @@ function M.show()
     M.run(real_buf, real_path, real_win, cursor_line, selection, instruction)
   end)
 end
-
-----------------------------------------------------------------------
--- User commands
-----------------------------------------------------------------------
 
 vim.api.nvim_create_user_command('HelpMeDiff', function()
   M.show()

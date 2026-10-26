@@ -1,27 +1,27 @@
--- Set <space> as the leader key
---  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
+if vim.fn.has 'nvim-0.12' == 0 then
+  error 'This config requires Neovim 0.12 or later. Run: bob use 0.12.6'
+end
+
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
---- https://github.com/fredrikaverpil/dotfiles/blob/82b161d397d27772e2eb34422058df5fd44b06a7/nvim-fredrik/lua/fredrik/init.lua#L7
+local plugin_root = vim.fn.stdpath 'data' .. '/lazy-0.12'
+
 ---@diagnostic disable-next-line: undefined-global
 if init_debug then
-  local osvpath = vim.fn.stdpath 'data' .. '/lazy/one-small-step-for-vimkind'
+  local osvpath = plugin_root .. '/one-small-step-for-vimkind'
   vim.opt.rtp:prepend(osvpath)
   require('osv').launch { port = 8086, blocking = true }
 end
 
--- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
 require 'config.options'
 require 'config.keymaps'
 require 'config.autocmds'
 
--- [[ Install `lazy.nvim` plugin manager ]]
---    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
-local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
+local lazypath = plugin_root .. '/lazy.nvim'
+if not vim.uv.fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
   local out = vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', lazyrepo, lazypath }
   if vim.v.shell_error ~= 0 then
@@ -29,16 +29,15 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end
 
----@type vim.Option
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
--- always reset lsp log level in case i forget
-vim.lsp.set_log_level 'warn'
+vim.lsp.log.set_level 'warn'
 
 require('lazy').setup({
   { import = 'plugins' },
 }, {
+  root = plugin_root,
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
     -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
@@ -61,5 +60,3 @@ require('lazy').setup({
 })
 
 vim.lsp.inlay_hint.enable(false)
--- The line beneath this is called `modeline`. See `:help modeline`
--- vim: ts=2 sts=2 sw=2 et

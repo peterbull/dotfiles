@@ -327,7 +327,7 @@ def preflight(home, selected, repos):
             attempt(lambda path=path: guards.file(path))
         attempt(lambda: verify_bob_config(guards))
         plans.extend((["mise", "--no-config", "install", "node@24", "ruby@3.4.9"],
-                      ["bob", "install", "0.11.7"], ["bob", "use", "0.11.7"]))
+                      ["bob", "install", "0.12.6"], ["bob", "use", "0.12.6"]))
     if "node-tools" in selected:
         def node_plan():
             for path in NODE_PATHS:

@@ -23,8 +23,8 @@ local function find_cmd_dir(cmd)
 end
 
 local function run_cmd(cmd, args, for_current_line, for_current_file, error_on_failure)
-  local stdout = vim.loop.new_pipe(false)
-  local stderr = vim.loop.new_pipe(false)
+  local stdout = vim.uv.new_pipe(false)
+  local stderr = vim.uv.new_pipe(false)
   local working_dir = find_cmd_dir(cmd)
   args = args or {}
 
@@ -36,7 +36,7 @@ local function run_cmd(cmd, args, for_current_line, for_current_file, error_on_f
 
   local handle
   local pid_or_err
-  handle, pid_or_err = vim.loop.spawn(cmd, {
+  handle, pid_or_err = vim.uv.spawn(cmd, {
     args = args,
     cwd = working_dir,
     stdio = { nil, stdout, stderr },

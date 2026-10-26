@@ -12,8 +12,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   pattern = { '*.env', '.env*' },
   callback = function()
-    -- Disable all diagnostics for this buffer
-    vim.diagnostic.enable(false)
+    vim.diagnostic.enable(false, { bufnr = 0 })
   end,
 })
 

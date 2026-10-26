@@ -81,7 +81,7 @@ rewritten. Writable selection/proxy files reject symlinks, as do managed paths.
 | Owner | Shared or optional tools |
 | --- | --- |
 | Homebrew | Bash, Git tools, tmux, fzf, search tools, managers, shell plugins, Ghostty, Nerd Font, Tinycast |
-| Bob | Neovim `0.11.7`; no separate Brew Neovim |
+| Bob | Neovim `0.12.6`; no separate Brew Neovim |
 | mise | Global Node `24` and Ruby `3.4.9`; project selectors remain authoritative |
 | uv | Separate Python `3.12.13` provider venv with `pynvim==0.6.0`; project Python remains separate |
 | Explicit Git pins | Oh My Zsh, TPM and selected tmux plugins; optional editor checkouts |
@@ -241,6 +241,15 @@ Its interactive create/remove workflows remain explicit user actions. Validation
 uses stubs, not your live server or repositories.
 
 ## Neovim and local development checkouts
+
+Neovim is pinned to `0.12.6` through Bob. Treesitter uses its `main` API and
+requires Homebrew `tree-sitter-cli` >= `0.26.1`. Plugins live under
+`~/.local/share/nvim/lazy-0.12`, with parsers and queries in `site-0.12`.
+These directories keep the previous 0.11 plugin installation available while
+existing editor sessions remain open. Restart each editor to use the new runtime.
+The prior runtime remains installed; `bob use 0.11.7` and restoring the pre-migration
+config and lockfile rolls back the migration. `:Lazy update` updates the new plugin
+installation; `:TSUpdate` updates its parsers.
 
 Use `<leader>gvp` to pick an open GitHub pull request with Telescope. The picker
 groups your PRs, review requests, and repository PRs, with duplicates removed.

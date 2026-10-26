@@ -128,38 +128,94 @@ assert(loads == 1 and options.images == true)
 
     def treesitter(self, expected):
         self.lua("""
-local parsers, autocmd = {}, nil
-package.preload['nvim-treesitter.parsers'] = function() return { get_parser_configs = function() return parsers end } end
-package.preload['nvim-treesitter.configs'] = function() return { setup = function() end } end
-vim.api.nvim_create_autocmd = function(_, o) autocmd = o end
+local parsers, autocmds, installs = { lua = {}, ruby = {} }, {}, {}
+package.preload['nvim-treesitter.parsers'] = function() return parsers end
+package.preload['nvim-treesitter'] = function() return {
+  setup = function(opts) assert(opts.install_dir == vim.fn.stdpath('data') .. '/site-0.12') end,
+  install = function(langs)
+    installs[#installs + 1] = langs
+    return { await = function(_, callback) callback(nil, true) end }
+  end,
+} end
+vim.api.nvim_create_autocmd = function(event, opts) autocmds[event] = opts end
 local spec = require('plugins.treesitter')
 spec.config(nil, spec.opts)
 """ + expected)
 
-    def test_parsers_absent_no_registration_or_autocmd(self):
-        self.treesitter("assert(parsers.reef == nil and parsers.mustache == nil and autocmd == nil)")
+    def test_parsers_absent_still_enables_builtin_languages(self):
+        self.treesitter("""
+assert(parsers.reef == nil and parsers.mustache == nil and parsers.bend2 == nil)
+assert(autocmds.FileType and autocmds.User.pattern == 'TSUpdate')
+assert(vim.tbl_contains(installs[1], 'ruby') and vim.tbl_contains(installs[1], 'tsx'))
+""")
 
     def test_parser_partial_source_no_registration(self):
         self.file("peter-projects/tree-sitter-mustache/src/parser.c")
-        self.treesitter("assert(parsers.mustache == nil and autocmd == nil)")
+        self.treesitter("assert(parsers.mustache == nil)")
 
     def test_available_parser_missing_compiled_parser_is_safe(self):
         for name in ("parser.c", "scanner.c"):
             self.file("peter-projects/tree-sitter-mustache/src/" + name)
         self.treesitter("""
-assert(parsers.reef == nil and parsers.mustache ~= nil)
-assert(vim.deep_equal(autocmd.pattern, { 'mustache' }))
-local custom_autocmd = autocmd
+assert(parsers.reef == nil and parsers.mustache.install_info.path:find('tree%-sitter%-mustache'))
+vim.bo.filetype = 'mustache'
 vim.treesitter.start = function() error('Parser not compiled') end
-assert(pcall(custom_autocmd.callback, { buf = 1 }))
+assert(pcall(autocmds.FileType.callback, { buf = 1 }))
+vim.wait(100, function() return #messages > 0 end)
+assert(messages[#messages]:find('Parser not compiled'))
 local started = false
 vim.treesitter.start = function(buf) started = buf == 1 end
-custom_autocmd.callback({ buf = 1 }); assert(started)
+vim.treesitter.query.get = function() return nil end
+autocmds.FileType.callback({ buf = 1 })
+assert(vim.wait(100, function() return started end))
 """)
 
-    def test_reef_available_registers_only_reef(self):
+    def test_reef_available_survives_parser_table_reload(self):
         self.file("peter-projects/tree-sitter-reef/src/parser.c")
-        self.treesitter("assert(parsers.reef ~= nil and parsers.mustache == nil); assert(vim.deep_equal(autocmd.pattern, {'reef'}))")
+        self.treesitter("""
+assert(parsers.reef ~= nil and parsers.mustache == nil)
+parsers.reef = nil
+autocmds.User.callback()
+assert(parsers.reef.install_info.path == vim.env.HOME .. '/peter-projects/tree-sitter-reef')
+""")
+
+    def test_ruby_keeps_regex_syntax_and_its_own_indentation(self):
+        self.treesitter("""
+vim.bo.filetype, vim.bo.indentexpr = 'ruby', 'GetRubyIndent()'
+vim.treesitter.start = function() end
+vim.treesitter.query.get = function() return {} end
+autocmds.FileType.callback({ buf = 1 })
+assert(vim.wait(100, function() return vim.bo.syntax == 'ruby' end))
+assert(vim.bo.indentexpr == 'GetRubyIndent()')
+""")
+
+    def test_typescript_uses_native_lsp_and_prioritizes_tsconfig(self):
+        self.file('project/tsconfig.json')
+        self.file('project/packages/app/package.json')
+        source = self.file('project/packages/app/main.ts')
+        self.lua("""
+package.preload['lspconfig'] = function() error('Deprecated LSP API') end
+package.preload['vtsls'] = function() return { config = function() end } end
+package.preload['blink.cmp'] = function() return { get_lsp_capabilities = function() return {} end } end
+local enabled
+vim.lsp.enable = function(name) enabled = name end
+require('plugins.typescript-tools').config()
+assert(enabled == 'vtsls')
+vim.api.nvim_buf_set_name(0, """ + repr(str(source)) + """)
+local root
+vim.lsp.config.vtsls.root_dir(0, function(dir) root = dir end)
+assert(root == vim.env.HOME .. '/project')
+assert(vim.lsp.config.vtsls.settings.vtsls.autoUseWorkspaceTsdk)
+""")
+
+    def test_env_diagnostics_do_not_disable_other_buffers(self):
+        self.lua("""
+require('config.autocmds')
+local buf = vim.api.nvim_create_buf(true, false)
+vim.api.nvim_exec_autocmds('BufRead', { pattern = '.env.local' })
+assert(not vim.diagnostic.is_enabled({ bufnr = 0 }))
+assert(vim.diagnostic.is_enabled({ bufnr = buf }))
+""")
 
     def test_modern_lsp_configuration_precedes_allowlisted_enable(self):
         self.lua("""
@@ -189,6 +245,9 @@ assert(vim.deep_equal(vim.lsp.config.zls.cmd, {'zls'}))
 assert(vim.lsp.config.lua_ls.settings.Lua.diagnostics.globals[1] == 'vim')
 assert(vim.lsp.config.html.filetypes[1] == 'html')
 assert(vim.lsp.config.gopls.settings.gopls.semanticTokens == true)
+local go = vim.lsp.config.gopls.settings.gopls
+assert(go.analyses.unusedparams and go.staticcheck and go.gofumpt)
+for _, value in pairs(go.hints) do assert(type(value) == 'boolean') end
 assert(vim.lsp.config.ruby_lsp.cmd[1] == 'mise' and enabled.ruby_lsp and enabled.sorbet)
 assert(vim.lsp.config.sorbet.capabilities.textDocument.completion.completionItem.snippetSupport)
 local function initialize_ty()
