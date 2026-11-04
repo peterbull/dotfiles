@@ -34,9 +34,11 @@ start_window ctm-ui "cd ~/work/ctm/packages/ctm-ui && pnpm dev"
 start_window ctm-ui-storybook "cd ~/work/ctm/packages/ctm-ui && pnpm dev:storybook"
 start_window askctm "cd ~/work/askctm && pnpm dev"
 
-# LiveKit voice stack (~/work/conversations): server on :7880, Twilio stream bridge on :8089, testground on :3001.
+# LiveKit voice stack (~/work/conversations): server on :7880, Twilio stream bridge on :8089, testground on :3001,
+# capture control API on :8790 (Rails sends capture commands to it).
 if [ -d ~/work/conversations ]; then
   start_window livekit "cd ~/work/conversations && pnpm dev:livekit"
+  start_window conversations-api "cd ~/work/conversations/apps/api && node_modules/.bin/tsx watch src/main.ts"
   start_window livekit-transcribe "cd ~/work/conversations && pnpm dev:transcribe"
   start_window livekit-elevenlabs "cd ~/work/conversations && pnpm dev:elevenlabs"
   start_window livekit-operators "cd ~/work/conversations && pnpm dev:agent"

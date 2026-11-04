@@ -5,8 +5,18 @@ local function capture_project(root)
   return root and vim.uv.fs_stat(root .. '/app/classes/live_conversation_capture/state.rb') ~= nil
 end
 
+local function repo_config(root)
+  return root and vim.uv.fs_stat(root .. '/sorbet/config') ~= nil
+end
+
 function M.root_dir(bufnr, on_dir)
-  local path = vim.fs.dirname(vim.api.nvim_buf_get_name(bufnr))
+  -- Diffview and fugitive buffers hold older revisions; Sorbet would read them as duplicate definitions.
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name:match '^%a[%w+.-]*://' or not vim.uv.fs_stat(name) then
+    return
+  end
+
+  local path = vim.fs.dirname(name)
   local config_file = vim.fs.find('sorbet/config', { path = path, upward = true, type = 'file' })[1]
   if config_file then
     on_dir(vim.fs.dirname(vim.fs.dirname(config_file)))
@@ -22,7 +32,9 @@ end
 
 function M.cmd(dispatchers, config)
   local command = { 'mise', 'exec', '--', 'bundle', 'exec' }
-  if capture_project(config.root_dir) then
+  if repo_config(config.root_dir) then
+    vim.list_extend(command, { 'srb', 'tc', '--lsp' })
+  elseif capture_project(config.root_dir) then
     vim.list_extend(command, {
       '--gemfile',
       tools .. '/Gemfile',
