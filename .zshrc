@@ -442,11 +442,6 @@ alias ghc="create_issue_checkout_branch"
 #
 ## Gen purpose aliases 
 alias zr="source ~/.zshrc && echo 'shell session reset'"
-alias tf="tree | tee >(pbcopy)"
-alias t1="tree -L 1 | tee >(pbcopy)"
-alias t2="tree -L 2 | tee >(pbcopy)"
-alias t3="tree -L 3 | tee >(pbcopy)"
-alias t4="tree -L 4 | tee >(pbcopy)"
 
 clipdump() {
 	local dir="${1:-.}"
@@ -573,6 +568,7 @@ alias ctmstart="~/dotfiles/scripts/ctmstart.sh"
 alias ctmstop="~/dotfiles/scripts/ctmstop.sh"
 
 alias tr="tmux source-file ~/.tmux.conf"
+unalias t3 2>/dev/null
 
 export SSH_AUTH_SOCK="/Users/peterbull/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 
