@@ -3,7 +3,7 @@ import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 import { spawn } from "node:child_process";
-import { denyReason, isReadOnlyCommand, prepareProdSql, PROD_TIMEOUT_MS } from "./runme-policy.ts";
+import { denyReason, prepareProdSql, PROD_TIMEOUT_MS } from "./runme-policy.ts";
 import {
   assertLoopback,
   browserCookies,
@@ -28,7 +28,6 @@ import {
 const BRIDGE_TITLE = "runme:bridge";
 const BRIDGE_TIMEOUT_MS = 15_000;
 
-const APPROVE_LOCAL = process.env.RUNME_APPROVE_LOCAL === "1";
 const PROD_ROW_CEILING = Number(process.env.RUNME_PROD_ROW_CEILING || 1_000_000);
 const PROD_APP_DIR = "/var/www/apps/phonetrac/current";
 
@@ -102,11 +101,6 @@ async function bridge(ctx: ExtensionContext, op: string, args: object = {}, time
   return parsed.result;
 }
 
-async function approve(ctx: ExtensionContext, title: string, message: string): Promise<void> {
-  if (APPROVE_LOCAL) return;
-  if (!(await ctx.ui.confirm(title, message, { signal: ctx.signal }))) throw new Error("The user declined this trigger");
-}
-
 function started(trigger: Trigger) {
   return text({
     trigger_id: trigger.id,
@@ -125,14 +119,11 @@ function text(value: unknown) {
 export default function (pi: ExtensionAPI) {
   pi.on("session_shutdown", () => stopChildren());
 
-  pi.on("tool_call", async (event, ctx) => {
+  pi.on("tool_call", async (event) => {
     if (!isToolCallEventType("bash", event)) return;
     const command = event.input.command;
     const reason = denyReason(command);
     if (reason) return { block: true, reason: `RunMe blocked this command: ${reason}` };
-    if (APPROVE_LOCAL || isReadOnlyCommand(command)) return;
-    const approved = await ctx.ui.confirm("Run local command?", command);
-    if (!approved) return { block: true, reason: "The user declined this command" };
   });
 
   pi.registerTool({
@@ -309,7 +300,6 @@ export default function (pi: ExtensionAPI) {
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
       await assertLoopback(params.url);
-      if (params.script) await approve(ctx, "Run script in the browser?", `${params.url}\n\n${params.script}`);
       return started(await startBrowser(params, ctx.cwd));
     },
   });
@@ -329,9 +319,6 @@ export default function (pi: ExtensionAPI) {
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
       await assertLoopback(params.url);
-      if (params.method !== "GET" && params.method !== "HEAD") {
-        await approve(ctx, `Send ${params.method} to the local app?`, `${params.method} ${params.url}\n\n${params.body ?? ""}`);
-      }
       const cookie = params.browser_session ? await browserCookies(params.url) : undefined;
       return started(await startHttp({ ...params, cookie }, ctx.cwd));
     },
@@ -346,7 +333,6 @@ export default function (pi: ExtensionAPI) {
     async execute(_id, params, _signal, _onUpdate, ctx) {
       const reason = denyReason(params.command);
       if (reason) throw new Error(`RunMe blocked this command: ${reason}`);
-      if (!isReadOnlyCommand(params.command)) await approve(ctx, "Run trigger command?", params.command);
       const cursor = await logCursor(ctx.cwd);
       return started(startCommand(params.command, ctx.cwd, cursor.logPath, cursor.logOffset));
     },
@@ -362,7 +348,6 @@ export default function (pi: ExtensionAPI) {
       scenarioPath: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
-      await approve(ctx, "Place a synthetic call?", JSON.stringify(params, null, 2));
       return started(await startCall(params, ctx.cwd));
     },
   });

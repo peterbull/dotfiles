@@ -16,22 +16,11 @@ const DENY: Array<[RegExp, string]> = [
   [/\bredis-cli\b[^\n]*\b(flush\w*|del|unlink|set|expire)\b/i, "redis writes are not allowed"],
 ];
 
-const READ_ONLY_SEGMENT =
-  /^\s*(rg|grep|cat|ls|head|tail|wc|find|fd|tree|file|stat|which|echo|pwd|sed\s+-n|awk|jq|git\s+(log|show|diff|status|blame|grep|ls-files|rev-parse))\b/;
-
 export function denyReason(command: string): string | undefined {
   for (const [pattern, reason] of DENY) {
     if (pattern.test(command)) return reason;
   }
   return undefined;
-}
-
-export function isReadOnlyCommand(command: string): boolean {
-  if (/[^>]>(?!&)|>>|\btee\b|\$\(|`/.test(command)) return false;
-  return command
-    .split(/&&|\|\||[;|]/)
-    .filter((segment) => segment.trim() !== "")
-    .every((segment) => READ_ONLY_SEGMENT.test(segment));
 }
 
 export function prepareProdSql(sql: string, limit: number): string {

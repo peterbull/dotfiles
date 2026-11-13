@@ -24,7 +24,6 @@ M.config = {
   session_dir = vim.fn.stdpath 'data' .. '/runme/sessions',
   history_file = vim.fn.stdpath 'data' .. '/runme_history.json',
   history_limit = 100,
-  approve_local = false,
   prod_row_ceiling = 1000000,
   run_timeout = 1800,
 }
@@ -440,7 +439,6 @@ local function spawn(ctx, run)
     cmd = M.build_cmd(ctx, run.id),
     cwd = ctx.root,
     env = {
-      RUNME_APPROVE_LOCAL = M.config.approve_local and '1' or '0',
       RUNME_PROD_ROW_CEILING = tostring(M.config.prod_row_ceiling),
     },
     on_message = function(msg)

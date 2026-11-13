@@ -25,7 +25,7 @@ Panel (right split, `runme://panel`, the run continues when you close it):
 
 | Key | Action |
 | --- | --- |
-| `a` / `n` | Approve / decline the pending command |
+| `a` / `n` | Approve / decline a pending production query |
 | `i` | Follow-up in the same pi session |
 | `r` | Re-run the prompt as a new run |
 | `e` | Edit the result's query in a scratch buffer; `:w` re-runs it |
@@ -130,8 +130,8 @@ nvim                                                pi --mode rpc (cwd = project
 | --- | --- |
 | Tools | `edit`, `write`, `dap_*` excluded; bridge ops are a fixed handler table |
 | Bash guard | Deny: tmux kill/`set -s`, `ctmstart`/`ctmstop`, kill, `rm`, git writes, `ssh`/`scp`, `RAILS_ENV=production`, `mysql` CLI, destructive `db:` tasks, docker teardown, redis writes |
-| Local approval | Non-read-only bash needs `a` in the panel unless `approve_local = true` |
-| Triggers | Loopback hosts only (DNS must resolve to 127.0.0.0/8 or ::1). GET/HEAD and page loads run freely; other HTTP methods, browser scripts, non-read-only commands, and phone calls need approval unless `approve_local`. The synthetic-user token is read by the extension from Claude Code's MCP config (or `RUNME_SYNTHETIC_TOKEN`) and never reaches the model. Background commands are killed on pi shutdown |
+| Approval | Only production: `runme_prod_sql` waits for `a`/`n` in the panel. Local commands and triggers run without prompts; the deny list still applies |
+| Triggers | Loopback hosts only (DNS must resolve to 127.0.0.0/8 or ::1). The synthetic-user token is read by the extension from Claude Code's MCP config (or `RUNME_SYNTHETIC_TOKEN`) and never reaches the model. Background commands are killed on pi shutdown |
 | Prod | Only `runme_prod_sql`: one SELECT/WITH, no locking reads or `INTO`, `MAX_EXECUTION_TIME(3000)` hint + session limit, forced `LIMIT`, `EXPLAIN` first, refused above `prod_row_ceiling` estimated rows in one table, then explicit approval. Runs through `ssh reader` + `bin/query --no-print` per the `ctm-mysql` skill |
 | Debugger | Conditional breakpoints preferred; RunMe-owned breakpoints are removed on cancel, pi exit, new run, and `VimLeavePre`. Before handoff, cancel also resumes a suspended thread and detaches a session RunMe attached |
 | Timeouts | `run_timeout` cancels a busy agent with cleanup; an idle one only loses its pi process (a follow-up resumes the session id) |
@@ -144,7 +144,6 @@ require('config.runme').setup {
   keymap = '<leader>hr',
   pi = { executable = stdpath('config') .. '/bin/pi-mise', model = 'openai-codex/gpt-6.1-sol', thinking = 'medium' },
   pi_config_dir = '~/peter-projects/pi-config',
-  approve_local = false,
   prod_row_ceiling = 1000000,
   run_timeout = 1800,
   history_limit = 100,

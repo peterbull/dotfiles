@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { denyReason, isReadOnlyCommand, prepareProdSql } from "./runme-policy.ts";
+import { denyReason, prepareProdSql } from "./runme-policy.ts";
 
 test("deny list blocks destructive and production commands", () => {
   for (const command of [
@@ -34,16 +34,6 @@ test("deny list ignores the same words as arguments", () => {
   ]) {
     assert.equal(denyReason(command), undefined, command);
   }
-});
-
-test("read-only detection", () => {
-  assert.ok(isReadOnlyCommand("rg -n 'def call' app | head -20"));
-  assert.ok(isReadOnlyCommand("sed -n 1,40p app/models/call.rb && git diff --stat"));
-  assert.ok(!isReadOnlyCommand("bin/rails runner 'x'"));
-  assert.ok(!isReadOnlyCommand("cat a > b"));
-  assert.ok(!isReadOnlyCommand("echo $(touch x)"));
-  assert.ok(!isReadOnlyCommand("rg x | tee out"));
-  assert.ok(!isReadOnlyCommand("sed -i s/a/b/ f"));
 });
 
 test("prod SQL is single SELECT with hint and limit", () => {

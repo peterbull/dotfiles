@@ -355,7 +355,7 @@ vim.fn.writefile({
   'out({"type": "tool_execution_start", "toolCallId": "t2", "toolName": "runme_context", "args": {}})',
   'out({"type": "tool_execution_end", "toolCallId": "t2", "toolName": "runme_context", "isError": False, "result": {"content": [{"type": "text", "text": ctx["result"]["project"] + "|" + str("--exclude-tools" in args) + "|" + str("Request: newest 20" in prompt["message"])}]}})',
   'out({"type": "tool_execution_start", "toolCallId": "t3", "toolName": "runme_step", "args": {"index": 1, "status": "done"}})',
-  'out({"type": "extension_ui_request", "id": "c1", "method": "confirm", "title": "Run local command?", "message": "bin/rails runner x"})',
+  'out({"type": "extension_ui_request", "id": "c1", "method": "confirm", "title": "Run on PROD reader?", "message": "SELECT 1"})',
   'answer = read()',
   'out({"type": "tool_execution_start", "toolCallId": "t4", "toolName": "runme_result", "args": {"title": "approved=" + str(answer.get("confirmed")), "columns": ["id"], "rows": [[1], [2]], "query": "SELECT id FROM calls", "language": "sql"}})',
   'out({"type": "message_update", "assistantMessageEvent": {"type": "text_delta", "delta": "Two rows \\u2028 found."}})',
