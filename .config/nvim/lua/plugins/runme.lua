@@ -6,16 +6,18 @@ return {
     enabled = vim.fn.filereadable(directory .. '/lua/runme/init.lua') == 1,
     name = 'runme',
     main = 'runme',
-    cmd = { 'RunMe', 'RunMeHistory', 'RunMeResume', 'RunMeCancel' },
+    cmd = { 'RunMe', 'RunMeHistory', 'RunMeResume', 'RunMeCancel', 'RunMeClear', 'RunMeScratch', 'RunMeEval' },
     opts = {
       keymap = false,
       resume_keymap = false,
+      resume_hint = '<leader>hR',
       pi = {
         executable = vim.fn.stdpath 'config' .. '/bin/pi-mise',
         model = 'openai-codex/gpt-6.1-sol',
         thinking = 'medium',
       },
       pi_config_dir = '~/peter-projects/pi-config',
+      ruby = { cmd = { 'mise', 'exec', '--', 'bundle', 'exec', 'rails', 'runner' } },
     },
     keys = {
       {
@@ -41,6 +43,18 @@ return {
         end,
         mode = 'n',
         desc = 'RunMe: reopen panel',
+      },
+      {
+        '<leader>he',
+        '<cmd>RunMeScratch<cr>',
+        mode = 'n',
+        desc = 'RunMe: Ruby scratch (warm Rails)',
+      },
+      {
+        '<leader>he',
+        ':RunMeEval<cr>',
+        mode = 'x',
+        desc = 'RunMe: evaluate selection (warm Rails)',
       },
     },
   },
