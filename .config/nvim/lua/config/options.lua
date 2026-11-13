@@ -43,8 +43,8 @@ vim.o.undofile = true
 vim.o.ignorecase = true
 vim.o.smartcase = true
 
--- Keep signcolumn on by default
-vim.o.signcolumn = 'yes'
+-- Allow Git signs alongside diagnostics and bookmarks.
+vim.o.signcolumn = 'auto:1-2'
 
 -- Decrease update time
 vim.o.updatetime = 250
