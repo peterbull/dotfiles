@@ -7,6 +7,7 @@ return {
 	},
 	config = function()
 		require("bookmarks").setup({
+			db_dir = vim.env.NVIM_BOOKMARKS_DB_DIR,
 			picker = {
 				picker_backend = "telescope",
 			},

@@ -26,7 +26,11 @@ return {
     name = 'codethrasher-inline',
     main = 'codethrasher-inline',
     cmd = { 'CodeThrasherInline', 'CodeThrasherInlineDiscard' },
-    opts = {},
+    opts = {
+      pi = {
+        executable = vim.fn.stdpath 'config' .. '/bin/pi-mise',
+      },
+    },
     keys = keys,
   },
 }

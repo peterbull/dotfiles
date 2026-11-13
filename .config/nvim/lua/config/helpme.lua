@@ -13,11 +13,6 @@ No explanations, no preamble, no code blocks unless needed to answer the questio
 The user is editing the code shown in context and needs a quick answer.
 ]]
 
-----------------------------------------------------------------------
--- Helpers
-----------------------------------------------------------------------
-
----Project root of the current buffer, so pi can grep the whole codebase.
 ---@return string
 local function project_root()
   local path = vim.api.nvim_buf_get_name(0)
@@ -27,8 +22,6 @@ local function project_root()
   return vim.fs.root(path, { '.git' }) or vim.fs.dirname(path)
 end
 
----Run pi as a brief one-off session in the project root and return the answer.
----pi greps/reads the codebase itself; context here is just the cursor neighborhood.
 ---@param question string
 ---@param context { text: string }
 ---@param callback fun(answer: string|nil, err: string|nil)
@@ -41,7 +34,7 @@ local function ask_pi(question, context, callback)
     .. question
 
   local args = {
-    'pi',
+    vim.fn.stdpath 'config' .. '/bin/pi-mise',
     '-p',
     '--no-session',
     '--no-extensions',
@@ -68,14 +61,11 @@ local function ask_pi(question, context, callback)
     callback(vim.trim(obj.stdout))
   end)
 
-  -- pi runs tools, so it can take a while — but never hang the popup forever
   timer:start(M.config.pi_timeout, 0, function()
     proc:kill 'sigterm'
   end)
 end
 
----Wrap text to fit within max_width characters per line.
----Breaks at word boundaries when possible.
 ---@param text string
 ---@param max_width number
 ---@return string[]
@@ -88,7 +78,6 @@ local function wrap_text(text, max_width)
     local line = raw_line
     while #line > max_width do
       local chunk = line:sub(1, max_width)
-      -- Walk backwards to find a space boundary
       local break_at = nil
       for i = max_width, 1, -1 do
         if chunk:sub(i, i) == ' ' then
@@ -100,7 +89,6 @@ local function wrap_text(text, max_width)
         table.insert(lines, chunk:sub(1, break_at - 1))
         line = line:sub(break_at + 1)
       else
-        -- No space — hard break at max_width
         table.insert(lines, chunk)
         line = line:sub(max_width + 1)
       end
@@ -112,7 +100,6 @@ local function wrap_text(text, max_width)
   return lines
 end
 
----Read the persisted history file.
 ---@return table[]
 local function load_history()
   local f = io.open(M.config.history_file, 'r')
@@ -128,7 +115,7 @@ local function load_history()
   return {}
 end
 
----Ensure the history directory exists (safe at module load, NOT in fast event context).
+-- vim.fn filesystem calls must run outside fast event callbacks.
 local function ensure_history_dir()
   local dir = vim.fn.fnamemodify(M.config.history_file, ':h')
   if vim.fn.isdirectory(dir) == 0 then
@@ -136,7 +123,7 @@ local function ensure_history_dir()
   end
 end
 
----Persist history to disk. Avoids vim.fn calls so it is safe in fast event context.
+-- Use io to allow writes from fast event callbacks.
 ---@param history table[]
 local function save_history(history)
   local f = io.open(M.config.history_file, 'w')
@@ -147,7 +134,6 @@ local function save_history(history)
   f:close()
 end
 
----Append a Q&A entry at the front of history and trim to limit.
 ---@param entry table
 local function add_history_entry(entry)
   local history = load_history()
@@ -166,8 +152,6 @@ local function no_completion(bufnr)
   vim.bo[bufnr].complete = ''
 end
 
----Map q / <Esc> to close this popup by window handle, so it quits even if focus
----lands elsewhere. Normal + insert mode.
 ---@param bufnr number
 ---@param winnr number
 local function map_quit(bufnr, winnr)
@@ -181,7 +165,6 @@ local function map_quit(bufnr, winnr)
   vim.keymap.set('i', '<Esc>', close, { buffer = bufnr, nowait = true })
 end
 
----Truncate a string for display, adding ellipsis if cut.
 ---@param s string
 ---@param max_len number
 ---@return string
@@ -192,10 +175,6 @@ local function ellipsize(s, max_len)
   end
   return s:sub(1, max_len - 1) .. '…'
 end
-
-----------------------------------------------------------------------
--- Context capture
-----------------------------------------------------------------------
 
 ---Capture surrounding lines, cursor position, and file metadata.
 ---@return { text: string, filetype: string, filename: string, cursor_line: number }
@@ -232,11 +211,6 @@ function M.capture_context()
   }
 end
 
-----------------------------------------------------------------------
--- Response display popup
-----------------------------------------------------------------------
-
----Open a popup displaying the answer.
 ---@param answer string
 local function show_response_popup(answer)
   local popup_width = math.floor(math.min(vim.o.columns * 0.6, 80))
@@ -264,9 +238,9 @@ local function show_response_popup(answer)
     title_pos = 'center',
   })
 
-  vim.cmd 'stopinsert' -- land in the answer popup in normal mode (came from typing)
+  vim.cmd 'stopinsert'
 
-  vim.wo[win].wrap = false -- we already hard-wrapped
+  vim.wo[win].wrap = false
   vim.wo[win].cursorline = false
 
   map_quit(buf, win)
@@ -279,10 +253,6 @@ local function show_response_popup(answer)
     M.show_history()
   end, { buffer = buf, nowait = true, desc = 'View history' })
 end
-
-----------------------------------------------------------------------
--- History viewer
-----------------------------------------------------------------------
 
 ---Open a popup listing past Q&A entries.
 function M.show_history()
@@ -324,7 +294,6 @@ function M.show_history()
 
   vim.wo[win].cursorline = true
 
-  -- Press Enter on a row to view it in full
   vim.keymap.set('n', '<CR>', function()
     local idx = vim.api.nvim_win_get_cursor(win)[1]
     local entry = history[idx]
@@ -346,14 +315,10 @@ function M.show_history()
   end, { buffer = buf, nowait = true, desc = 'Delete entry' })
 end
 
-----------------------------------------------------------------------
--- Main entry point: ask a question
-----------------------------------------------------------------------
-
 ---Open the quick-question popup. When the user submits, capture context,
 ---call the LLM, and display the answer.
 function M.show()
-  -- snapshot context before we open the popup (so cursor is correct)
+  -- Capture the source buffer before the prompt takes focus.
   local context = M.capture_context()
 
   local prompt_width = math.floor(math.min(vim.o.columns * 0.5, 70))
@@ -361,7 +326,6 @@ function M.show()
   local prompt_buf = vim.api.nvim_create_buf(false, true)
   vim.bo[prompt_buf].buftype = 'prompt'
   vim.bo[prompt_buf].bufhidden = 'wipe'
-  -- No LSP here — disable all autocomplete in the prompt window
   no_completion(prompt_buf)
 
   local prompt_win = vim.api.nvim_open_win(prompt_buf, true, {
@@ -378,7 +342,6 @@ function M.show()
 
   vim.fn.prompt_setprompt(prompt_buf, '> ')
 
-  -- Helper to force-close the prompt window without save prompts
   local function close_prompt()
     if vim.api.nvim_win_is_valid(prompt_win) then
       vim.api.nvim_win_close(prompt_win, true)
@@ -393,7 +356,6 @@ function M.show()
         return
       end
 
-      -- Replace prompt buffer with "Thinking..." text
       vim.bo[prompt_buf].buftype = 'nofile'
       vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, false, { '  Thinking…' })
       vim.bo[prompt_buf].modifiable = false
@@ -401,7 +363,6 @@ function M.show()
       ask_pi(question, context, function(answer, err)
         vim.schedule(function()
           if err then
-            -- Show the error in the prompt popup
             vim.bo[prompt_buf].modifiable = true
             local error_text = 'Error: ' .. err
             vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, false, wrap_text(error_text, prompt_width - 4))
@@ -411,7 +372,6 @@ function M.show()
             return
           end
 
-          -- Save to history
           add_history_entry {
             question = question,
             answer = answer,
@@ -421,7 +381,6 @@ function M.show()
             timestamp = os.time(),
           }
 
-          -- Close the prompt popup and open the response popup
           close_prompt()
           show_response_popup(answer)
         end)
@@ -429,19 +388,13 @@ function M.show()
     end)
   end)
 
-  -- Close keymaps for the prompt buffer (normal + insert modes)
   vim.keymap.set('n', 'q', close_prompt, { buffer = prompt_buf, nowait = true })
   vim.keymap.set('n', '<Esc>', close_prompt, { buffer = prompt_buf, nowait = true })
   vim.keymap.set('i', '<Esc>', close_prompt, { buffer = prompt_buf, nowait = true })
   vim.keymap.set('i', '<C-c>', close_prompt, { buffer = prompt_buf, nowait = true })
 
-  -- Start in insert mode so user can type immediately
   vim.cmd 'startinsert'
 end
-
-----------------------------------------------------------------------
--- User commands
-----------------------------------------------------------------------
 
 vim.api.nvim_create_user_command('HelpMe', function()
   M.show()
@@ -450,10 +403,6 @@ end, { desc = 'Ask a quick programming question to the LLM' })
 vim.api.nvim_create_user_command('HelpMeHistory', function()
   M.show_history()
 end, { desc = 'Browse previous helpme Q&A history' })
-
-----------------------------------------------------------------------
--- Initialisation
-----------------------------------------------------------------------
 
 ensure_history_dir()
 

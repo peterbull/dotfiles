@@ -54,7 +54,7 @@ local function open_diff(root, repo, pr)
 						return
 					end
 					local ok, err = pcall(function()
-						require("diffview").open({ "-C=" .. root, base .. "..." .. head })
+						require("diffview").open({ "-C=" .. root, "--imply-local", base .. "..." .. head })
 					end)
 					if not ok then
 						fail(tostring(err))

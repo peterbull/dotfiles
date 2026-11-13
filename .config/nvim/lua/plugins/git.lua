@@ -273,6 +273,35 @@ return {
 		config = function()
 			require("diffview").setup({
 				use_icons = vim.g.have_nerd_font,
+				hooks = {
+					view_opened = function(view)
+						if view.bookmark_walk_owned then
+							return
+						end
+						local CDiffView = require("diffview.api.views.diff.diff_view").CDiffView
+						if not view:instanceof(CDiffView) then
+							return
+						end
+						local head = view.adapter:head_rev()
+						if not head or view.right.commit ~= head.commit then
+							return
+						end
+						-- Atlas creates custom views that bypass --imply-local.
+						local GitRev = require("diffview.vcs.adapters.git.rev").GitRev
+						local RevType = require("diffview.vcs.rev").RevType
+						view.right = GitRev(RevType.LOCAL)
+						for _, entry in ipairs(view.files.working) do
+							entry.revs.b = view.right
+							entry.layout.b.file.rev = view.right
+							entry.layout.b.file.winbar = " WORKING TREE - " .. entry.path
+						end
+					end,
+					view_closed = function(view)
+						if not view.bookmark_walk_owned then
+							cleanup_iadd()
+						end
+					end,
+				},
 				view = {
 					default = {
 						layout = "diff2_horizontal",
@@ -328,10 +357,6 @@ return {
 
 			-- Undo intent-to-add entries (see <leader>gM) when the diff view closes
 			-- or on quit, so the index is left exactly as we found it.
-			vim.api.nvim_create_autocmd("User", {
-				pattern = "DiffviewViewClosed",
-				callback = cleanup_iadd,
-			})
 			vim.api.nvim_create_autocmd("VimLeavePre", {
 				callback = cleanup_iadd,
 			})

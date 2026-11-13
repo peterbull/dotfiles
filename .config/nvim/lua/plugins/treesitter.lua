@@ -27,6 +27,7 @@ return {
       'rust',
       'python',
       'ruby',
+      'rbs',
       'go',
       'gomod',
       'gowork',

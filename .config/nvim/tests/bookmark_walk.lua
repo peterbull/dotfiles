@@ -93,7 +93,7 @@ end
 
 test('start at persisted order, preserve code focus, display the stored explanation', function()
   local win = vim.api.nvim_get_current_win()
-  assert(Walk.start 'walk-test/ordered')
+  assert(Walk.start 'walk-test/ordered', vim.inspect(notifications))
   eq(vim.api.nvim_get_current_win(), win)
   at(order[1], 1)
   vim.cmd 'redraw'

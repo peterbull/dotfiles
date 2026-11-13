@@ -343,7 +343,13 @@ return {
       },
     })
     vim.lsp.config('ruby_lsp', {
-      cmd = { 'mise', 'exec', '--', 'ruby-lsp' },
+      cmd = function(dispatchers, config)
+        -- Mason's executable can retain the Ruby version used when it was installed.
+        return vim.lsp.rpc.start({ 'mise', 'exec', '--', 'ruby', '-e', "load Gem.bin_path('ruby-lsp', 'ruby-lsp')" }, dispatchers, {
+          cwd = config.root_dir,
+          env = config.cmd_env,
+        })
+      end,
       filetypes = { 'ruby', 'eruby', 'erb' },
       root_markers = { 'Gemfile', '.ruby-version' },
       capabilities = capabilities,
@@ -389,8 +395,6 @@ return {
 
     -- Capture uses local tooling; other projects opt in through sorbet/config.
     local sorbet = require 'config.sorbet'
-    local sorbet_noise_codes = { ['7003'] = true, [7003] = true }
-    local publish_diagnostics = vim.lsp.handlers['textDocument/publishDiagnostics']
 
     vim.lsp.config('sorbet', {
       cmd = sorbet.cmd,
@@ -402,16 +406,6 @@ return {
       on_attach = function(_, bufnr)
         vim.keymap.set('n', 'K', vim.lsp.buf.hover, { buffer = bufnr, desc = 'Sorbet hover' })
       end,
-      handlers = {
-        ['textDocument/publishDiagnostics'] = function(err, result, ctx, config)
-          if result and result ~= vim.NIL and type(result.diagnostics) == 'table' then
-            result.diagnostics = vim.tbl_filter(function(d)
-              return not sorbet_noise_codes[d.code]
-            end, result.diagnostics)
-          end
-          publish_diagnostics(err, result, ctx, config)
-        end,
-      },
     })
 
     vim.lsp.enable 'ruby_lsp'

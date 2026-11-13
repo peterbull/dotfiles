@@ -1,22 +1,44 @@
 # Local Sorbet support for inline RBS
 
-Neovim loads `lua/config/sorbet.lua` alongside Ruby LSP. A project with a
-Gemfile and `app/classes/live_conversation_capture/state.rb` uses this local
-profile, including other phonetrac worktrees. Other projects can still opt in
-with their own `sorbet/config`.
+Neovim loads `lua/config/sorbet.lua` alongside Ruby LSP. Projects with a
+`sorbet/config` use their own compiler bundle and configuration. Phonetrac's
+capture profile below is a fallback for older checkouts without that config.
+Sorbet attaches only to the source paths listed in that configuration. Opening
+an unrelated file can crash Sorbet when its input directory is narrower than
+the project root. `# typed: true` and RBS annotations do not add a file to the
+configured source paths; outside them, Ruby LSP supplies hover information.
 
-The compiler bundle and `phonetrac.config` live here. Cache files go under
-Neovim's cache directory, separately for each checkout. Phonetrac needs no
-Sorbet configuration, RBI file, or compiler dependency in its Gemfile.
+Ruby LSP and Sorbet run through `mise exec` from the project root. Ruby LSP
+resolves its executable through RubyGems so a Mason wrapper cannot select an
+older Ruby. Install its gems for each Ruby version used by your projects:
 
-The profile checks the capture module with Prism, experimental RBS comment
+```sh
+mise exec -- gem install ruby-lsp ruby-lsp-rails --no-document
+```
+
+Treesitter installs both Ruby and RBS parsers. The Ruby injection query in
+`after/queries/ruby/injections.scm` joins consecutive `#:` / `#|` lines and
+excludes their prefixes, so multiline signatures receive RBS highlighting.
+Sorbet diagnostics from the project configuration are shown without filtering.
+
+The fallback compiler bundle and `phonetrac.config` live here. Cache files go under
+Neovim's cache directory, separately for each checkout. The fallback needs no
+Sorbet configuration, RBI file, or compiler dependency in the project.
+
+The fallback profile checks the capture module with Prism, experimental RBS comment
 support and one worker thread. It skips gem RBIs and suppresses missing-context
 codes 5002/7003. It provides editor types rather than a full Rails type check.
-Watchman is disabled for the separate input paths; run `:LspRestart sorbet`
+Watchman is disabled for the separate input paths; run `:lsp restart sorbet`
 after external file changes such as switching branches. Unsaved editor changes
 update types normally.
 
-From a phonetrac checkout, check types with:
+From a current phonetrac checkout, check types with:
+
+```sh
+SRB_SKIP_GEM_RBIS=1 mise exec -- bundle exec srb tc
+```
+
+For an older checkout without `sorbet/config`, use the fallback:
 
 ```sh
 SRB_SKIP_GEM_RBIS=1 mise exec -- bundle exec \

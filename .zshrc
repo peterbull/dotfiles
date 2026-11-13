@@ -632,7 +632,7 @@ unset _dotfiles_brew _dotfiles_brew_prefix
 export PATH="$HOME/bin:$PATH"
 
 # QA/debug Chrome on :9223 (chrome-devtools MCP attaches here; signed-in debug profile)
-alias chrome-debug='pkill -f "user-data-dir=$HOME/.config/chrome-debug" 2>/dev/null; sleep 1; open -na "Google Chrome" --args --remote-debugging-port=9223 --user-data-dir=$HOME/.config/chrome-debug'
+alias chrome-debug='open -gna "Google Chrome" --args --remote-debugging-port=9223 --user-data-dir="$HOME/.config/chrome-debug" --no-first-run --no-default-browser-check about:blank'
 
 # bun completions
 [[ -r "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
