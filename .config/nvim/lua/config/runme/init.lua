@@ -18,7 +18,6 @@ M.config = {
     executable = vim.fn.stdpath 'config' .. '/bin/pi-mise',
     model = 'openai-codex/gpt-6.1-sol', ---@type string|nil
     thinking = 'medium', ---@type string|nil
-    mcp = true,
   },
   pi_config_dir = vim.fn.expand '~/peter-projects/pi-config',
   extension = vim.fn.stdpath 'config' .. '/pi/runme.ts',
@@ -40,13 +39,37 @@ Workflow:
 
 Modes (the request states one; `auto` means choose the best fit):
 - query: run the detected query or an analog. For ActiveRecord in the phonetrac profile, build the exact SQL locally with `mise exec -- bundle exec rails runner 'puts <relation>.to_sql'`. Local target: run the SQL with mysql_dev. Prod target: run it only with runme_prod_sql. Bind values from the request; if none are given, pick a realistic sample and say which. Report with runme_result including columns, rows, and the exact query.
-- break: break on the cursor line unless the request names another place. Web request code attaches with runme_dap_attach target=rails; jobs and workers (`perform`, app/jobs, resque) use target=worker. Set runme_breakpoint with a condition that narrows to the named entity when possible. Trigger the flow if asked (curl to the local app, `rails runner` that calls or enqueues the code, or the synthetic-user MCP for phone calls); otherwise tell the user to trigger it. A hit breakpoint blocks the triggering request, so start triggers in the background (for example `(curl -s --max-time 600 ... >/dev/null 2>&1 &)`). Then runme_wait_stopped, optionally runme_dap_eval the values the user asked about, then runme_handoff. Never continue, step, or detach after handoff.
+- break: stop the debugger where the user points, trigger that code yourself, prove the stop is the intended one, then hand off. Follow the break playbook below.
 - observe: run the code locally and report output, return values, and executed SQL. In the phonetrac profile use `mise exec -- bundle exec rails runner` with the script wrapped in `ActiveRecord::Base.transaction do ... raise ActiveRecord::Rollback end` unless the user says to commit, and subscribe to `sql.active_record` to list executed SQL. In other projects run the narrowest test or command for the filetype. Observe never runs in prod.
+
+Break playbook:
+1. Place. Break on the cursor line unless the request names another place. runme_breakpoint reports `will_stop`; when it is false, move the breakpoint to the suggested executable line before doing anything else. Add a `condition` that narrows to the entity the user named; leave it out when no safe expression exists.
+2. Choose the process. Request-handling code (controllers, GraphQL, webhooks, and models or services they call) runs in rails: runme_dap_attach target=rails. Resque jobs (app/jobs, `perform`) run in the debugged worker: target=worker, and the job must be enqueued (`Resque.enqueue` / `perform_later`) so that worker runs it. `perform_now` inside `rails runner` runs in the runner process, which has no debugger.
+3. Find the real entry point. Read config/routes.rb or the controller, GraphQL type, or job to learn the URL, HTTP method, params, and auth the code path needs.
+4. Trigger it yourself with the closest real entry point:
+   - A page, or code reached from a page load: runme_trigger_browser with the local app URL (https://app.ctmdev.us/...). The agent Chrome is logged in.
+   - An XHR, JSON, or GraphQL call that the app's frontend makes: runme_trigger_browser with `script` that calls fetch() from an app page, so the session cookie and CSRF token apply (read the token from `document.querySelector('meta[name=csrf-token]')`).
+   - An API endpoint, webhook, or health check: runme_trigger_http. API keys use basic_auth (find a local account's key with mysql_dev); session-authenticated endpoints can use browser_session=true.
+   - A job, rake task, or runner path: runme_trigger_command.
+   - Call routing, IVR, VoiceAI, or Twilio webhooks: runme_trigger_call.
+   Make the trigger match the breakpoint condition (same account, record, or params).
+5. Verify. A trigger is not done until you know what it did:
+   a. Call runme_wait_stopped right after the trigger: 30-60 s for browser and HTTP triggers, longer for jobs and calls.
+   b. On a stop, check `hit`. `runme` means your breakpoint fired: confirm it is the intended request with runme_dap_eval (the condition, params, ids, current user or account). `user` or `other` (another breakpoint, an exception) means it stopped elsewhere: report where, and use runme_dap_continue only when the stop is unrelated and your breakpoint is still ahead.
+   c. On a timeout, call runme_trigger_status and read the status code, the redirect location, and `rails_log_since_trigger`:
+      - No `Started` line: the request never reached the debugged process (wrong host or port, a browser error, a job not enqueued, or the wrong worker).
+      - `Processing by` a different Controller#action: wrong route; fix the URL or method.
+      - 401, a redirect to sign-in, `Filter chain halted`, or a CSRF error: an auth problem; switch to the browser session or supply credentials.
+      - The right action, `Completed 2xx`, and no stop: the line was not reached (a branch not taken) or the condition was false. Retry once without the condition, or with a breakpoint at the first line of the action, to prove entry.
+      - Still pending with no completion: something else holds it (check runme_dap_status).
+   d. Retry at most twice. State the hypothesis each retry tests. If it still does not stop, report what you proved, clear your breakpoints with runme_breakpoint_clear, and stop.
+6. Hand off only after a verified `runme` stop. Call runme_handoff with where it stopped, which trigger caused it, and the key values. Never continue, step, or detach after handoff. The triggering request stays held until the user continues.
 
 Rules:
 - Target prod allows only runme_prod_sql. Nothing else touches production.
 - Ruby and Rails commands run through `mise exec -- bundle exec`, never rvm.
 - If a dev service you need is down (tmux session ctm-server, windows rails and resque-debug), say so and stop. Never start or stop services.
+- Trigger with the runme_trigger_* tools, not bash: they run in the background, stay on the local stack, and record what happened.
 - rdbg accepts one debugger client: use only the runme_* debugger tools.
 ]]
 
@@ -187,9 +210,6 @@ function M.build_cmd(ctx, session_id)
     '-e',
     cfg.extension,
   }
-  if not cfg.pi.mcp then
-    table.insert(cmd, '--no-mcp')
-  end
   if cfg.pi.model then
     vim.list_extend(cmd, { '--model', cfg.pi.model })
   end
@@ -203,7 +223,7 @@ function M.build_cmd(ctx, session_id)
     end
   end
   if ctx.project == 'phonetrac' then
-    for _, skill in ipairs { 'ctm-mysql', 'ctm-query-review', 'ctm-elasticsearch', 'ctm-redis', 'synthetic-user', 'phonetrac-patterns' } do
+    for _, skill in ipairs { 'ctm-mysql', 'ctm-query-review', 'ctm-elasticsearch', 'ctm-redis', 'phonetrac-patterns' } do
       local path = pc .. '/skills/' .. skill
       if exists(path .. '/SKILL.md') then
         vim.list_extend(cmd, { '--skill', path })

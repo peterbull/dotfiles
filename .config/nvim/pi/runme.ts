@@ -4,6 +4,22 @@ import { StringEnum } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 import { spawn } from "node:child_process";
 import { denyReason, isReadOnlyCommand, prepareProdSql, PROD_TIMEOUT_MS } from "./runme-policy.ts";
+import {
+  assertLoopback,
+  browserCookies,
+  executableLines,
+  getTrigger,
+  lineCheck,
+  logCursor,
+  refreshCall,
+  startBrowser,
+  startCall,
+  startCommand,
+  startHttp,
+  stopChildren,
+  triggerReport,
+  type Trigger,
+} from "./runme-triggers.ts";
 
 // RunMe's Neovim panel owns this process over `pi --mode rpc`. Bridge calls ride
 // the extension UI sub-protocol: an `input` dialog titled BRIDGE_TITLE carries a
@@ -86,6 +102,19 @@ async function bridge(ctx: ExtensionContext, op: string, args: object = {}, time
   return parsed.result;
 }
 
+async function approve(ctx: ExtensionContext, title: string, message: string): Promise<void> {
+  if (APPROVE_LOCAL) return;
+  if (!(await ctx.ui.confirm(title, message, { signal: ctx.signal }))) throw new Error("The user declined this trigger");
+}
+
+function started(trigger: Trigger) {
+  return text({
+    trigger_id: trigger.id,
+    label: trigger.label,
+    next: "Call runme_wait_stopped now; if it times out, call runme_trigger_status with this trigger_id to diagnose.",
+  });
+}
+
 function text(value: unknown) {
   return {
     content: [{ type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }],
@@ -94,6 +123,8 @@ function text(value: unknown) {
 }
 
 export default function (pi: ExtensionAPI) {
+  pi.on("session_shutdown", () => stopChildren());
+
   pi.on("tool_call", async (event, ctx) => {
     if (!isToolCallEventType("bash", event)) return;
     const command = event.input.command;
@@ -195,7 +226,21 @@ export default function (pi: ExtensionAPI) {
       log_message: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
-      return text(await bridge(ctx, "breakpoint_set", params));
+      const result = await bridge(ctx, "breakpoint_set", params);
+      if (String(result.file).endsWith(".rb")) {
+        try {
+          const check = lineCheck(await executableLines(result.file, ctx.cwd), result.line);
+          Object.assign(result, check, { will_stop: check.line_executable });
+          if (!check.line_executable) {
+            await bridge(ctx, "breakpoint_remove", { file: result.file, line: result.line });
+            result.set = false;
+            result.warning = `Line ${result.line} has no executable code, so the debugger cannot stop on it; RunMe removed it. Set it on line ${check.next_executable_line ?? check.previous_executable_line} (or another line in the same method).`;
+          }
+        } catch (error) {
+          result.line_check_error = (error as Error).message;
+        }
+      }
+      return text(result);
     },
   });
 
@@ -239,6 +284,100 @@ export default function (pi: ExtensionAPI) {
     async execute(_id, params, _signal, _onUpdate, ctx) {
       await bridge(ctx, "handoff", params);
       return { ...text("handed off to the user"), terminate: true };
+    },
+  });
+
+  pi.registerTool({
+    name: "runme_dap_continue",
+    label: "Continue",
+    description:
+      "Resume a thread that stopped somewhere other than your breakpoint (a user breakpoint or an exception) so the flow can reach your breakpoint. Refused after runme_handoff.",
+    parameters: Type.Object({ reason: Type.String() }),
+    async execute(_id, params, _signal, _onUpdate, ctx) {
+      return text(await bridge(ctx, "continue", params));
+    },
+  });
+
+  pi.registerTool({
+    name: "runme_trigger_browser",
+    label: "Trigger: browser",
+    description:
+      "Open a local app URL in the dedicated, logged-in agent Chrome (background tab, reused across calls), or run `script` (an async function body, e.g. a fetch() to a JSON/GraphQL endpoint) inside a page at that URL's origin so it uses the browser session and CSRF token. Returns at once with a trigger_id; the request may be held by the breakpoint.",
+    parameters: Type.Object({
+      url: Type.String({ description: "Local app URL, e.g. https://app.ctmdev.us/dashboard" }),
+      script: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params, _signal, _onUpdate, ctx) {
+      await assertLoopback(params.url);
+      if (params.script) await approve(ctx, "Run script in the browser?", `${params.url}\n\n${params.script}`);
+      return started(await startBrowser(params, ctx.cwd));
+    },
+  });
+
+  pi.registerTool({
+    name: "runme_trigger_http",
+    label: "Trigger: HTTP",
+    description:
+      "Send one HTTP request to the local stack in the background (loopback hosts only, redirects not followed). Use basic_auth for API keys, or browser_session=true to send the agent Chrome's cookies for session-authenticated endpoints. Returns at once with a trigger_id.",
+    parameters: Type.Object({
+      method: StringEnum(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] as const),
+      url: Type.String(),
+      headers: Type.Optional(Type.Record(Type.String(), Type.String())),
+      body: Type.Optional(Type.String()),
+      basic_auth: Type.Optional(Type.Object({ user: Type.String(), password: Type.String() })),
+      browser_session: Type.Optional(Type.Boolean()),
+    }),
+    async execute(_id, params, _signal, _onUpdate, ctx) {
+      await assertLoopback(params.url);
+      if (params.method !== "GET" && params.method !== "HEAD") {
+        await approve(ctx, `Send ${params.method} to the local app?`, `${params.method} ${params.url}\n\n${params.body ?? ""}`);
+      }
+      const cookie = params.browser_session ? await browserCookies(params.url) : undefined;
+      return started(await startHttp({ ...params, cookie }, ctx.cwd));
+    },
+  });
+
+  pi.registerTool({
+    name: "runme_trigger_command",
+    label: "Trigger: command",
+    description:
+      "Start a local shell command in the background, e.g. `mise exec -- bundle exec rails runner 'Resque.enqueue(SomeJob, 1)'` to have the debugged resque worker run a job. Same safety rules as bash. Returns at once with a trigger_id.",
+    parameters: Type.Object({ command: Type.String() }),
+    async execute(_id, params, _signal, _onUpdate, ctx) {
+      const reason = denyReason(params.command);
+      if (reason) throw new Error(`RunMe blocked this command: ${reason}`);
+      if (!isReadOnlyCommand(params.command)) await approve(ctx, "Run trigger command?", params.command);
+      const cursor = await logCursor(ctx.cwd);
+      return started(startCommand(params.command, ctx.cwd, cursor.logPath, cursor.logOffset));
+    },
+  });
+
+  pi.registerTool({
+    name: "runme_trigger_call",
+    label: "Trigger: phone call",
+    description:
+      "Place a simulated customer call through the local synthetic-user runner (same arguments as its synthetic_run: `call` with prompt, firstMessage, mode phone|room, conversationSeconds, persona, environment; or `scenarioPath`). Use for call routing, IVR, VoiceAI and Twilio webhook code. Returns a trigger_id.",
+    parameters: Type.Object({
+      call: Type.Optional(Type.Record(Type.String(), Type.Any())),
+      scenarioPath: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params, _signal, _onUpdate, ctx) {
+      await approve(ctx, "Place a synthetic call?", JSON.stringify(params, null, 2));
+      return started(await startCall(params, ctx.cwd));
+    },
+  });
+
+  pi.registerTool({
+    name: "runme_trigger_status",
+    label: "Trigger status",
+    description:
+      "Report a trigger: pending/done/failed, HTTP or document status, redirect location, script or command output, call status, and the Rails development.log lines written since the trigger (Started / Processing by / Completed / errors). Use it to prove whether the request reached the debugged process and which action handled it.",
+    parameters: Type.Object({ trigger_id: Type.String() }),
+    async execute(_id, params) {
+      const trigger = getTrigger(params.trigger_id);
+      if (!trigger) throw new Error(`unknown trigger ${params.trigger_id}`);
+      await refreshCall(trigger);
+      return text(await triggerReport(trigger));
     },
   });
 

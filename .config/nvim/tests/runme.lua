@@ -142,8 +142,16 @@ setmetatable(fake.listeners.after, {
 })
 local function make_session(port)
   local session = { config = { port = port, type = 'ruby' }, sent = {}, closed = false }
-  function session:set_breakpoints(bps)
+  function session:set_breakpoints(bps, on_done)
     table.insert(self.sent, bps)
+    for bufnr, list in pairs(bps) do
+      for _, bp in ipairs(list) do
+        breakpoints.set_state(bufnr, { line = bp.line, verified = true })
+      end
+    end
+    if on_done then
+      on_done()
+    end
   end
   function session:request(command, args, cb)
     table.insert(fake.requests, { command = command, args = args })
@@ -194,6 +202,9 @@ local function call(op, args)
   Bridge.handle({ op = op, args = args }, function(ok, value)
     result = { ok = ok, value = value }
   end)
+  vim.wait(2000, function()
+    return result ~= nil
+  end, 5)
   return result
 end
 
@@ -207,14 +218,33 @@ test('bridge: breakpoints are owned, synced, and cleared without touching user b
   eq(r.value.sent_to_session, false, 'no session yet')
   local bps = breakpoints.get(bufnr)[bufnr]
   eq(#bps, 2, 'user + runme breakpoint')
+  eq(call('breakpoint_set', { file = 'call.rb', line = 12 }).ok, true, 'set to remove')
+  eq(call('breakpoint_remove', { file = 'call.rb', line = 12 }).value.removed.line, 12, 'removed one owned breakpoint')
+  eq(#breakpoints.get(bufnr)[bufnr], 2, 'removal kept the others')
+  eq(call('breakpoint_remove', { file = 'call.rb', line = 11 }).ok, false, 'user breakpoint is not RunMe-owned')
   eq(call('breakpoint_set', { file = 'call.rb', line = 99 }).ok, false, 'out of range')
   eq(call('breakpoint_set', { file = 'missing.rb', line = 1 }).ok, false, 'missing file')
 
+  Bridge.port_holder = function()
+    return { pid = 4242, command = 'nvim' }
+  end
+  local held = call('dap_attach', { target = 'rails' })
+  eq(held.ok, false, 'held port fails fast')
+  assert(held.value:find('nvim pid 4242', 1, true), held.value)
+  Bridge.port_holder = function()
+    return nil
+  end
   eq(call('dap_attach', { target = 'rails' }).value.status, 'attached', 'attach')
+  local verified = call('breakpoint_set', { file = ruby_file, line = 5 })
+  eq(verified.value.sent_to_session, true, 'sent once attached')
+  eq(verified.value.adapter_verified, true, 'adapter state reported')
+  local status = call('dap_status', {})
+  eq(#status.value.runme_breakpoints, 2, 'status lists owned breakpoints')
+  eq(status.value.runme_breakpoints[2].adapter_verified, true, 'status carries verification')
   eq(call('dap_attach', { target = 'rails' }).value.status, 'already attached', 'idempotent attach')
   eq(call('dap_attach', { target = 'nope' }).ok, false, 'bad target')
 
-  eq(call('breakpoint_clear', {}).value.removed, 1, 'cleared owned')
+  eq(call('breakpoint_clear', {}).value.removed, 2, 'cleared owned')
   bps = breakpoints.get(bufnr)[bufnr]
   eq(#bps, 1, 'user breakpoint kept')
   eq(bps[1].line, 11, 'user breakpoint line')
@@ -247,6 +277,14 @@ test('bridge: wait_stopped, eval, handoff, and cleanup', function()
   end, 'stop')
   eq(waited.ok, true, 'stopped ok')
   eq({ waited.value.line, waited.value.reason, waited.value.thread }, { 4, 'breakpoint', 7 }, 'stop frame')
+  eq(waited.value.hit, 'other', 'stop without an owned breakpoint is classified other')
+  call('breakpoint_set', { file = ruby_file, line = 4 })
+  eq(Bridge.classify_stop(ruby_file, 4), 'runme', 'owned breakpoint hit')
+  eq(Bridge.classify_stop(ruby_file, 9), 'other', 'unrelated line')
+  local bufnr = vim.fn.bufadd(ruby_file)
+  breakpoints.set({}, bufnr, 10)
+  eq(Bridge.classify_stop(ruby_file, 10), 'user', 'user breakpoint hit')
+  breakpoints.remove(bufnr, 10)
 
   local evaluated
   Bridge.handle({ op = 'dap_eval', args = { expression = 'account.id' } }, function(ok, value)
@@ -257,10 +295,14 @@ test('bridge: wait_stopped, eval, handoff, and cleanup', function()
   end, 'eval')
   eq(evaluated.value.result, '42', 'eval result')
 
+  fake.requests = {}
+  eq(call('continue', { reason = 'unrelated stop' }).value.continued, 7, 'continue before handoff')
+  eq(fake.requests[1].command, 'continue', 'continue request sent')
+
   Bridge.state.attached_session = session
   fake.requests = {}
   local actions = Bridge.cleanup()
-  eq(actions, { 'resumed suspended thread', 'detached debugger' }, 'cleanup before handoff')
+  eq(actions, { 'removed 1 breakpoint(s)', 'resumed suspended thread', 'detached debugger' }, 'cleanup before handoff')
   eq(fake.requests[1].command, 'continue', 'continued')
   eq(fake.requests[1].args.threadId, 7, 'continued the stopped thread')
 
@@ -276,6 +318,7 @@ test('bridge: wait_stopped, eval, handoff, and cleanup', function()
   eq(handed.message, 'stopped for you', 'handoff message')
   eq(handed.frame.line, 4, 'handoff frame')
   fake.requests = {}
+  eq(call('continue', { reason = 'x' }).ok, false, 'continue refused after handoff')
   eq(Bridge.cleanup(), {}, 'cleanup after handoff leaves the session alone')
   eq(#fake.requests, 0, 'no continue/disconnect after handoff')
   session.stopped_thread_id = nil
@@ -334,7 +377,7 @@ test('end to end: prompt, bridge reply, approval, result, follow-up, history, ca
   local history = tmp .. '/runme-history-' .. vim.fn.getpid() .. '.json'
   RunMe.setup {
     keymap = '<leader>hr',
-    pi = { executable = runner, mcp = false },
+    pi = { executable = runner },
     pi_config_dir = tmp .. '/no-pi-config',
     session_dir = tmp .. '/runme-sessions',
     history_file = history,

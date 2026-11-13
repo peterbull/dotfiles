@@ -60,11 +60,83 @@ local function resolve(path)
 end
 
 ---@param bufnr integer
-local function sync_breakpoints(bufnr)
+---@param on_done? fun()
+local function sync_breakpoints(bufnr, on_done)
   local bps = require('dap.breakpoints').get(bufnr)[bufnr] or {}
-  for _, session in pairs(dap().sessions()) do
-    session:set_breakpoints { [bufnr] = bps }
+  local pending = vim.tbl_count(dap().sessions())
+  if pending == 0 then
+    if on_done then
+      on_done()
+    end
+    return
   end
+  for _, session in pairs(dap().sessions()) do
+    session:set_breakpoints({ [bufnr] = bps }, function()
+      pending = pending - 1
+      if pending == 0 and on_done then
+        on_done()
+      end
+    end)
+  end
+end
+
+---@param bufnr integer
+---@param line integer
+---@return table|nil
+local function breakpoint_state(bufnr, line)
+  for _, bp in ipairs(require('dap.breakpoints').get(bufnr)[bufnr] or {}) do
+    if bp.line == line then
+      return bp.state
+    end
+  end
+  return nil
+end
+
+---@param file string|nil
+---@param line integer|nil
+---@return 'runme'|'user'|'other'
+function M.classify_stop(file, line)
+  if not (file and line) then
+    return 'other'
+  end
+  for _, bp in ipairs(M.state.owned) do
+    if vim.api.nvim_buf_is_valid(bp.bufnr) and vim.api.nvim_buf_get_name(bp.bufnr) == file and bp.line == line then
+      return 'runme'
+    end
+  end
+  local bufnr = vim.fn.bufnr(file)
+  if bufnr ~= -1 then
+    for _, bp in ipairs(require('dap.breakpoints').get(bufnr)[bufnr] or {}) do
+      if bp.line == line then
+        return 'user'
+      end
+    end
+  end
+  return 'other'
+end
+
+---@return table[]
+local function owned_list()
+  return vim.tbl_map(function(bp)
+    local bp_state = vim.api.nvim_buf_is_valid(bp.bufnr) and breakpoint_state(bp.bufnr, bp.line) or nil
+    return {
+      file = vim.api.nvim_buf_get_name(bp.bufnr),
+      line = bp.line,
+      adapter_verified = bp_state and bp_state.verified,
+      adapter_message = bp_state and bp_state.message,
+    }
+  end, M.state.owned)
+end
+
+---@param frame table|nil
+---@param extra table
+---@return table
+local function stop_report(frame, extra)
+  frame = frame or {}
+  return vim.tbl_extend('force', frame, extra, {
+    hit = M.classify_stop(frame.file, frame.line),
+    runme_breakpoints = owned_list(),
+  })
 end
 
 ---@param session table
@@ -110,8 +182,7 @@ local function install_listeners()
     end
     top_frame(session, body.threadId, function(frame)
       vim.schedule(function()
-        local result = vim.tbl_extend('force', frame or {}, { reason = body.reason, thread = body.threadId })
-        resolve_waiters(true, result)
+        resolve_waiters(true, stop_report(frame, { reason = body.reason, thread = body.threadId, description = body.description or body.text }))
       end)
     end)
   end
@@ -138,9 +209,8 @@ end
 
 function handlers.dap_status(_, reply)
   local state = Context.dap_state()
-  state.runme_breakpoints = vim.tbl_map(function(bp)
-    return { file = vim.api.nvim_buf_get_name(bp.bufnr), line = bp.line }
-  end, M.state.owned)
+  state.runme_breakpoints = owned_list()
+  state.handed_off = M.state.handed_off
   reply(true, state)
 end
 
@@ -150,6 +220,30 @@ local function session_on_port(port)
   for _, session in pairs(dap().sessions()) do
     if tonumber(session.config.port) == port then
       return session
+    end
+  end
+  return nil
+end
+
+--- rdbg serves one DAP client; a second attach hangs instead of failing, so find
+--- an existing client first.
+---@param port integer
+---@return { pid: integer, command: string }|nil
+function M.port_holder(port)
+  local result = vim.system({ 'lsof', '-nP', '-iTCP:' .. port, '-sTCP:ESTABLISHED', '-Fpcn' }, { text = true }):wait(3000)
+  if result.code ~= 0 or not result.stdout then
+    return nil
+  end
+  local pid, command
+  local suffix = ':' .. port
+  for line in result.stdout:gmatch '[^\n]+' do
+    local tag, value = line:sub(1, 1), line:sub(2)
+    if tag == 'p' then
+      pid = tonumber(value)
+    elseif tag == 'c' then
+      command = value
+    elseif tag == 'n' and value:sub(-#suffix) == suffix and value:find('->', 1, true) and pid ~= vim.fn.getpid() then
+      return { pid = pid, command = command }
     end
   end
   return nil
@@ -165,6 +259,19 @@ function handlers.dap_attach(args, reply)
   local existing = session_on_port(port)
   if existing then
     reply(true, { port = port, status = 'already attached' })
+    return
+  end
+  local holder = M.port_holder(port)
+  if holder then
+    reply(
+      false,
+      string.format(
+        'rdbg on port %d already has a debugger client (%s pid %d). rdbg accepts one client: run RunMe from that editor, or disconnect it there, then retry.',
+        port,
+        holder.command or '?',
+        holder.pid
+      )
+    )
     return
   end
   local config
@@ -206,6 +313,10 @@ function handlers.dap_attach(args, reply)
     end
   end
   timer = after(M.attach_timeout_ms, function()
+    local stuck = session_on_port(port)
+    if stuck then
+      stuck:close()
+    end
     finish(false, string.format('could not attach to rdbg on port %d; is the process running under rdbg?', port))
   end)
   dap().run(config, { new = true })
@@ -231,14 +342,29 @@ function handlers.breakpoint_set(args, reply)
     log_message = args.log_message,
   }, bufnr, line)
   table.insert(M.state.owned, { bufnr = bufnr, line = line })
-  sync_breakpoints(bufnr)
   local attached = next(dap().sessions()) ~= nil
-  reply(true, {
-    file = path,
-    line = line,
-    code = vim.trim(vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1] or ''),
-    sent_to_session = attached,
-  })
+  local timer, responded
+  local function respond()
+    if responded then
+      return
+    end
+    responded = true
+    if timer then
+      close_timer(timer)
+    end
+    local bp_state = breakpoint_state(bufnr, line)
+    reply(true, {
+      file = path,
+      line = line,
+      condition = args.condition,
+      code = vim.trim(vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1] or ''),
+      sent_to_session = attached,
+      adapter_verified = bp_state and bp_state.verified,
+      adapter_message = bp_state and bp_state.message,
+    })
+  end
+  timer = after(5000, respond)
+  sync_breakpoints(bufnr, vim.schedule_wrap(respond))
 end
 
 ---@return integer removed
@@ -263,6 +389,21 @@ function M.clear_owned()
   return removed
 end
 
+function handlers.breakpoint_remove(args, reply)
+  local path = resolve(args.file)
+  local line = tonumber(args.line)
+  for i, bp in ipairs(M.state.owned) do
+    if vim.api.nvim_buf_is_valid(bp.bufnr) and vim.api.nvim_buf_get_name(bp.bufnr) == path and bp.line == line then
+      require('dap.breakpoints').remove(bp.bufnr, line)
+      table.remove(M.state.owned, i)
+      sync_breakpoints(bp.bufnr)
+      reply(true, { removed = { file = path, line = line } })
+      return
+    end
+  end
+  reply(false, string.format('no RunMe breakpoint at %s:%s', path, tostring(args.line)))
+end
+
 function handlers.breakpoint_clear(_, reply)
   reply(true, { removed = M.clear_owned() })
 end
@@ -273,7 +414,7 @@ function handlers.wait_stopped(args, reply)
   if session and session.stopped_thread_id then
     top_frame(session, session.stopped_thread_id, function(frame)
       vim.schedule(function()
-        reply(true, vim.tbl_extend('force', frame or {}, { reason = 'already stopped' }))
+        reply(true, stop_report(frame, { reason = 'already stopped', thread = session.stopped_thread_id }))
       end)
     end)
     return
@@ -287,9 +428,31 @@ function handlers.wait_stopped(args, reply)
     M.state.waiters = vim.tbl_filter(function(w)
       return w ~= waiter
     end, M.state.waiters)
-    reply(false, 'timed out waiting for a breakpoint hit')
+    reply(false, 'timed out waiting for a breakpoint hit; call runme_trigger_status to see whether the trigger reached the debugged process')
   end)
   table.insert(M.state.waiters, waiter)
+end
+
+function handlers.continue(args, reply)
+  if M.state.handed_off then
+    reply(false, 'the debugger belongs to the user after handoff')
+    return
+  end
+  local session = dap().session()
+  if not (session and session.stopped_thread_id) then
+    reply(false, 'debugger is not stopped')
+    return
+  end
+  local thread = session.stopped_thread_id
+  session:request('continue', { threadId = thread }, function(err)
+    vim.schedule(function()
+      if err then
+        reply(false, err.message or vim.inspect(err))
+      else
+        reply(true, { continued = thread, reason = args.reason })
+      end
+    end)
+  end)
 end
 
 function handlers.dap_eval(args, reply)
