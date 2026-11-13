@@ -16,7 +16,7 @@ M.config = {
   keymap = '<leader>hr',
   pi = {
     executable = vim.fn.stdpath 'config' .. '/bin/pi-mise',
-    model = nil, ---@type string|nil
+    model = 'openai-codex/gpt-6.1-sol', ---@type string|nil
     thinking = 'medium', ---@type string|nil
     mcp = true,
   },

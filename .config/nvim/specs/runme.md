@@ -116,7 +116,7 @@ nvim                                                pi --mode rpc (cwd = project
 ```lua
 require('config.runme').setup {
   keymap = '<leader>hr',
-  pi = { executable = stdpath('config') .. '/bin/pi-mise', model = nil, thinking = 'medium', mcp = true },
+  pi = { executable = stdpath('config') .. '/bin/pi-mise', model = 'openai-codex/gpt-6.1-sol', thinking = 'medium', mcp = true },
   pi_config_dir = '~/peter-projects/pi-config',
   approve_local = false,
   prod_row_ceiling = 1000000,
@@ -131,7 +131,7 @@ require('config.runme').setup {
    `rails runner`, synthetic-user) or asks you to trigger.
 2. The agent may `runme_dap_eval` in your session before handoff, never after.
 3. Prod: MySQL through `runme_prod_sql`. ES/Redis prod reads are not exposed yet.
-4. Model: pi's default, `thinking = 'medium'`; override with `pi.model`.
+4. Model: Codex (`openai-codex/gpt-6.1-sol`), pinned in config, `thinking = 'medium'`.
 5. Location: this config, with the pi extension in `pi/` so both sides version together.
 
 ## Verification (2026-11-13)
