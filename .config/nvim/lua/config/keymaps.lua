@@ -133,8 +133,6 @@ vim.keymap.set('n', '<leader>hh', function()
   require('config.helpme').show_history()
 end, {})
 
-require('config.runme').setup()
-
 vim.keymap.set('v', ':s', ':s/\\%V', { desc = 'Substitute strictly inside visual selection' })
 
 -- Open the current HTML buffer in the system default app (i.e. the browser).
