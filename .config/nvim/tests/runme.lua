@@ -384,6 +384,7 @@ test('end to end: prompt, bridge reply, approval, result, follow-up, history, ca
   }
   assert(vim.fn.exists ':RunMe' == 2, 'command defined')
   eq(vim.fn.maparg('<leader>hr', 'n') ~= '', true, 'keymap defined')
+  eq(vim.fn.maparg('<leader>hR', 'n') ~= '', true, 'resume keymap defined')
 
   vim.cmd.edit(ruby_file)
   vim.api.nvim_win_set_cursor(0, { 4, 22 })

@@ -14,6 +14,7 @@ local PREFIX_MODE = { ['?'] = 'query', ['!'] = 'break', ['>'] = 'observe' }
 ---@class runme.Config
 M.config = {
   keymap = '<leader>hr',
+  resume_keymap = '<leader>hR',
   pi = {
     executable = vim.fn.stdpath 'config' .. '/bin/pi-mise',
     model = 'openai-codex/gpt-6.1-sol', ---@type string|nil
@@ -911,6 +912,9 @@ function M.setup(opts)
       M.show()
     end, { desc = 'RunMe: run / query / break here' })
     vim.keymap.set('x', M.config.keymap, M.visual, { desc = 'RunMe: run / query the selection' })
+  end
+  if M.config.resume_keymap then
+    vim.keymap.set('n', M.config.resume_keymap, M.resume, { desc = 'RunMe: reopen panel' })
   end
 
   vim.api.nvim_create_autocmd('VimLeavePre', {

@@ -13,7 +13,7 @@ nvim-dap session for a breakpoint. RunMe never edits source files.
 | `<leader>hr` (n) | Prompt with the cursor context |
 | `<leader>hr` (x), `:'<,'>RunMe` | The selection is the subject |
 | `:RunMe [text]` | Start immediately (`? ` query, `! ` break, `> ` observe) |
-| `:RunMeResume` | Reopen the panel (or restore the last run from history) |
+| `<leader>hR`, `:RunMeResume` | Reopen the panel (or restore the last run from history) |
 | `:RunMeHistory` | Pick a past run; `i` in the panel continues its pi session |
 | `:RunMeCancel` | Cancel and clean up the debugger |
 
@@ -142,6 +142,7 @@ nvim                                                pi --mode rpc (cwd = project
 ```lua
 require('config.runme').setup {
   keymap = '<leader>hr',
+  resume_keymap = '<leader>hR',
   pi = { executable = stdpath('config') .. '/bin/pi-mise', model = 'openai-codex/gpt-6.1-sol', thinking = 'medium' },
   pi_config_dir = '~/peter-projects/pi-config',
   prod_row_ceiling = 1000000,
