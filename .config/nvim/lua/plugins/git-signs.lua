@@ -22,6 +22,13 @@ return {
 
   keys = {
     {
+      '<leader>gR',
+      function()
+        require('config.git_gutter').toggle_pr()
+      end,
+      desc = 'Toggle PR changes in gutter (current file)',
+    },
+    {
       '<leader>gt',
       function()
         local enabled = require('gitsigns').toggle_signs()
@@ -32,6 +39,10 @@ return {
     {
       '<leader>grh',
       function()
+        if vim.b.gitsigns_pr_base then
+          vim.notify('Switch to local edits with <leader>gR before resetting a hunk', vim.log.levels.WARN)
+          return
+        end
         require('gitsigns').reset_hunk()
       end,
       desc = 'Reset Hunk',

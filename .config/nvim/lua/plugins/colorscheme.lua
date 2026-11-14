@@ -4,6 +4,13 @@ return {
   config = function()
     require('onedarkpro').setup {
       highlights = {
+        GitSignsAdd = { fg = '${green}', bold = true },
+        GitSignsChange = { fg = '${yellow}', bold = true },
+        GitSignsDelete = { fg = '${red}', bold = true },
+        GitSignsStagedAdd = { fg = '${green}' },
+        GitSignsStagedChange = { fg = '${yellow}' },
+        GitSignsStagedDelete = { fg = '${red}' },
+
         -- underline instead of solid background
         LspReferenceText = { underline = true, sp = '#6c8ebf' },
         LspReferenceRead = { underline = true, sp = '#6c8ebf' },

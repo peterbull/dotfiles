@@ -6,10 +6,11 @@ return {
     enabled = vim.fn.filereadable(directory .. '/lua/runme/init.lua') == 1,
     name = 'runme',
     main = 'runme',
-    cmd = { 'RunMe', 'RunMeHistory', 'RunMeResume', 'RunMeCancel', 'RunMeClear', 'RunMeScratch', 'RunMeEval' },
+    cmd = { 'RunMe', 'RunMeHistory', 'RunMeResume', 'RunMeCancel', 'RunMeClear', 'RunMeScratch', 'RunMeEval', 'RunMeTrigger', 'RunMeRestoreServices' },
     opts = {
       keymap = false,
       resume_keymap = false,
+      trigger_keymap = false,
       resume_hint = '<leader>hR',
       pi = {
         executable = vim.fn.stdpath 'config' .. '/bin/pi-mise',
@@ -18,6 +19,11 @@ return {
       },
       pi_config_dir = '~/peter-projects/pi-config',
       ruby = { cmd = { 'mise', 'exec', '--', 'bundle', 'exec', 'rails', 'runner' } },
+      services = {
+        session = 'ctm-server',
+        start_script = '~/dotfiles/scripts/ctmstart.sh',
+        ready = { rails = 38698, ['resque-debug'] = 38699 },
+      },
     },
     keys = {
       {
@@ -43,6 +49,14 @@ return {
         end,
         mode = 'n',
         desc = 'RunMe: reopen panel',
+      },
+      {
+        '<leader>ht',
+        function()
+          require('runme').replay()
+        end,
+        mode = 'n',
+        desc = 'RunMe: replay the breakpoint trigger',
       },
       {
         '<leader>he',
