@@ -2,7 +2,12 @@ local M = {}
 
 ---@alias PseudoEvalProvenance 'literal'|'derived'|'mock'
 
+---@alias PseudoEvalScope
+---| 'line' the statement starting on the cursor line, including its body
+---| 'expr' an explicit expression: visual selection, the one under the cursor, or a command argument
+
 ---@class PseudoEvalResult
+---@field subject string
 ---@field type string
 ---@field shape string
 ---@field value string
@@ -14,6 +19,8 @@ local M = {}
 ---@field id integer
 ---@field key string
 ---@field expr string
+---@field scope PseudoEvalScope
+---@field label string display name: the model's subject, else the expression
 ---@field line_text string
 ---@field bufnr integer
 ---@field filename string
@@ -30,6 +37,7 @@ M.config = {
   timeout = 90000,
   lines_above = 150,
   lines_below = 40,
+  max_statement_lines = 400,
   hover_timeout = 800,
   max_width = 90,
   max_height = 30,
@@ -59,7 +67,9 @@ local PROVENANCE_ICON = {
 }
 
 local PROMPT =
-  [=[You are a pseudo-debugger. The user has just stepped over the marked line in a debugger and wants to inspect the value of an expression. You cannot run the code. Produce the value the expression would most plausibly hold right after the marked line executes: if the line assigns it, show the assigned value; if the expression is evaluated on that line, show what it evaluates to there. Never answer nil/null/undefined merely because a variable is unassigned before the line runs.
+  [=[You are a pseudo-debugger. The user is stepping through code in a debugger and wants to inspect a value. You cannot run the code, so produce the value it would most plausibly hold. Never answer nil/null/undefined merely because a variable is unassigned before its line runs, and never report a syntax error for the request itself.
+
+%s
 
 Decide the provenance:
 - "literal": the value follows directly from literals or constants visible in the code.
@@ -68,14 +78,24 @@ Decide the provenance:
 
 Respond with ONLY one JSON object, no prose and no code fences:
 {
+  "subject": "a short name for what you inspected, at most 40 characters, e.g. links, totals, buildMenu(\"main\", 2), if (href === path)",
   "type": "the runtime type in the language's own notation, e.g. Array<Hash{Symbol => String}>, list[dict[str, int]], Map<string, User>",
   "shape": "one short line describing structure and size, e.g. 3 × {id: Integer, name: String, tags: Array<String>}",
   "value": "the value written as a %s literal that would reconstruct it, pretty-printed, at most 25 lines; abbreviate long collections with 2-3 elements and a trailing comment giving the full count",
   "provenance": "literal | derived | mock",
   "basis": "a short phrase naming where the data came from, e.g. db/schema.rb `calls` table, or naming conventions only",
-  "repl": "%s code that assigns this value to a variable named after the expression (snake_case if the expression is not a valid name), loading anything required, ready to paste into a REPL"
+  "repl": "%s code that assigns this value to a variable named after the subject (snake_case if the subject is not a valid name), loading anything required, ready to paste into a REPL; for a function, define sample arguments and call it"
 }
 ]=]
+
+local SCOPE_INSTRUCTIONS = {
+  line = [=[Evaluate the statement on the marked lines as a whole, as if you just stepped over it:
+- a declaration or assignment: the value of the variable(s) it assigns;
+- an expression statement or return: the value it produces;
+- a function, method, lambda or class definition: call it once with representative arguments taken from its call sites (search for them) or invented to fit; "type" is its signature with the return type, "shape" names the sample arguments, "value" is the return value;
+- if/while/case/for: the value of its condition or of the collection it iterates, and say which branch runs or how many iterations in "shape".]=],
+  expr = [=[Inspect the expression given below as it would be right after the marked line executes: if the line assigns it, the assigned value; if the line evaluates it, what it evaluates to there.]=],
+}
 
 ---@param msg string
 ---@param level? integer
@@ -160,16 +180,42 @@ local function visual_selection()
   return text ~= '' and text or nil
 end
 
+---Last line of the outermost syntax node that starts on `lnum`, so a function, block or
+---multi-line chain is evaluated with its whole body.
+---@param bufnr integer
+---@param lnum integer 1-based
+---@return integer last 1-based
+local function statement_end(bufnr, lnum)
+  local line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ''
+  local col = (line:find '%S' or 1) - 1
+  local ok, node = pcall(vim.treesitter.get_node, { bufnr = bufnr, pos = { lnum - 1, col } })
+  if not ok or not node then
+    return lnum
+  end
+  local parent = node:parent()
+  while parent and parent:parent() and parent:start() == lnum - 1 do
+    node = parent
+    parent = node:parent()
+  end
+  local end_row, end_col = select(3, node:range())
+  if end_col == 0 and end_row > lnum - 1 then
+    end_row = end_row - 1
+  end
+  return math.min(end_row + 1, lnum + M.config.max_statement_lines)
+end
+
 ---@param bufnr integer
 ---@param row integer 1-based
+---@param last_row integer 1-based end of the inspected statement
 ---@return string
-local function code_context(bufnr, row)
+local function code_context(bufnr, row, last_row)
   local first = math.max(1, row - M.config.lines_above)
-  local last = math.min(vim.api.nvim_buf_line_count(bufnr), row + M.config.lines_below)
+  local last = math.min(vim.api.nvim_buf_line_count(bufnr), math.max(row, last_row) + M.config.lines_below)
   local out = {}
   for i, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, first - 1, last, false)) do
     local lnum = first + i - 1
-    out[#out + 1] = string.format('%s%5d  %s', lnum == row and '>' or ' ', lnum, line)
+    local mark = (lnum >= row and lnum <= last_row) and '>' or ' '
+    out[#out + 1] = string.format('%s%5d  %s', mark, lnum, line)
   end
   return table.concat(out, '\n')
 end
@@ -231,6 +277,7 @@ local function parse_result(raw)
 
   local provenance = PROVENANCE_HL[data.provenance] and data.provenance or 'mock'
   return {
+    subject = vim.trim(tostring(data.subject or '')),
     type = tostring(data.type or '?'),
     shape = tostring(data.shape or ''),
     value = tostring(data.value or ''),
@@ -240,21 +287,35 @@ local function parse_result(raw)
   }
 end
 
----@param target { expr: string, bufnr: integer, filename: string, filetype: string, lnum: integer, line_text: string }
+---@class PseudoEvalTarget
+---@field expr string
+---@field scope PseudoEvalScope
+---@field bufnr integer
+---@field filename string
+---@field filetype string
+---@field lnum integer 1-based
+---@field last_lnum integer 1-based end of the statement starting on lnum
+---@field line_text string
+
+---@param target PseudoEvalTarget
 ---@param hover string?
 ---@param callback fun(result: PseudoEvalResult?, err: string?)
 local function ask_pi(target, hover, callback)
   local lang = language_name(target.filetype)
+  local span = target.last_lnum > target.lnum and string.format('lines %d-%d', target.lnum, target.last_lnum) or ('line ' .. target.lnum)
   local parts = {
-    PROMPT:format(lang, lang),
-    'File: ' .. target.filename .. ' (' .. lang .. ')',
-    'Paused at line ' .. target.lnum .. ': ' .. vim.trim(target.line_text),
-    'Expression to inspect: ' .. target.expr,
+    PROMPT:format(SCOPE_INSTRUCTIONS[target.scope], lang, lang),
+    'File: ' .. target.filename .. ' (' .. lang .. '). Read more of it or other files if the code below is not enough.',
   }
-  if hover then
-    parts[#parts + 1] = 'Language server hover for the expression:\n' .. hover
+  if target.scope == 'line' then
+    parts[#parts + 1] = 'Statement to evaluate: ' .. span .. ' (marked with >).'
+  else
+    parts[#parts + 1] = 'Paused at ' .. span .. ' (marked with >).\nExpression to inspect: ' .. target.expr
   end
-  parts[#parts + 1] = 'Code (the > marks the paused line):\n' .. code_context(target.bufnr, target.lnum)
+  if hover then
+    parts[#parts + 1] = 'Language server hover at the cursor:\n' .. hover
+  end
+  parts[#parts + 1] = 'Code:\n' .. code_context(target.bufnr, target.lnum, target.last_lnum)
 
   local args = {
     M.config.pi,
@@ -334,7 +395,7 @@ local function render_annotations(bufnr)
       end
       local r = entry.result
       chunks[#chunks + 1] = { PROVENANCE_ICON[r.provenance] .. ' ', PROVENANCE_HL[r.provenance] }
-      chunks[#chunks + 1] = { ellipsize(entry.expr, 24) .. ': ', 'Comment' }
+      chunks[#chunks + 1] = { ellipsize(entry.label, 24) .. ': ', 'Comment' }
       chunks[#chunks + 1] = { r.type, 'Comment' }
     end
     local anchor = list[#list]
@@ -389,7 +450,7 @@ local function show_entry(entry, opts)
     max_height = M.config.max_height,
     title = {
       { ' ' .. PROVENANCE_ICON[r.provenance] .. ' ', PROVENANCE_HL[r.provenance] },
-      { ellipsize(entry.expr, 60) .. ' ', 'FloatTitle' },
+      { ellipsize(entry.label, 60) .. ' ', 'FloatTitle' },
     },
     title_pos = 'left',
     close_events = opts.at_cursor == false and {} or nil,
@@ -426,11 +487,11 @@ local function show_entry(entry, opts)
   map('<Esc>', close, 'Close')
   map('y', function()
     vim.fn.setreg('+', r.value)
-    notify('Value yanked: ' .. entry.expr)
+    notify('Value yanked: ' .. entry.label)
   end, 'Yank value')
   map('Y', function()
     vim.fn.setreg('+', r.repl)
-    notify('REPL snippet yanked: ' .. entry.expr)
+    notify('REPL snippet yanked: ' .. entry.label)
   end, 'Yank REPL snippet')
   map('s', function()
     close()
@@ -443,7 +504,7 @@ local function show_entry(entry, opts)
   map('R', function()
     close()
     M.goto_entry(entry)
-    evaluate { expr = entry.expr, force = true }
+    evaluate { scope = entry.scope, expr = entry.scope == 'expr' and entry.expr or nil, force = true }
   end, 'Re-evaluate')
   map('o', function()
     close()
@@ -453,7 +514,7 @@ end
 
 ---@param entry PseudoEvalEntry
 open_split = function(entry)
-  local name = 'pseudo-eval://' .. entry.id .. '/' .. entry.expr
+  local name = 'pseudo-eval://' .. entry.id .. '/' .. entry.label
   local existing = vim.fn.bufnr(name)
   vim.cmd 'botright vsplit'
   if existing ~= -1 then
@@ -465,7 +526,7 @@ open_split = function(entry)
   vim.bo[buf].bufhidden = 'hide'
   local r = entry.result
   local header = {
-    string.format('%s: %s', entry.expr, r.type),
+    string.format('%s: %s', entry.label, r.type),
     r.shape,
     string.format('%s — %s', r.provenance, r.basis),
     string.format('%s:%d', vim.fn.fnamemodify(entry.filename, ':~:.'), entry_lnum(entry)),
@@ -501,7 +562,7 @@ send_to_repl = function(entry)
     notify('REPL send failed: ' .. tostring(err), vim.log.levels.ERROR)
     return
   end
-  notify('Sent to ' .. entry.filetype .. ' REPL: ' .. entry.expr)
+  notify('Sent to ' .. entry.filetype .. ' REPL: ' .. entry.label)
 end
 
 ---@param entry PseudoEvalEntry
@@ -594,52 +655,61 @@ local function loading_float(expr)
   return stop
 end
 
----@param opts? { expr?: string, force?: boolean }
+---@param opts? { scope?: PseudoEvalScope, expr?: string, force?: boolean }
 evaluate = function(opts)
   opts = opts or {}
   local bufnr = vim.api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win()
-  local cursor = vim.api.nvim_win_get_cursor(win)
-  local lnum = cursor[1]
+  local lnum = vim.api.nvim_win_get_cursor(win)[1]
   local line_text = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ''
-
-  local expr = opts.expr
-  if not expr then
-    local mode = vim.fn.mode()
-    if mode == 'v' or mode == 'V' or mode == '\22' then
-      expr = visual_selection()
-      vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
-    else
-      expr = expression_at_cursor(bufnr)
-    end
+  if vim.trim(line_text) == '' then
+    notify('Nothing to evaluate on a blank line', vim.log.levels.WARN)
+    return
   end
-  if not expr or vim.trim(line_text) == '' then
+
+  local mode = vim.fn.mode()
+  local scope, expr = opts.scope, opts.expr
+  if expr then
+    scope = 'expr'
+  elseif mode == 'v' or mode == 'V' or mode == '\22' then
+    scope, expr = 'expr', visual_selection()
+    vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
+  elseif scope == 'expr' then
+    expr = expression_at_cursor(bufnr)
+  else
+    scope, expr = 'line', vim.trim(line_text)
+  end
+  if not expr then
     notify('Nothing to evaluate here', vim.log.levels.WARN)
     return
   end
 
-  local key = entry_key(bufnr, lnum, expr, line_text)
+  local key = entry_key(bufnr, lnum, scope .. ':' .. expr, line_text)
   local cached, cached_idx = find_entry(key)
   if cached and not opts.force then
     show_entry(cached)
     return
   end
   if pending[key] then
-    notify('Already evaluating ' .. expr)
+    notify('Already evaluating ' .. ellipsize(expr, 40))
     return
   end
   pending[key] = true
   vim.cmd.redrawstatus()
 
+  ---@type PseudoEvalTarget
   local target = {
     expr = expr,
+    scope = scope,
     bufnr = bufnr,
     filename = vim.api.nvim_buf_get_name(bufnr),
     filetype = vim.bo[bufnr].filetype,
     lnum = lnum,
+    last_lnum = scope == 'line' and statement_end(bufnr, lnum) or lnum,
     line_text = line_text,
   }
-  local stop_loading = loading_float(expr)
+  local stop_loading =
+    loading_float(scope == 'line' and (target.last_lnum > lnum and ('lines %d-%d'):format(lnum, target.last_lnum) or ('line ' .. lnum)) or ellipsize(expr, 40))
 
   lsp_hover(bufnr, win, function(hover)
     ask_pi(target, hover, function(result, err)
@@ -648,7 +718,7 @@ evaluate = function(opts)
         stop_loading()
         vim.cmd.redrawstatus()
         if not result then
-          notify('pseudo-eval ' .. expr .. ' failed: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
+          notify('pseudo-eval ' .. ellipsize(expr, 40) .. ' failed: ' .. (err or 'unknown error'), vim.log.levels.ERROR)
           return
         end
 
@@ -664,6 +734,8 @@ evaluate = function(opts)
           id = next_id,
           key = key,
           expr = expr,
+          scope = scope,
+          label = result.subject ~= '' and result.subject or expr,
           line_text = line_text,
           bufnr = bufnr,
           filename = target.filename,
@@ -686,16 +758,20 @@ evaluate = function(opts)
         if still_here then
           show_entry(entry, { focus = false })
         else
-          notify(string.format('%s: %s  (<leader>vl to open)', expr, result.type))
+          notify(string.format('%s: %s  (<leader>vl to open)', entry.label, result.type))
         end
       end)
     end)
   end)
 end
 
----Evaluate the expression under the cursor, or the visual selection.
+---Evaluate the cursor line (with the body it opens), or the visual selection.
 function M.eval()
   evaluate()
+end
+
+function M.eval_expression()
+  evaluate { scope = 'expr' }
 end
 
 ---Reopen the newest result on the cursor line, or the newest result overall.
@@ -726,7 +802,7 @@ function M.history()
       return string.format(
         '%s %s  %s  │ %s:%d  %s',
         PROVENANCE_ICON[entry.result.provenance],
-        ellipsize(entry.expr, 40),
+        ellipsize(entry.label, 40),
         entry.result.type,
         vim.fn.fnamemodify(entry.filename, ':t'),
         entry_lnum(entry) or entry.lnum,
@@ -775,13 +851,14 @@ function M.setup(opts)
 
   vim.api.nvim_create_user_command('PseudoEval', function(cmd)
     evaluate { expr = cmd.args ~= '' and cmd.args or nil, force = cmd.bang }
-  end, { nargs = '?', bang = true, desc = 'Pseudo-evaluate the expression under the cursor (! to re-run)' })
+  end, { nargs = '?', bang = true, desc = 'Pseudo-evaluate the cursor line, or [expr] (! to re-run)' })
   vim.api.nvim_create_user_command('PseudoEvalLast', M.last, { desc = 'Reopen the latest pseudo-eval result' })
   vim.api.nvim_create_user_command('PseudoEvalHistory', M.history, { desc = 'Browse pseudo-eval results' })
   vim.api.nvim_create_user_command('PseudoEvalToggle', M.toggle_annotations, { desc = 'Toggle pseudo-eval annotations' })
   vim.api.nvim_create_user_command('PseudoEvalClear', M.clear, { desc = 'Clear pseudo-eval results for this buffer' })
 
-  vim.keymap.set({ 'n', 'x' }, '<leader>vv', M.eval, { desc = 'Pseudo-eval: inspect [v]alue' })
+  vim.keymap.set({ 'n', 'x' }, '<leader>vv', M.eval, { desc = 'Pseudo-eval: line or selection' })
+  vim.keymap.set('n', '<leader>vw', M.eval_expression, { desc = 'Pseudo-eval: expression under cursor' })
   vim.keymap.set('n', '<leader>vl', M.last, { desc = 'Pseudo-eval: [l]ast result' })
   vim.keymap.set('n', '<leader>vh', M.history, { desc = 'Pseudo-eval: [h]istory' })
   vim.keymap.set('n', '<leader>vt', M.toggle_annotations, { desc = 'Pseudo-eval: [t]oggle annotations' })
