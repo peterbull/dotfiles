@@ -8,7 +8,8 @@ local actions = {
   { '<leader>nr', 'review', 'review my code' },
   { '<leader>nd', 'done', 'step done' },
   { '<leader>nR', 'reveal', 'reveal (typed toll)' },
-  { '<leader>nc', 'card', 'show the step card' },
+  { '<leader>nc', 'panel', 'toggle the panel' },
+  { '<leader>nx', 'cancel', 'cancel the request' },
   { '<leader>np', 'plan', 'edit the plan' },
 }
 

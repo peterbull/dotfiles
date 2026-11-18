@@ -1,31 +1,52 @@
 local M = {}
 
-local function get_rust_package_name()
-  local cargo_toml_path = vim.fn.getcwd() .. '/Cargo.toml'
+-- Reads binary targets from cargo metadata, so workspaces (whose root Cargo.toml has no package name) resolve too.
+local function cargo_binaries()
+  local result = vim.system({ 'cargo', 'metadata', '--no-deps', '--format-version', '1' }, { text = true }):wait()
+  if result.code ~= 0 then
+    vim.notify('cargo metadata failed: ' .. result.stderr, vim.log.levels.ERROR)
+    return nil
+  end
 
-  if vim.fn.filereadable(cargo_toml_path) == 1 then
-    local cargo_content = vim.fn.readfile(cargo_toml_path)
-
-    for _, line in ipairs(cargo_content) do
-      local name = line:match '^name%s*=%s*"([^"]+)"'
-      if name then
-        return name
+  local metadata = vim.json.decode(result.stdout)
+  local binaries = {}
+  for _, package in ipairs(metadata.packages) do
+    for _, target in ipairs(package.targets) do
+      if vim.tbl_contains(target.kind, 'bin') then
+        table.insert(binaries, target.name)
       end
     end
   end
-
-  return nil
+  return binaries, metadata.target_directory
 end
+
 local function rust_package()
+  local dap = require 'dap'
   local result = vim.fn.system { 'cargo', 'build' }
   if vim.v.shell_error ~= 0 then
     vim.notify('Cargo build failed: ' .. result, vim.log.levels.ERROR)
-    return require('dap').ABORT
+    return dap.ABORT
   end
 
-  local package_name = get_rust_package_name() or 'backend'
-  local exe_path = vim.fn.getcwd() .. '/target/debug/' .. package_name
-  return exe_path
+  local binaries, target_directory = cargo_binaries()
+  if not binaries then
+    return dap.ABORT
+  end
+  if #binaries == 0 then
+    vim.notify('No binary targets in this Cargo project', vim.log.levels.ERROR)
+    return dap.ABORT
+  end
+
+  local binary = binaries[1]
+  if #binaries > 1 then
+    binary = require('dap.utils').pick_one(binaries, 'Binary to debug: ', function(name)
+      return name
+    end)
+    if not binary then
+      return dap.ABORT
+    end
+  end
+  return target_directory .. '/debug/' .. binary
 end
 local function rust_file()
   local current_file = vim.fn.expand '%:p'

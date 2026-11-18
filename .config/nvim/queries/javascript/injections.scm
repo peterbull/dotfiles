@@ -11,3 +11,12 @@
   (#set! injection.language "html")
   (#offset! @injection.content 0 1 0 -1)
   (#set! injection.include-children))
+
+(call_expression
+  function: (member_expression
+    property: (property_identifier) @_method)
+  arguments: (arguments (template_string) @injection.content)
+  (#eq? @_method "html")
+  (#set! injection.language "html")
+  (#offset! @injection.content 0 1 0 -1)
+  (#set! injection.include-children))
