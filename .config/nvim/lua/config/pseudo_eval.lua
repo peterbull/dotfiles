@@ -25,7 +25,7 @@ local M = {}
 
 M.config = {
   pi = vim.fn.stdpath 'config' .. '/bin/pi-mise',
-  model = nil, ---@type string? pi --model pattern; nil uses pi's default
+  model = 'openai-codex/gpt-6.1-sol', ---@type string? pi --model pattern (provider/id)
   thinking = 'low',
   timeout = 90000,
   lines_above = 150,
