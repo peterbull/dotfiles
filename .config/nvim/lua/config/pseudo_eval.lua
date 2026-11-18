@@ -460,6 +460,7 @@ local function show_entry(entry, opts)
   end
   local buf = vim.api.nvim_win_get_buf(win)
   vim.wo[win].concealcursor = 'n'
+  last_shown = entry
 
   if opts.at_cursor == false then
     local cfg = vim.api.nvim_win_get_config(win)
@@ -470,8 +471,9 @@ local function show_entry(entry, opts)
     vim.api.nvim_set_current_win(win)
   end
 
+  vim.b[buf].pseudo_eval_entry = entry.id
   pcall(vim.api.nvim_win_set_config, win, {
-    footer = { { ' y yank · s split · r repl · R rerun · o goto ', 'FloatFooter' } },
+    footer = { { ' ⏎ actions · q close ', 'FloatFooter' } },
     footer_pos = 'right',
   })
 
@@ -485,31 +487,7 @@ local function show_entry(entry, opts)
   end
   map('q', close, 'Close')
   map('<Esc>', close, 'Close')
-  map('y', function()
-    vim.fn.setreg('+', r.value)
-    notify('Value yanked: ' .. entry.label)
-  end, 'Yank value')
-  map('Y', function()
-    vim.fn.setreg('+', r.repl)
-    notify('REPL snippet yanked: ' .. entry.label)
-  end, 'Yank REPL snippet')
-  map('s', function()
-    close()
-    open_split(entry)
-  end, 'Open in split')
-  map('r', function()
-    close()
-    send_to_repl(entry)
-  end, 'Send to REPL')
-  map('R', function()
-    close()
-    M.goto_entry(entry)
-    evaluate { scope = entry.scope, expr = entry.scope == 'expr' and entry.expr or nil, force = true }
-  end, 'Re-evaluate')
-  map('o', function()
-    close()
-    M.goto_entry(entry)
-  end, 'Go to source line')
+  map('<CR>', M.actions, 'Pick an action')
 end
 
 ---@param entry PseudoEvalEntry
@@ -575,6 +553,126 @@ function M.goto_entry(entry)
   local lnum = math.min(entry_lnum(entry) or entry.lnum, vim.api.nvim_buf_line_count(0))
   local col = (vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, false)[1] or ''):find(entry.expr, 1, true)
   vim.api.nvim_win_set_cursor(0, { lnum, col and col - 1 or 0 })
+end
+
+---@class PseudoEvalAction
+---@field key string suffix after <leader>v
+---@field name string
+---@field desc string
+---@field run fun(entry: PseudoEvalEntry)
+
+---@type PseudoEvalAction[]
+local ACTIONS = {
+  {
+    key = 'y',
+    name = 'yank',
+    desc = 'copy value to clipboard',
+    run = function(entry)
+      vim.fn.setreg('+', entry.result.value)
+      notify('Value yanked: ' .. entry.label)
+    end,
+  },
+  {
+    key = 'Y',
+    name = 'yank repl',
+    desc = 'copy assignment snippet',
+    run = function(entry)
+      vim.fn.setreg('+', entry.result.repl)
+      notify('REPL snippet yanked: ' .. entry.label)
+    end,
+  },
+  {
+    key = 's',
+    name = 'split',
+    desc = 'open in a scratch split',
+    run = function(entry)
+      open_split(entry)
+    end,
+  },
+  {
+    key = 'r',
+    name = 'repl',
+    desc = 'define it in the iron REPL',
+    run = function(entry)
+      send_to_repl(entry)
+    end,
+  },
+  {
+    key = 'R',
+    name = 'rerun',
+    desc = 'evaluate again, skip cache',
+    run = function(entry)
+      M.goto_entry(entry)
+      evaluate { scope = entry.scope, expr = entry.scope == 'expr' and entry.expr or nil, force = true }
+    end,
+  },
+  {
+    key = 'o',
+    name = 'goto',
+    desc = 'jump to the source line',
+    run = function(entry)
+      M.goto_entry(entry)
+    end,
+  },
+}
+
+---@type PseudoEvalEntry?
+local last_shown
+
+---The entry an action applies to: the one in the current popup or split, else the newest on
+---the cursor line, else the one shown last.
+---@return PseudoEvalEntry?
+local function resolve_entry()
+  local id = vim.b.pseudo_eval_entry
+  if id then
+    for _, entry in ipairs(entries) do
+      if entry.id == id then
+        return entry
+      end
+    end
+  end
+  local bufnr = vim.api.nvim_get_current_buf()
+  local lnum = vim.api.nvim_win_get_cursor(0)[1]
+  for _, entry in ipairs(entries) do
+    if entry.bufnr == bufnr and entry_lnum(entry) == lnum then
+      return entry
+    end
+  end
+  return last_shown or entries[1]
+end
+
+---@param action PseudoEvalAction
+---@param entry? PseudoEvalEntry
+local function run_action(action, entry)
+  entry = entry or resolve_entry()
+  if not entry then
+    notify 'No pseudo-eval results yet'
+    return
+  end
+  local win = vim.api.nvim_get_current_win()
+  if vim.w[win][FOCUS_ID] then
+    vim.api.nvim_win_close(win, true)
+  end
+  action.run(entry)
+end
+
+---Pick an action for the current result from a short described list.
+function M.actions()
+  local entry = resolve_entry()
+  if not entry then
+    notify 'No pseudo-eval results yet'
+    return
+  end
+  vim.ui.select(ACTIONS, {
+    prompt = PROVENANCE_ICON[entry.result.provenance] .. ' ' .. ellipsize(entry.label, 40),
+    format_item = function(action)
+      return string.format('%-11s %-10s %s', '<leader>v' .. action.key, action.name, action.desc)
+    end,
+  }, function(action)
+    if action then
+      run_action(action, entry)
+    end
+  end)
 end
 
 ---@param bufnr integer
@@ -863,6 +961,12 @@ function M.setup(opts)
   vim.keymap.set('n', '<leader>vh', M.history, { desc = 'Pseudo-eval: [h]istory' })
   vim.keymap.set('n', '<leader>vt', M.toggle_annotations, { desc = 'Pseudo-eval: [t]oggle annotations' })
   vim.keymap.set('n', '<leader>vc', M.clear, { desc = 'Pseudo-eval: [c]lear buffer results' })
+  vim.keymap.set('n', '<leader>va', M.actions, { desc = 'Pseudo-eval: [a]ctions' })
+  for _, action in ipairs(ACTIONS) do
+    vim.keymap.set('n', '<leader>v' .. action.key, function()
+      run_action(action)
+    end, { desc = 'Pseudo-eval: ' .. action.name })
+  end
 end
 
 return M
