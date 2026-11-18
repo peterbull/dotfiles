@@ -438,14 +438,13 @@ end
 local open_split, send_to_repl, evaluate
 
 ---@param entry PseudoEvalEntry
----@param opts? { focus?: boolean, at_cursor?: boolean }
+---@param opts? { at_cursor?: boolean }
 local function show_entry(entry, opts)
   opts = opts or {}
   local r = entry.result
   local _, win = vim.lsp.util.open_floating_preview(markdown_lines(entry), 'markdown', {
     border = 'rounded',
     focus_id = FOCUS_ID,
-    focus = opts.focus ~= false,
     max_width = M.config.max_width,
     max_height = M.config.max_height,
     title = {
@@ -468,8 +467,8 @@ local function show_entry(entry, opts)
     cfg.row = math.floor((vim.o.lines - cfg.height) / 2) - 1
     cfg.col = math.floor((vim.o.columns - cfg.width) / 2)
     vim.api.nvim_win_set_config(win, cfg)
-    vim.api.nvim_set_current_win(win)
   end
+  vim.api.nvim_set_current_win(win)
 
   vim.b[buf].pseudo_eval_entry = entry.id
   pcall(vim.api.nvim_win_set_config, win, {
@@ -854,7 +853,7 @@ evaluate = function(opts)
           and vim.api.nvim_win_get_cursor(win)[1] == lnum
           and vim.fn.mode() == 'n'
         if still_here then
-          show_entry(entry, { focus = false })
+          show_entry(entry)
         else
           notify(string.format('%s: %s  (<leader>vl to open)', entry.label, result.type))
         end
