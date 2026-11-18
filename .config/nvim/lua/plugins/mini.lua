@@ -29,7 +29,8 @@ return {
     ---@diagnostic disable-next-line: duplicate-set-field
     statusline.section_location = function()
       local runme = package.loaded['runme']
-      return (runme and runme.statusline() or '') .. '%2l:%-2v'
+      local pseudo_eval = package.loaded['config.pseudo_eval']
+      return (pseudo_eval and pseudo_eval.statusline() or '') .. (runme and runme.statusline() or '') .. '%2l:%-2v'
     end
 
     -- ... and there is more!

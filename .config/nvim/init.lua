@@ -20,6 +20,7 @@ require 'config.options'
 require 'config.keymaps'
 require 'config.autocmds'
 require('config.diff_lsp').setup()
+require('config.pseudo_eval').setup()
 
 local lazypath = plugin_root .. '/lazy.nvim'
 if not vim.uv.fs_stat(lazypath) then
